@@ -1,0 +1,23 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "ghostkey (staging)",
+      "request": "launch",
+      "type": "dart",
+      "toolArgs": ["--dart-define=GHOSTKEY_SERVER_URL=https://ghostkey-server-staging.fly.dev"]
+    },
+    {
+      "name": "ghostkey (prod)",
+      "request": "launch",
+      "type": "dart",
+      "toolArgs": ["--dart-define=GHOSTKEY_SERVER_URL=https://api.ghost-key.app"]
+    },
+    {
+      "name": "ghostkey (local :3000 over LAN)",
+      "request": "launch",
+      "type": "dart",
+      "toolArgs": ["--dart-define=GHOSTKEY_SERVER_URL=http://192.168.1.10:3000"]
+    }
+  ]
+}

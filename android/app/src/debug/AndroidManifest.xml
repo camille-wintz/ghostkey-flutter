@@ -1,0 +1,14 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The INTERNET permission is required for development. Specifically,
+         the Flutter tool needs it to communicate with the running application
+         to allow setting breakpoints, to provide hot reload, etc.
+    -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Debug builds only, and only so that GHOSTKEY_SERVER_URL can be an
+         http:// one: the LAN and `adb reverse` configurations in
+         .vscode/launch.json point at the dev server on port 3000, and without
+         this every request from them fails as a cleartext violation. Release
+         builds never see this file, so the shipped app still refuses http. -->
+    <application android:usesCleartextTraffic="true" />
+</manifest>
