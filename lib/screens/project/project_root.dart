@@ -34,6 +34,22 @@ class _ProjectRootState extends ConsumerState<ProjectRoot> {
 
   void _close() => ref.read(activeProjectProvider.notifier).close();
 
+  /// A book opened with a question waiting opens ON the chat rather than on
+  /// the home — the first-run flow's guided branch, whose whole point is the
+  /// conversation. Pushed rather than made the first route so the home is
+  /// still under it and Back still reaches the shelf.
+  ///
+  /// The question itself is the chat screen's to consume; this only decides
+  /// which screen the author lands on.
+  @override
+  void initState() {
+    super.initState();
+    if (ref.read(activeProjectProvider).ask?.isEmpty ?? true) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _nav.currentState?.pushNamed(PhantomScreen.route);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final project = ref.watch(projectProvider(widget.projectId));

@@ -12,6 +12,7 @@ import '../../server/dto/projects.dart';
 import '../../server/errors.dart';
 import '../../server/media/api.dart';
 import '../../server/providers.dart';
+import '../../store/active_project.dart';
 import 'attach_menu_sheet.dart';
 import 'attachment_tray.dart';
 import 'chapter_picker_sheet.dart';
@@ -64,6 +65,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     isSending: () => ref.read(chatTurnProvider(_projectId)).sending,
   );
   final ScrollController _scroll = ScrollController();
+
+  /// A question the first-run flow put on the open project, sent once on
+  /// arrival and cleared so it can never be sent twice. Sent rather than
+  /// pre-filled: it is the author's own words from the step before, and asking
+  /// them to press send on a sentence they already committed to is a second
+  /// confirmation of the same decision.
+  ///
+  /// It goes through `_send` like anything they typed, so the quota gate
+  /// refuses it the same way — an author out of messages meets the wall, not a
+  /// silent nothing.
+  @override
+  void initState() {
+    super.initState();
+    final ask = ref.read(activeProjectProvider).ask;
+    if (ask == null || ask.isEmpty) return;
+    ref.read(activeProjectProvider.notifier).clearAsk();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _send(ask);
+    });
+  }
 
   @override
   void dispose() {

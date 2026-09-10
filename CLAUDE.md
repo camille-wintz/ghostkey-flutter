@@ -53,8 +53,8 @@ Glamour are desk rooms and never come here.
 
 ## Navigation
 
-The root ([lib/app.dart](lib/app.dart)) is exactly one of three subtrees:
-the sign-in screen, the shelf, or an open book. **The shelf and an open
+The root ([lib/app.dart](lib/app.dart)) is exactly one of four subtrees:
+the sign-in screen, the **first-run flow**, the shelf, or an open book. **The shelf and an open
 book are alternative roots, not a stack**: `open(id)` / `close()` on the
 active-project notifier IS the navigation. Each subtree has its own nested
 `Navigator` and answers Android's back button itself (`HardwareBack`).
@@ -62,6 +62,23 @@ Inside a book, `ProjectRoot` loads the project and hosts the project home
 plus the rooms; `ProjectScope.of(context)` gives any room the project id,
 and `routeForRoom` is the one map from a room to its route. A room draws
 `RoomEntering` until its push has landed (`Entered`), then builds itself.
+
+**The first-run flow is gated on SERVER state** (`authorProfileProvider`,
+`GET /api/me/profile`), not on anything kept here. That is the opposite call
+from `access/welcome_notices.dart`, which keeps its "seen" flags in a local
+file on purpose — those record what a screen has SHOWN, these are answers a
+person gave, and they have to reach a phone that person has never signed into.
+A profile that has not arrived, or failed to, leaves the author on the shelf.
+
+The flow asks the same four questions as the desk and stores the same
+answers, and its endings differ because this app has four rooms:
+`screens/onboarding/intents.dart` maps an intent to a room HERE — `plot` ends
+in the chat (there is no Mara), and `pitch` is not offered at all (there is no
+Glamour, and an option leading nowhere is worse than one option fewer). The
+stored `intent` is the author's word, never a room name, which is what lets
+the two clients disagree about it. The guided branch carries its question on
+`ActiveProject.ask`; `ProjectRoot` opens the chat on it and the chat screen
+sends it once and clears it.
 
 ## Layout
 
@@ -81,7 +98,8 @@ lib/
   backdrop/                 glow · motes · ambient_motion
   ui/                       the primitives
   screens/
-    auth/ shelf/ account/   sign-in · the shelf (home, cards, create, notices) · account
+    auth/ onboarding/       sign-in · the first-run flow (questions, intent map, seed prompt)
+    shelf/ account/         the shelf (home, cards, create, notices) · account
     project/                project_root · project_home · cover · backdrop · room_row · room_entering
     apparition/ veil/ poltergeist/ phantom/   the rooms
 ```

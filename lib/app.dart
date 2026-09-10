@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth/session.dart';
 import 'ds/tokens.dart';
 import 'screens/auth/auth_screen.dart';
+import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/project/project_root.dart';
 import 'screens/shelf/shelf_root.dart';
+import 'server/providers.dart';
 import 'store/active_project.dart';
 
 /// The app: one theme, and a root that is exactly one of three things.
@@ -35,12 +37,22 @@ class _GhostkeyAppState extends ConsumerState<GhostkeyApp> {
   }
 }
 
-/// Signed out, on the shelf, or inside a book — never two at once.
+/// Signed out, being asked what they came here to do, on the shelf, or inside
+/// a book — never two at once.
 ///
 /// Opening a project is a change of MODE, not a drill-down: the open project
 /// decides which subtree exists, and nothing navigates between them. The
 /// shelf is gone while the book is open, so an author writing in Apparition
 /// is not carrying the shelf's queries, covers and animating backdrop.
+///
+/// The first-run flow is a fourth mode on the same rule, and it is gated on
+/// SERVER state (`authorProfileProvider`) rather than anything on the device.
+/// The welcome notices deliberately keep their "seen" in a local file, because
+/// they record what a screen has shown; these are answers a person gave, and
+/// they have to reach a phone they have never signed into.
+///
+/// A profile that has not arrived, or failed to, leaves the author on the
+/// shelf: nobody is walled out of their own books because a request was slow.
 class _Root extends ConsumerWidget {
   const _Root();
 
@@ -48,13 +60,18 @@ class _Root extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(sessionProvider.select((s) => s.status));
     final projectId = ref.watch(activeProjectProvider.select((p) => p.projectId));
+    final owed = status == AuthStatus.signedIn &&
+        projectId == null &&
+        ((ref.watch(authorProfileProvider).value?.owed ?? false));
 
     final Widget child = switch (status) {
       AuthStatus.hydrating => Container(key: const ValueKey('hydrating'), color: Ds.void_),
       AuthStatus.signedOut => const AuthScreen(key: ValueKey('auth')),
-      AuthStatus.signedIn => projectId == null
-          ? const ShelfRoot(key: ValueKey('shelf'))
-          : ProjectRoot(key: ValueKey('project-$projectId'), projectId: projectId),
+      AuthStatus.signedIn => owed
+          ? const OnboardingScreen(key: ValueKey('onboarding'))
+          : projectId == null
+              ? const ShelfRoot(key: ValueKey('shelf'))
+              : ProjectRoot(key: ValueKey('project-$projectId'), projectId: projectId),
     };
 
     return AnimatedSwitcher(

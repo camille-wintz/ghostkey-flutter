@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/session.dart';
 import 'billing/api.dart';
 import 'dto/billing.dart';
+import 'dto/profile.dart';
 import 'dto/projects.dart';
 import 'folders/api.dart';
+import 'profile/api.dart';
 import 'projects/api.dart';
 import 'series/api.dart';
 
@@ -14,6 +16,12 @@ import 'series/api.dart';
 //
 // Nothing here is gated on sign-in by a flag: a read while signed out has no
 // caller, and the whole cache is dropped on sign-out (`clearServerCache`).
+
+/// What the author said about themselves on arrival, and whether the first-run
+/// flow is still owed. Read once at the root, which is where the flow is
+/// decided; never cached longer than the session, because the flow writes a key
+/// and reads it back on the next step.
+final authorProfileProvider = FutureProvider<AuthorProfile>((ref) => getAuthorProfile());
 
 final projectsProvider = FutureProvider.family<List<ProjectMeta>, String?>(
   (ref, folderId) => listProjects(folderId),
