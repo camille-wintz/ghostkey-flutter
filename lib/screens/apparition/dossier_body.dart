@@ -155,8 +155,16 @@ class _GlanceGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Two columns on a hairline grid; an odd last cell spans the row rather
-    // than leaving a hole showing the grid's own hairline as a block.
+    // than leaving a hole showing the grid's own hairline as a block. A
+    // character's GMC is sentences rather than phrases, so it stacks instead.
     final rows = <Widget>[];
+    if (isGmcGlance(cells)) {
+      for (final (i, cell) in cells.indexed) {
+        rows.add(_GlanceCell(cell, gmc: true));
+        if (i + 1 < cells.length) rows.add(const SizedBox(height: 1));
+      }
+      return _glanceFrame(rows);
+    }
     for (var i = 0; i < cells.length; i += 2) {
       final left = cells[i];
       final right = i + 1 < cells.length ? cells[i + 1] : null;
@@ -171,23 +179,28 @@ class _GlanceGrid extends StatelessWidget {
       ));
       if (i + 2 < cells.length) rows.add(const SizedBox(height: 1));
     }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(DsGeom.radius),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: Ds.edge),
-          borderRadius: BorderRadius.circular(DsGeom.radius),
-          color: Ds.edge,
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: rows),
-      ),
-    );
+    return _glanceFrame(rows);
   }
+
+  Widget _glanceFrame(List<Widget> rows) => ClipRRect(
+        borderRadius: BorderRadius.circular(DsGeom.radius),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Ds.edge),
+            borderRadius: BorderRadius.circular(DsGeom.radius),
+            color: Ds.edge,
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: rows),
+        ),
+      );
 }
 
 class _GlanceCell extends StatelessWidget {
-  const _GlanceCell(this.cell);
+  const _GlanceCell(this.cell, {this.gmc = false});
   final DossierGlanceItem cell;
+  /// A GMC cell names its question in words rather than as an eyebrow, and
+  /// carries what that question asks underneath it.
+  final bool gmc;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -196,9 +209,18 @@ class _GlanceCell extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(cell.label.toUpperCase(), style: DsStyle.eyebrow()),
-            const SizedBox(height: 4),
-            Text(cell.value, style: DsStyle.ui(DsText.body, color: Ds.hi)),
+            if (gmc) ...[
+              Text(cell.label, style: DsStyle.prose(DsText.body, color: Ds.accent200)),
+              if (glanceGmcMeaning[cell.label] != null)
+                Text(glanceGmcMeaning[cell.label]!,
+                    style: DsStyle.ui(DsText.eyebrow, color: Ds.faint)),
+              const SizedBox(height: 6),
+              Text(cell.value, style: DsStyle.prose(DsText.body, color: Ds.ink)),
+            ] else ...[
+              Text(cell.label.toUpperCase(), style: DsStyle.eyebrow()),
+              const SizedBox(height: 4),
+              Text(cell.value, style: DsStyle.ui(DsText.body, color: Ds.hi)),
+            ],
           ],
         ),
       );

@@ -278,6 +278,30 @@ class DossierGlanceItem {
       DossierGlanceItem(label: asString(json['label']), value: asString(json['value']));
 }
 
+/// A CHARACTER's glance cells, in the order the server sends them: the story's
+/// GMC plus the arc the conflict demands. Fixed and server-enforced, so these
+/// are the one dossier labels a client may switch on. Places and terms have no
+/// GMC and keep model-chosen labels.
+const glanceGmc = ['Goal', 'Motivation', 'Conflict', 'Arc'];
+
+/// What each GMC cell asks, shown under the label — "Motivation" alone reads
+/// as "how motivated they are" rather than as the backstory the want comes
+/// out of.
+const glanceGmcMeaning = {
+  'Goal': 'What they want',
+  'Motivation': 'The backstory that makes them want it',
+  'Conflict': 'What stands in their way',
+  'Arc': 'How they have to change to overcome it',
+};
+
+/// Whether a glance is a character's GMC — the cells are sentences then, not
+/// the eight-word phrases the two-column grid was drawn for, so the surfaces
+/// stack them instead. Read off the labels rather than the entity type: the
+/// cells are all these widgets are handed, and a character with none of them
+/// (nothing in the excerpts to fill one) correctly reads as not-GMC.
+bool isGmcGlance(List<DossierGlanceItem> glance) =>
+    glance.isNotEmpty && glance.every((c) => glanceGmc.contains(c.label));
+
 class DossierTie {
   const DossierTie({required this.key, required this.name, required this.relation});
   final String key;
