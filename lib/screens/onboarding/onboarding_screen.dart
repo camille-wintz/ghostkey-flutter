@@ -30,7 +30,7 @@ import 'seed_prompt.dart';
 // backoffice most wants, which is that they said they didn't know where to
 // start.
 
-enum _Step { experience, start, title, idea, intent }
+enum _Step { experience, start, title, intent }
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -42,7 +42,6 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   _Step _step = _Step.experience;
   final _title = TextEditingController();
-  final _idea = TextEditingController();
   ProjectMeta? _imported;
   bool _busy = false;
   String? _error;
@@ -51,7 +50,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   void dispose() {
     _title.dispose();
-    _idea.dispose();
     super.dispose();
   }
 
@@ -92,12 +90,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     });
     try {
       // The chat is project-scoped, so there has to be a book before there can
-      // be a conversation. What they typed names it, which is what the question
-      // above the field promises.
-      final project = await createProject(
-        name: titleFromIdea(_idea.text),
-        title: titleFromIdea(_idea.text),
-      );
+      // be a conversation. Named by nobody yet — this author does not know what
+      // the book is, which is the whole reason they are on this branch.
+      final project = await createProject(name: defaultTitle, title: defaultTitle);
       await _remember(() => saveAuthorProfile(
             experience: Experience.beginner,
             intent: Intent.guided,
@@ -105,7 +100,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             completed: true,
           ));
       if (!mounted) return;
-      _land(project, ask: seedPrompt(_idea.text));
+      _land(project, ask: seedPrompt());
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -134,7 +129,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               completed: true,
             ));
         if (!mounted) return;
-        _land(project, ask: seedPrompt(''));
+        // No seeded question: this is an experienced writer who chose to plot,
+        // and the guided branch's "I don't know where to start" would be words
+        // put in their mouth. The chat's own intro offers planning openers.
+        _land(project);
         return;
       }
       await _remember(() => saveAuthorProfile(
@@ -253,10 +251,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               label: "I don't know where to start",
               blurb: "We'll talk it through — the idea, the genre, and whether to plot or just write.",
               disabled: _busy,
-              onPressed: () {
-                _remember(() => saveAuthorProfile(experience: Experience.beginner));
-                _to(_Step.idea);
-              },
+              onPressed: _guided,
             ),
           ],
         _Step.start => [
@@ -302,29 +297,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 onPressed: () => _to(_Step.intent),
               ),
             ),
-          ],
-        _Step.idea => [
-            const _Question(
-              eyebrow: 'However half-formed',
-              title: 'What do you want to write about?',
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: UiText(
-                "A sentence is plenty — an image, a character, a question you can't drop. "
-                'It names your book and starts the conversation.',
-                color: Ds.mid,
-              ),
-            ),
-            GkField(
-              controller: _idea,
-              placeholder: "A woman who can't swim inherits a house behind a river…",
-              autofocus: true,
-              textInputAction: TextInputAction.go,
-              onSubmitted: (_) => _guided(),
-            ),
-            const SizedBox(height: 12),
-            GkButton(label: 'Start', wide: true, busy: _busy, onPressed: _guided),
           ],
         _Step.intent => [
             const _Question(

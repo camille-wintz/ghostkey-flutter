@@ -41,7 +41,10 @@ Glamour are desk rooms and never come here.
   `DsMotion`, `DsStyle.ui/prose/eyebrow`). Night only. Fonts are bundled
   TTFs (Manrope = the app's words, Newsreader = titles, Spectral = the
   manuscript page only). Icons are Lucide via `lucide_icons_flutter`; the
-  room marks are inline SVG in `lib/rooms/icons.dart`.
+  room marks are inline SVG in `lib/rooms/icons.dart`. The app's own mark
+  is not ours: `../ghost-key/public/icon.svg` draws it for the whole suite,
+  and `tool/build_icons.mjs` renders it from there into the launcher icons
+  and the splash — run by hand, never at build time.
 - **Primitives** in `lib/ui/`: `Press` (the house press, no ripple),
   `GkButton`, `GkField`, `BrandTitle` / `Eyebrow` / `UiText`, `showGkSheet`
   + `SheetHeader`, `showNoticeModal`, `StateScreen`. Use these; a size or a
@@ -70,15 +73,19 @@ file on purpose — those record what a screen has SHOWN, these are answers a
 person gave, and they have to reach a phone that person has never signed into.
 A profile that has not arrived, or failed to, leaves the author on the shelf.
 
-The flow asks the same four questions as the desk and stores the same
-answers, and its endings differ because this app has four rooms:
+The flow asks the same questions as the desk and stores the same answers, and
+its endings differ because this app has four rooms:
 `screens/onboarding/intents.dart` maps an intent to a room HERE — `plot` ends
 in the chat (there is no Mara), and `pitch` is not offered at all (there is no
 Glamour, and an option leading nowhere is worse than one option fewer). The
 stored `intent` is the author's word, never a room name, which is what lets
-the two clients disagree about it. The guided branch carries its question on
-`ActiveProject.ask`; `ProjectRoot` opens the chat on it and the chat screen
-sends it once and clears it.
+the two clients disagree about it. "I don't know where to start" leaves on the FIRST question and is asked
+nothing else — that author is here because they cannot answer "what is it
+about" yet, and the conversation is what asks. It carries its opening question
+on `ActiveProject.ask`; `ProjectRoot` opens the chat on it and the chat screen
+sends it once and clears it. `plot` also lands in the chat but seeds NOTHING:
+that is an experienced writer choosing to plot, and the guided opener would be
+words put in their mouth.
 
 ## Layout
 
