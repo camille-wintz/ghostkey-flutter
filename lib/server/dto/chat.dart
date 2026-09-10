@@ -212,19 +212,28 @@ class ChatSavedNote {
       );
 }
 
-/// A chapter the turn edited in place (update_chapter) — already written by
-/// the time the turn resolves, through the write the autosave uses. The
-/// receipt; `version` is the revision the write produced.
+/// A chapter the turn wrote — a passage replaced in place (update_chapter) or
+/// a whole chapter added (create_chapter) — already written by the time the
+/// turn resolves, through the writes the autosave and a new chapter use. The
+/// receipt; `version` is the revision the write produced, and `created` is
+/// true for a chapter that was not there before this turn.
 class ChatChapterEdit {
-  const ChatChapterEdit({required this.documentId, required this.filename, required this.version});
+  const ChatChapterEdit({
+    required this.documentId,
+    required this.filename,
+    required this.version,
+    required this.created,
+  });
   final String documentId;
   final String filename;
   final int version;
+  final bool created;
 
   static ChatChapterEdit fromJson(Json json) => ChatChapterEdit(
         documentId: asString(json['documentId']),
         filename: asString(json['filename']),
         version: asInt(json['version']),
+        created: json['created'] == true,
       );
 }
 

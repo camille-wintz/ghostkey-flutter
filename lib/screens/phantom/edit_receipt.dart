@@ -6,7 +6,7 @@ import '../../ds/tokens.dart';
 import '../../server/dto/chat.dart';
 
 /// What the assistant changed in the project this turn besides notes: a
-/// passage of a chapter, a world-bible card. Receipts, not prompts — each
+/// passage of a chapter, a chapter it wrote, a world-bible card. Receipts, not prompts — each
 /// write happened on the author's say-so before the turn resolved.
 class EditReceipt extends StatelessWidget {
   const EditReceipt({super.key, required this.edits});
@@ -16,7 +16,10 @@ class EditReceipt extends StatelessWidget {
   Widget build(BuildContext context) {
     if (edits.isEmpty) return const SizedBox.shrink();
     final rows = <(IconData, Color, String, String, String)>[
-      for (final e in edits.chapterEdits) (LucideIcons.filePen, Ds.attention, 'Edited a passage of ', stripMd(e.filename), ' in the manuscript'),
+      for (final e in edits.chapterEdits)
+        e.created
+            ? (LucideIcons.filePlus, Ds.attention, 'Wrote ', stripMd(e.filename), ' into the manuscript')
+            : (LucideIcons.filePen, Ds.attention, 'Edited a passage of ', stripMd(e.filename), ' in the manuscript'),
       for (final e in edits.bibleEdits) (LucideIcons.bookMarked, Ds.done, e.created ? 'Added ' : 'Updated ', e.name, ' in the world bible'),
     ];
     return Padding(

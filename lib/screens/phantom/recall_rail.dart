@@ -16,6 +16,8 @@ final RegExp _recalling = RegExp(r'^recalling\s+', caseSensitive: false);
 final RegExp _lookingUp = RegExp(r'^looking up\s+', caseSensitive: false);
 final RegExp _inTheBible = RegExp(r'\s+in the world bible$', caseSensitive: false);
 final RegExp _lookingThrough = RegExp(r'^looking through the library(?: for)?\s*', caseSensitive: false);
+final RegExp _writing = RegExp(r'^writing\s+', caseSensitive: false);
+final RegExp _intoTheManuscript = RegExp(r'\s+into the manuscript$', caseSensitive: false);
 
 /// Short token for the collapsed line, derived from the step's summary the
 /// way the desktop rail does it.
@@ -29,6 +31,10 @@ String shortLabel(ChatToolStep step) {
     'read_guide' => 'the Ghostkey handbook',
     'edit_outline' => 'outline correction',
     'save_note' => 'a saved note',
+    'create_chapter' => _or(
+        summary.replaceFirst(_writing, '').replaceFirst(_intoTheManuscript, '').trim(),
+        'a new chapter',
+      ),
     'read_library_item' => 'a library item',
     'add_to_library' => 'an addition to the library',
     'read_attachment' => step.detail?.split(' · ').firstOrNull?.replaceAll('"', '') ?? 'an attachment',
