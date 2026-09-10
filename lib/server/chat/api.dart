@@ -78,6 +78,9 @@ Future<TurnHandle> streamTurn(
   String projectId, {
   required List<ChatMessage> messages,
   String? model,
+  /// Whether this turn may edit chapters — "write" or "read_only". Sent
+  /// every turn: the server's default is read-only, the app's is write.
+  String? manuscript,
   String? sessionId,
   required void Function(ChatToolStep step) onStep,
   required void Function(String chunk) onText,
@@ -89,6 +92,7 @@ Future<TurnHandle> streamTurn(
     body: {
       'messages': messages.map((m) => m.toJson()).toList(),
       'model': ?model,
+      'manuscript': ?manuscript,
       'session_id': ?sessionId,
     },
   );

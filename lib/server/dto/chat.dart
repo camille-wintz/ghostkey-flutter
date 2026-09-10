@@ -11,19 +11,49 @@ sealed class ChatAttachment {
 
   Json toJson();
 
-  static ChatAttachment fromJson(Json json) => json['kind'] == 'paste'
-      ? PasteAttachment(
-          id: asString(json['id']),
-          title: asString(json['title']),
-          words: asInt(json['words']),
-          text: asString(json['text']),
-        )
-      : ChapterAttachment(
-          id: asString(json['id']),
-          title: asString(json['title']),
-          documentId: asString(json['document_id']),
-          words: json['words'] as int?,
-        );
+  static ChatAttachment fromJson(Json json) => switch (json['kind']) {
+        'paste' => PasteAttachment(
+            id: asString(json['id']),
+            title: asString(json['title']),
+            words: asInt(json['words']),
+            text: asString(json['text']),
+          ),
+        'file' => FileAttachment(
+            id: asString(json['id']),
+            title: asString(json['title']),
+            itemId: asString(json['item_id']),
+            words: json['words'] as int?,
+          ),
+        _ => ChapterAttachment(
+            id: asString(json['id']),
+            title: asString(json['title']),
+            documentId: asString(json['document_id']),
+            words: json['words'] as int?,
+          ),
+      };
+}
+
+/// A file the author uploaded — a .docx, a .pdf, a text file. Its text is a
+/// media library item (the upload made it, origin "chat"); this carries the
+/// item's id and no body, so a book-length file never rides the transcript.
+class FileAttachment extends ChatAttachment {
+  const FileAttachment({
+    required super.id,
+    required super.title,
+    required this.itemId,
+    this.words,
+  });
+  final String itemId;
+  final int? words;
+
+  @override
+  Json toJson() => {
+        'kind': 'file',
+        'id': id,
+        'title': title,
+        'item_id': itemId,
+        if (words != null) 'words': words,
+      };
 }
 
 /// A chapter attached by id — the document is the body, read by the server.
@@ -182,6 +212,44 @@ class ChatSavedNote {
       );
 }
 
+/// A chapter the turn edited in place (update_chapter) — already written by
+/// the time the turn resolves, through the write the autosave uses. The
+/// receipt; `version` is the revision the write produced.
+class ChatChapterEdit {
+  const ChatChapterEdit({required this.documentId, required this.filename, required this.version});
+  final String documentId;
+  final String filename;
+  final int version;
+
+  static ChatChapterEdit fromJson(Json json) => ChatChapterEdit(
+        documentId: asString(json['documentId']),
+        filename: asString(json['filename']),
+        version: asInt(json['version']),
+      );
+}
+
+/// A world-bible card the turn added or edited (update_entity).
+class ChatBibleEdit {
+  const ChatBibleEdit({required this.entityId, required this.name, required this.created});
+  final String entityId;
+  final String name;
+  final bool created;
+
+  static ChatBibleEdit fromJson(Json json) => ChatBibleEdit(
+        entityId: asString(json['entityId']),
+        name: asString(json['name']),
+        created: json['created'] == true,
+      );
+}
+
+/// What a turn wrote into the project besides notes.
+class ChatTurnEdits {
+  const ChatTurnEdits({required this.chapterEdits, required this.bibleEdits});
+  final List<ChatChapterEdit> chapterEdits;
+  final List<ChatBibleEdit> bibleEdits;
+  bool get isEmpty => chapterEdits.isEmpty && bibleEdits.isEmpty;
+}
+
 /// The `result` frame of a turn. `session` is the updated row when
 /// `session_id` was sent and the write landed; null otherwise.
 class ChatTurnResult {
@@ -190,17 +258,25 @@ class ChatTurnResult {
     required this.steps,
     required this.savedNotes,
     required this.session,
+    this.chapterEdits = const [],
+    this.bibleEdits = const [],
   });
   final String answer;
   final List<ChatToolStep> steps;
   final List<ChatSavedNote> savedNotes;
   final ChatSession? session;
+  final List<ChatChapterEdit> chapterEdits;
+  final List<ChatBibleEdit> bibleEdits;
+
+  ChatTurnEdits get edits => ChatTurnEdits(chapterEdits: chapterEdits, bibleEdits: bibleEdits);
 
   static ChatTurnResult fromJson(Json json) => ChatTurnResult(
         answer: asString(json['answer']),
         steps: asJsonList(json['steps']).map(ChatToolStep.fromJson).toList(),
         savedNotes: asJsonList(json['savedNotes']).map(ChatSavedNote.fromJson).toList(),
         session: json['session'] == null ? null : ChatSession.fromJson(asJson(json['session'])),
+        chapterEdits: asJsonList(json['chapterEdits']).map(ChatChapterEdit.fromJson).toList(),
+        bibleEdits: asJsonList(json['bibleEdits']).map(ChatBibleEdit.fromJson).toList(),
       );
 }
 

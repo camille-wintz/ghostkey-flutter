@@ -11,6 +11,7 @@ String? lengthLabel(ChatAttachment a) {
   final words = switch (a) {
     ChapterAttachment(:final words) => words,
     PasteAttachment(:final words) => words,
+    FileAttachment(:final words) => words,
   };
   if (words == null) return null;
   if (words == 0) return 'empty';
@@ -55,7 +56,15 @@ class _AttachmentChipState extends State<AttachmentChip> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(paste ? LucideIcons.clipboard : LucideIcons.fileText, size: 13, color: Ds.mid),
+                Icon(
+                  switch (a) {
+                    PasteAttachment() => LucideIcons.clipboard,
+                    FileAttachment() => LucideIcons.fileUp,
+                    ChapterAttachment() => LucideIcons.fileText,
+                  },
+                  size: 13,
+                  color: Ds.mid,
+                ),
                 const SizedBox(width: 6),
                 Flexible(
                   child: Text(

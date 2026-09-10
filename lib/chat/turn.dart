@@ -69,6 +69,7 @@ class ChatTurnState {
     this.error,
     this.stepsByIndex = const {},
     this.notesByIndex = const {},
+    this.editsByIndex = const {},
   });
 
   final List<ChatMessage> messages;
@@ -82,6 +83,10 @@ class ChatTurnState {
   final Map<int, List<ChatToolStep>> stepsByIndex;
   final Map<int, List<ChatSavedNote>> notesByIndex;
 
+  /// Chapters and world-bible cards each turn changed — the same receipt
+  /// shape as the notes.
+  final Map<int, ChatTurnEdits> editsByIndex;
+
   ChatTurnState copyWith({
     List<ChatMessage>? messages,
     String? activeSessionId,
@@ -93,6 +98,7 @@ class ChatTurnState {
     bool clearError = false,
     Map<int, List<ChatToolStep>>? stepsByIndex,
     Map<int, List<ChatSavedNote>>? notesByIndex,
+    Map<int, ChatTurnEdits>? editsByIndex,
   }) =>
       ChatTurnState(
         messages: messages ?? this.messages,
@@ -102,6 +108,7 @@ class ChatTurnState {
         error: clearError ? null : (error ?? this.error),
         stepsByIndex: stepsByIndex ?? this.stepsByIndex,
         notesByIndex: notesByIndex ?? this.notesByIndex,
+        editsByIndex: editsByIndex ?? this.editsByIndex,
       );
 }
 
@@ -148,7 +155,12 @@ class ChatTurnNotifier extends Notifier<ChatTurnState> with WidgetsBindingObserv
     return const ChatTurnState();
   }
 
-  Future<SendOutcome> send(String text, List<ChatAttachment> attachments, String model) async {
+  Future<SendOutcome> send(
+    String text,
+    List<ChatAttachment> attachments,
+    String model, {
+    required String manuscript,
+  }) async {
     if (state.sending) return const SendFailed();
     await _persist.catchError((_) {});
     if (!_alive) return const SendFailed();
@@ -169,6 +181,7 @@ class ChatTurnNotifier extends Notifier<ChatTurnState> with WidgetsBindingObserv
         projectId,
         messages: transcript,
         model: model,
+        manuscript: manuscript,
         sessionId: sessionId,
         onStep: (step) {
           pending.steps.value = upsertStep(pending.steps.value, step);
@@ -198,6 +211,7 @@ class ChatTurnNotifier extends Notifier<ChatTurnState> with WidgetsBindingObserv
           notesByIndex: result.savedNotes.isEmpty
               ? null
               : {...state.notesByIndex, assistantIndex: result.savedNotes},
+          editsByIndex: result.edits.isEmpty ? null : {...state.editsByIndex, assistantIndex: result.edits},
         );
       }
       _persist = _persistTurn(finalMessages, result.session, sessionId, token);

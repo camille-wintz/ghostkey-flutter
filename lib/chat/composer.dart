@@ -5,6 +5,7 @@ import '../core/words.dart';
 import '../server/dto/billing.dart';
 import '../server/dto/chat.dart';
 import '../server/dto/projects.dart';
+import '../server/dto/media.dart';
 import 'attachments.dart';
 import 'quota_feature.dart';
 import 'refusals.dart';
@@ -60,6 +61,23 @@ class ComposerController extends ChangeNotifier {
   void _set(List<ChatAttachment> next) {
     _attachments = next;
     notifyListeners();
+  }
+
+  /// Attach an uploaded file: `upload` (the screen's, over the library's
+  /// upload call) hands back the item the server made, and the attachment
+  /// carries its id. A length on the chip only when the whole body came back.
+  Future<void> attachFile(Future<MediaItem> Function() upload) async {
+    final item = await upload();
+    if (_attachments.any((a) => a is FileAttachment && a.itemId == item.id)) return;
+    _set([
+      ..._attachments,
+      FileAttachment(
+        id: _mint(),
+        title: item.title,
+        itemId: item.id,
+        words: item.bodyIsWhole ? countWords(item.body) : null,
+      ),
+    ]);
   }
 
   void attachChapter(DocumentSummary chapter) {

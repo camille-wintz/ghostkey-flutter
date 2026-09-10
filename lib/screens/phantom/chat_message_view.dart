@@ -5,19 +5,23 @@ import '../../server/dto/chat.dart';
 import 'attachment_chip.dart';
 import 'chat_markdown.dart';
 import 'recall_rail.dart';
+import 'edit_receipt.dart';
 import 'saved_note_receipt.dart';
 
 /// A user turn is a bubble on the right with its attachment chips beneath;
 /// an assistant turn is prose — the recall rail above, a saved-note receipt
 /// below.
 class ChatMessageView extends StatelessWidget {
-  const ChatMessageView({super.key, required this.message, this.steps, this.savedNotes});
+  const ChatMessageView({super.key, required this.message, this.steps, this.savedNotes, this.edits});
 
   final ChatMessage message;
 
   /// The recall behind an assistant turn, live transcript only.
   final List<ChatToolStep>? steps;
   final List<ChatSavedNote>? savedNotes;
+
+  /// Chapters and world-bible cards the turn changed. Same receipt shape.
+  final ChatTurnEdits? edits;
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +35,7 @@ class ChatMessageView extends StatelessWidget {
           if (steps case final s? when s.isNotEmpty) RecallRail(steps: s, live: false),
           ChatMarkdown(message.text),
           if (savedNotes case final n?) SavedNoteReceipt(notes: n),
+          if (edits case final e?) EditReceipt(edits: e),
         ],
       ),
     );
