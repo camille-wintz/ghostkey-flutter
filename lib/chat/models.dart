@@ -32,13 +32,20 @@ class ModelDef {
 
 /// The included set first, then the premium band, so the one padlock a Basic
 /// author sees sits at the bottom. The head of the list is the default, and it
-/// has to be a model every paying plan includes: Opus leads since 2026-09-10,
-/// when its band (`models.advanced`) dropped to Basic — the id stays on Opus
-/// and Sol because the padlock reads it, and the server keeps it granted at
-/// Basic so that read draws no lock.
+/// has to be a model every paying plan includes: Sol leads again since
+/// 2026-09-10, where Opus led for a day from the same date, when the
+/// `models.advanced` band dropped to Basic — the id stays on Sol and Opus
+/// because the padlock reads it, and the server keeps it granted at Basic so
+/// that read draws no lock.
+///
+/// Sol over Opus because of the voice a new author meets first: on an empty
+/// project's opening turn Opus was cold and self-justifying where Sol was warm.
+/// Keep this order in step with the server's `DEFAULT_CHAT_MODEL`
+/// (ghostkey-server/src/lib/chat/turn.ts) and the desktop catalog
+/// (ghost-key/src/shared/models/models.ts) — nothing gates the drift.
 const List<ModelDef> models = [
-  ModelDef(id: 'opus-4-8', name: 'Claude Opus 4.8', capability: ModelCapability.advanced),
   ModelDef(id: 'gpt-5-6-sol', name: 'GPT-5.6 Sol', capability: ModelCapability.advanced),
+  ModelDef(id: 'opus-4-8', name: 'Claude Opus 4.8', capability: ModelCapability.advanced),
   ModelDef(id: 'gpt-5-6-terra', name: 'GPT-5.6 Terra'),
   ModelDef(id: 'gemini-3-1-pro', name: 'Gemini 3.1 Pro'),
   ModelDef(id: 'glm-5-2', name: 'GLM 5.2'),
@@ -55,7 +62,7 @@ const List<ModelDef> models = [
   //   ModelDef(id: 'gpt-6-astra', name: 'GPT-6 Astra', capability: ModelCapability.premium, quota: 'fable_chat'),
 ];
 
-const String defaultModel = 'opus-4-8';
+const String defaultModel = 'gpt-5-6-sol';
 
 /// The weekly counter every chat message draws from.
 const String chatQuotaFeature = 'phantom_chat';
