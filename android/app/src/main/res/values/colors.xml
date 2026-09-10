@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Ds.void_, the window behind every screen. The app is night only, so
+         the launch window names it outright instead of asking the system. -->
+    <color name="gk_void">#FF0A0914</color>
+</resources>

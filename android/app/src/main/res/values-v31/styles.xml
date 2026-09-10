@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12 replaced the launch window with the splash screen API: it draws
+     windowSplashScreenBackground with the icon centred on it and ignores
+     windowBackground until the splash is done. A qualified style replaces its
+     unqualified twin whole rather than merging into it, which is why
+     NormalTheme is repeated here unchanged. -->
+<resources>
+    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowSplashScreenBackground">@color/gk_void</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
+        <item name="android:windowBackground">@drawable/launch_background</item>
+    </style>
+    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">@color/gk_void</item>
+    </style>
+</resources>
