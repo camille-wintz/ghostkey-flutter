@@ -26,6 +26,7 @@ String shortLabel(ChatToolStep step) {
     'read_novel' => 'whole novel',
     'read_author_outline' => "author's outline",
     'read_story_map' => 'story map',
+    'read_guide' => 'the Ghostkey handbook',
     'edit_outline' => 'outline correction',
     'save_note' => 'a saved note',
     'read_library_item' => 'a library item',
