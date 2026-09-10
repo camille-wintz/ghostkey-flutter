@@ -30,18 +30,21 @@ class ModelDef {
   final String? quota;
 }
 
-/// Included band first, then the two banded groups, so a Basic author's
-/// padlocks sit together at the bottom. The head of the list is the default,
-/// and it has to be a model every paying plan includes.
+/// The included set first, then the premium band, so the one padlock a Basic
+/// author sees sits at the bottom. The head of the list is the default, and it
+/// has to be a model every paying plan includes: Opus leads since 2026-09-10,
+/// when its band (`models.advanced`) dropped to Basic — the id stays on Opus
+/// and Sol because the padlock reads it, and the server keeps it granted at
+/// Basic so that read draws no lock.
 const List<ModelDef> models = [
+  ModelDef(id: 'opus-4-8', name: 'Claude Opus 4.8', capability: ModelCapability.advanced),
+  ModelDef(id: 'gpt-5-6-sol', name: 'GPT-5.6 Sol', capability: ModelCapability.advanced),
   ModelDef(id: 'gpt-5-6-terra', name: 'GPT-5.6 Terra'),
   ModelDef(id: 'gemini-3-1-pro', name: 'Gemini 3.1 Pro'),
   ModelDef(id: 'glm-5-2', name: 'GLM 5.2'),
   ModelDef(id: 'sonnet-5', name: 'Claude Sonnet 5'),
   ModelDef(id: 'kimi-k3', name: 'Kimi K3'),
   ModelDef(id: 'qwen3-8-max', name: 'Qwen3.8 Max'),
-  ModelDef(id: 'gpt-5-6-sol', name: 'GPT-5.6 Sol', capability: ModelCapability.advanced),
-  ModelDef(id: 'opus-4-8', name: 'Claude Opus 4.8', capability: ModelCapability.advanced),
   ModelDef(id: 'fable-5', name: 'Claude Fable 5', capability: ModelCapability.premium, quota: 'fable_chat'),
   // **GPT-6 Astra belongs here and is deliberately withheld** (2026-09-07),
   // matching the desktop catalog — see the long note in
@@ -52,7 +55,7 @@ const List<ModelDef> models = [
   //   ModelDef(id: 'gpt-6-astra', name: 'GPT-6 Astra', capability: ModelCapability.premium, quota: 'fable_chat'),
 ];
 
-const String defaultModel = 'gpt-5-6-terra';
+const String defaultModel = 'opus-4-8';
 
 /// The weekly counter every chat message draws from.
 const String chatQuotaFeature = 'phantom_chat';
