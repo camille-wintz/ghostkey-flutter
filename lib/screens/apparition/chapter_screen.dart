@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -6,18 +8,26 @@ import '../../editor/capture_launchers.dart';
 import '../../server/errors.dart';
 import '../../server/providers.dart';
 import '../../store/active_project.dart';
+import '../../ui/anchored_panel.dart';
 import '../../ui/state_screen.dart';
 import '../project/project_root.dart';
 import 'chapter_editor.dart';
 import 'document_resolve.dart';
+import 'nav/chapter_nav.dart';
+import 'nav/chapter_nav_state.dart';
 
-/// The page behind the drawer: resolves the active chapter's filename to a
-/// document and mounts [ChapterEditor] for it, keyed by document id — so a
+/// The page under the chapter list: resolves the active chapter's filename to
+/// a document and mounts [ChapterEditor] for it, keyed by document id — so a
 /// title rename doesn't wipe the editor, and a chapter switch is one editor
 /// going (flushing) and the next arriving.
+///
+/// It also owns the list, because it is what opens it: from the title's own
+/// chevron while a chapter is open, and from the middle of the screen while
+/// none is.
 class ChapterScreen extends ConsumerStatefulWidget {
-  const ChapterScreen({super.key, required this.rename, this.onDictate, this.onScan});
+  const ChapterScreen({super.key, required this.nav, required this.rename, this.onDictate, this.onScan});
 
+  final ChapterNavState nav;
   final RecentRename rename;
   final CaptureLauncher? onDictate;
   final CaptureLauncher? onScan;
@@ -29,10 +39,26 @@ class ChapterScreen extends ConsumerStatefulWidget {
 class _ChapterScreenState extends ConsumerState<ChapterScreen> {
   bool _openedForEmpty = false;
 
-  void _openDrawer() => Scaffold.of(context).openDrawer();
+  /// The list is a route, so a second open would stack a second panel on the
+  /// first — which is what deleting the chapter you are in does, since that
+  /// empties the selection while the list that deleted it is still up.
+  bool _navOpen = false;
 
-  /// Open the chapter drawer when no chapter is selected — once per time
-  /// the selection goes empty, not on every build.
+  void _openNav([Rect? anchor]) {
+    if (_navOpen) return;
+    _navOpen = true;
+    unawaited(
+      showAnchoredPanel<void>(
+        context,
+        anchor: anchor,
+        label: 'Chapters',
+        builder: (context) => ChapterNav(state: widget.nav, rename: widget.rename),
+      ).whenComplete(() => _navOpen = false),
+    );
+  }
+
+  /// Open the chapter list when no chapter is selected — once per time the
+  /// selection goes empty, not on every build.
   void _autoOpen(bool empty) {
     if (!empty) {
       _openedForEmpty = false;
@@ -41,14 +67,8 @@ class _ChapterScreenState extends ConsumerState<ChapterScreen> {
     if (_openedForEmpty) return;
     _openedForEmpty = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _openDrawer();
+      if (mounted) _openNav();
     });
-  }
-
-  void _onRenamed(String documentId, String filename) {
-    widget.rename.note(documentId, filename);
-    ref.read(activeProjectProvider.notifier).setActiveChapter(filename);
-    ref.invalidate(projectProvider(ProjectScope.of(context)));
   }
 
   @override
@@ -63,9 +83,9 @@ class _ChapterScreenState extends ConsumerState<ChapterScreen> {
     if (filename == null) {
       return StateScreen(
         icon: LucideIcons.bookOpen,
-        message: 'Select a chapter from the side menu.',
+        message: 'Pick a chapter to start writing.',
         actionLabel: 'Open chapter list',
-        onAction: _openDrawer,
+        onAction: _openNav,
       );
     }
     if (data == null) {
@@ -82,8 +102,8 @@ class _ChapterScreenState extends ConsumerState<ChapterScreen> {
       documentId: documentId,
       filename: filename,
       typography: data.project.typography,
-      onRenamed: (next) => _onRenamed(documentId, next),
-      openDrawer: _openDrawer,
+      onBack: () => Navigator.of(context).pop(),
+      onOpenChapters: _openNav,
       onDictate: widget.onDictate,
       onScan: widget.onScan,
     );

@@ -4,7 +4,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/words.dart';
 import '../../ds/tokens.dart';
-import '../../ui/room_menu_button.dart';
+import '../../ui/anchored_panel.dart';
+import '../../ui/press.dart';
+import '../../ui/room_back_button.dart';
 
 // The save tick and the empty slot that balances it.
 const double _markSize = 12;
@@ -17,10 +19,17 @@ const double _markSlot = 17;
 /// face: the page below is Spectral, and a title in the page's own face would
 /// read as the first line of the prose.
 ///
-/// The chapters button lives here because this is what it navigates between —
-/// there is no bar above to put it in. The empty box opposite it is doing real
-/// work: it keeps the title centred on the SCREEN rather than in the space the
-/// button left over.
+/// The name is also the way into the chapter list: the chevron beside it is
+/// the hinge the list unfolds from, and the name is held to one line so that
+/// chevron always has room. It used to be a hamburger in the corner and a
+/// title you could type into, which put the room's navigation in the one place
+/// a phone reserves for the way back — so leaving Apparition meant opening a
+/// drawer and pressing its head, a door behind a door. The corner is the way
+/// back now, the title is the list, and renaming a chapter is the list's own
+/// row menu, where renaming any *other* chapter already lived.
+///
+/// The empty box opposite the back chevron is doing real work: it keeps the
+/// title centred on the SCREEN rather than in the space the chevron left over.
 ///
 /// The save state is a tick beside the word count and nothing else. A word
 /// count that has just moved and no tick beside it *is* the unsaved state, so
@@ -45,8 +54,8 @@ class TitleBlock extends StatefulWidget {
     required this.words,
     required this.saved,
     required this.collapsed,
-    required this.onRename,
-    required this.onMenu,
+    required this.onBack,
+    required this.onOpenChapters,
   });
 
   final String title;
@@ -55,64 +64,25 @@ class TitleBlock extends StatefulWidget {
 
   /// The reader is into the text, so the chrome steps out of the way.
   final ValueListenable<bool> collapsed;
-  final ValueChanged<String> onRename;
-  final VoidCallback onMenu;
+  final VoidCallback onBack;
+
+  /// Open the chapter list, unfolded from the title's own box.
+  final void Function(Rect? anchor) onOpenChapters;
 
   @override
   State<TitleBlock> createState() => _TitleBlockState();
 }
 
 class _TitleBlockState extends State<TitleBlock> {
-  late final TextEditingController _draft = TextEditingController(text: widget.title);
-  final FocusNode _focus = FocusNode();
-  bool _focused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _focus.addListener(_onFocus);
-  }
-
-  @override
-  void didUpdateWidget(TitleBlock oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.title != widget.title) _draft.text = widget.title;
-  }
-
-  void _onFocus() {
-    final focused = _focus.hasFocus;
-    if (focused == _focused) return;
-    setState(() => _focused = focused);
-    if (!focused) _commit();
-  }
-
-  void _commit() {
-    final next = _draft.text.trim();
-    if (next.isEmpty || next == widget.title) {
-      _draft.text = widget.title;
-      return;
-    }
-    widget.onRename(next);
-  }
-
-  @override
-  void dispose() {
-    _focus.removeListener(_onFocus);
-    _focus.dispose();
-    _draft.dispose();
-    super.dispose();
-  }
+  final GlobalKey _titleKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
       valueListenable: widget.collapsed,
       builder: (context, collapsed, _) {
-        // A title being RENAMED shows at full size whatever the scroll says —
-        // you should be able to see what you are typing.
-        final small = collapsed && !_focused;
         return TweenAnimationBuilder<double>(
-          tween: Tween(end: small ? 1 : 0),
+          tween: Tween(end: collapsed ? 1 : 0),
           duration: DsMotion.screenIn,
           curve: Curves.easeOutCubic,
           builder: (context, step, _) {
@@ -136,31 +106,53 @@ class _TitleBlockState extends State<TitleBlock> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  RoomMenuButton(onPressed: widget.onMenu, semanticLabel: 'Chapters'),
+                  RoomBackButton(onPressed: widget.onBack, semanticLabel: 'Back to the book'),
                   Expanded(
                     child: Column(
                       children: [
-                        TextField(
-                          controller: _draft,
-                          focusNode: _focus,
-                          maxLines: null,
-                          textAlign: TextAlign.center,
-                          textInputAction: TextInputAction.done,
-                          autocorrect: false,
-                          cursorColor: Ds.accent,
-                          onSubmitted: (_) => _focus.unfocus(),
-                          style: TextStyle(
-                            fontFamily: DsFonts.prose,
-                            fontWeight: FontWeight.w600,
-                            fontSize: fontSize,
-                            height: lineHeight / fontSize,
-                            color: Ds.hi,
-                            leadingDistribution: TextLeadingDistribution.even,
-                          ),
-                          decoration: const InputDecoration(
-                            isDense: true,
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.zero,
+                        Press(
+                          key: _titleKey,
+                          onPressed: () => widget.onOpenChapters(anchorRectOf(_titleKey)),
+                          semanticLabel: '${widget.title}, open the chapter list',
+                          builder: (context, pressed) => Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: pressed ? Ds.veil : const Color(0x00000000),
+                              borderRadius: BorderRadius.circular(DsGeom.radius),
+                            ),
+                            // The name is capped to one line so the chevron
+                            // always has room beside it. That cap is what puts
+                            // it there: a text allowed to wrap fills its whole
+                            // box, so a chevron next to it lands at the far
+                            // right with nothing near it, and a chevron set IN
+                            // the text is dropped onto a line of its own by the
+                            // line breaker. Held to one line the box hugs the
+                            // name, and the mark sits against the last letter
+                            // whether that is the whole title or an ellipsis.
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    widget.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontFamily: DsFonts.prose,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: fontSize,
+                                      height: lineHeight / fontSize,
+                                      color: Ds.hi,
+                                      leadingDistribution: TextLeadingDistribution.even,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: lerp(8, 6)),
+                                Icon(LucideIcons.chevronDown, size: lerp(21, 16), color: Ds.mid),
+                              ],
+                            ),
                           ),
                         ),
                         // The tick keeps a slot of its own, matched by an empty

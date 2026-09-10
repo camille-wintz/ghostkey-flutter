@@ -4,7 +4,7 @@ import '../../../core/chapter_search.dart';
 import '../../../ds/tokens.dart';
 import '../../../server/dto/projects.dart';
 
-// The drawer's two sections flattened into one list of items, with the layout
+// The panel's two sections flattened into one list of items, with the layout
 // table the list positions itself by. Pure: `test/apparition/` pins it.
 //
 // The table is computed here rather than measured because the list has to
@@ -16,34 +16,34 @@ import '../../../server/dto/projects.dart';
 /// neighbours around it rather than pinned to the top edge.
 const int leadRows = 3;
 
-const double drawerGapHeight = 10;
+const double navGapHeight = 10;
 
 /// A one-line notice (the body step's 22px line) with 10 of padding either
 /// side of it.
-const double drawerMessageHeight = 22 + 20;
+const double navMessageHeight = 22 + 20;
 
-enum DrawerSection { chapters, notes }
+enum NavSection { chapters, notes }
 
-/// One row of the drawer's single list. Chapters and notes are two
+/// One row of the panel's single list. Chapters and notes are two
 /// reorderable groups drawn in one list, so every row that can be dragged
 /// carries `index` — its place in *its own group*, which is what a drop
 /// handler is indexed by, and never its place in the list.
-sealed class DrawerItem {
-  const DrawerItem();
+sealed class NavItem {
+  const NavItem();
   String get id;
   double get height => DsGeom.row;
 }
 
-class HeaderItem extends DrawerItem {
+class HeaderItem extends NavItem {
   const HeaderItem({required this.label, required this.section, required this.addable});
   final String label;
-  final DrawerSection section;
+  final NavSection section;
   final bool addable;
   @override
   String get id => 'h-${section.name}';
 }
 
-class FolderItem extends DrawerItem {
+class FolderItem extends NavItem {
   const FolderItem({required this.name, required this.index});
   final String name;
   final int index;
@@ -51,7 +51,7 @@ class FolderItem extends DrawerItem {
   String get id => 'g-$name';
 }
 
-class ChapterItem extends DrawerItem {
+class ChapterItem extends NavItem {
   const ChapterItem({required this.doc, required this.nested, required this.index});
   final DocumentSummary doc;
   final bool nested;
@@ -60,7 +60,7 @@ class ChapterItem extends DrawerItem {
   String get id => 'c-${doc.id}';
 }
 
-class NoteItem extends DrawerItem {
+class NoteItem extends NavItem {
   const NoteItem({required this.doc, required this.index});
   final DocumentSummary doc;
   final int index;
@@ -68,26 +68,26 @@ class NoteItem extends DrawerItem {
   String get id => 'n-${doc.id}';
 }
 
-class GapItem extends DrawerItem {
+class GapItem extends NavItem {
   const GapItem();
   @override
   String get id => 'gap-notes';
   @override
-  double get height => drawerGapHeight;
+  double get height => navGapHeight;
 }
 
-class MessageItem extends DrawerItem {
+class MessageItem extends NavItem {
   const MessageItem(this.text);
   final String text;
   @override
   String get id => 'm-chapters';
   @override
-  double get height => drawerMessageHeight;
+  double get height => navMessageHeight;
 }
 
 /// The list as it is drawn, and where everything in it sits.
-class DrawerLayout {
-  const DrawerLayout({
+class NavLayout {
+  const NavLayout({
     required this.items,
     required this.offsets,
     required this.chapterRows,
@@ -96,7 +96,7 @@ class DrawerLayout {
     required this.showNotes,
   });
 
-  final List<DrawerItem> items;
+  final List<NavItem> items;
 
   /// Content offset of each item, by list index.
   final List<double> offsets;
@@ -129,9 +129,9 @@ class DrawerLayout {
 }
 
 /// The two sections flattened into one list, plus the offset table.
-DrawerLayout layoutDrawer(List<ChapterListRow> rows, List<DocumentSummary> shownNotes, String query) {
-  final items = <DrawerItem>[
-    const HeaderItem(label: 'Chapters', section: DrawerSection.chapters, addable: true),
+NavLayout layoutNav(List<ChapterListRow> rows, List<DocumentSummary> shownNotes, String query) {
+  final items = <NavItem>[
+    const HeaderItem(label: 'Chapters', section: NavSection.chapters, addable: true),
   ];
 
   final chaptersMessage = rows.isEmpty ? (query.isNotEmpty ? 'No chapter by that name.' : 'No chapters yet.') : null;
@@ -148,7 +148,7 @@ DrawerLayout layoutDrawer(List<ChapterListRow> rows, List<DocumentSummary> shown
   final showNotes = query.isEmpty || shownNotes.isNotEmpty;
   if (showNotes) {
     items.add(const GapItem());
-    items.add(HeaderItem(label: 'Notes', section: DrawerSection.notes, addable: query.isEmpty));
+    items.add(HeaderItem(label: 'Notes', section: NavSection.notes, addable: query.isEmpty));
     for (var index = 0; index < shownNotes.length; index++) {
       items.add(NoteItem(doc: shownNotes[index], index: index));
     }
@@ -161,7 +161,7 @@ DrawerLayout layoutDrawer(List<ChapterListRow> rows, List<DocumentSummary> shown
     offset += item.height;
   }
 
-  return DrawerLayout(
+  return NavLayout(
     items: items,
     offsets: offsets,
     chapterRows: rows,

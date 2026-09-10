@@ -6,11 +6,11 @@ import '../../../server/dto/projects.dart';
 import '../../../server/projects/api.dart';
 import 'tree_edits.dart';
 
-/// What the drawer remembers between opens, and every write it makes.
+/// What the list remembers between opens, and every write it makes.
 ///
-/// Lives above the drawer, in the room: Flutter's drawer unmounts its
-/// content while closed, so the query, the folded folders and an order that
-/// has not landed yet would all be lost with it. Owned once so the two rows
+/// Lives above the panel, in the room: the panel is a route that is gone the
+/// moment it closes, so the query, the folded folders and an order that has
+/// not landed yet would all go with it. Owned once so the two rows
 /// that can lift (chapters, notes) and the writes that follow a drop have
 /// one place to agree on what is pending.
 ///
@@ -19,12 +19,12 @@ import 'tree_edits.dart';
 /// caught up — a draft version at or past the one the write landed on, or a
 /// note order that matches. A refused write drops the held order and
 /// refetches, which puts the list back the way the server has it.
-class ChapterDrawerState extends ChangeNotifier {
-  ChapterDrawerState({required this.projectId, required this.refreshProject});
+class ChapterNavState extends ChangeNotifier {
+  ChapterNavState({required this.projectId, required this.refreshProject});
 
   final String projectId;
 
-  /// Drop the project read so it refetches. The drawer never reads stale.
+  /// Drop the project read so it refetches. The list never reads stale.
   final void Function() refreshProject;
 
   String _query = '';

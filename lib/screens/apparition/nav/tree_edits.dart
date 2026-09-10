@@ -1,6 +1,6 @@
 import '../../../server/dto/projects.dart';
 
-// Pure edits to the chapter tree and the note list, for the drawer's writes.
+// Pure edits to the chapter tree and the note list, for the panel's writes.
 
 List<String> chapterFilenamesInTree(List<ChaptersListEntry> tree) =>
     chaptersInTree(tree).map((d) => d.filename).toList();

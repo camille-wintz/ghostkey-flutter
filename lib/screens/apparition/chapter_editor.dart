@@ -14,7 +14,6 @@ import '../../editor/inline_markdown.dart';
 import '../../server/dto/bible.dart';
 import '../../server/dto/projects.dart';
 import '../../server/errors.dart';
-import '../../server/projects/api.dart';
 import '../../scan/scan_context.dart';
 import '../../server/providers.dart';
 import '../../ui/state_screen.dart';
@@ -53,8 +52,8 @@ class ChapterEditor extends ConsumerStatefulWidget {
     required this.documentId,
     required this.filename,
     required this.typography,
-    required this.onRenamed,
-    required this.openDrawer,
+    required this.onBack,
+    required this.onOpenChapters,
     this.onDictate,
     this.onScan,
   });
@@ -64,9 +63,10 @@ class ChapterEditor extends ConsumerStatefulWidget {
   final String filename;
   final TypographyMode typography;
 
-  /// The document now has this filename — the screen re-points the store.
-  final void Function(String filename) onRenamed;
-  final VoidCallback openDrawer;
+  final VoidCallback onBack;
+
+  /// Open the chapter list, unfolded from the control that asked for it.
+  final void Function(Rect? anchor) onOpenChapters;
   final CaptureLauncher? onDictate;
   final CaptureLauncher? onScan;
 
@@ -190,15 +190,6 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
     );
   }
 
-  Future<void> _rename(String title) async {
-    try {
-      final doc = await renameDocument(widget.projectId, widget.documentId, '$title.md');
-      widget.onRenamed(doc.filename);
-    } catch (e) {
-      if (mounted) unawaited(showRoomAlert(context, title: 'Rename failed', message: messageFor(e)));
-    }
-  }
-
   // The keyboard goes down as a capture surface comes up — the session opens
   // on the waveform or the viewfinder, not on a keyboard nobody asked for.
   Future<void> _capture(CaptureLauncher launcher) async {
@@ -274,8 +265,8 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
               words: _words,
               saved: _autosave!.saved,
               collapsed: _scrolled,
-              onRename: _rename,
-              onMenu: widget.openDrawer,
+              onBack: widget.onBack,
+              onOpenChapters: widget.onOpenChapters,
             ),
             if (canSweep)
               ValueListenableBuilder<List<NameCandidate>>(

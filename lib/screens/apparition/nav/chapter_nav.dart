@@ -14,37 +14,41 @@ import '../../../server/errors.dart';
 import '../../../server/providers.dart';
 import '../../../store/active_project.dart';
 import '../../../ui/press.dart';
-import '../../project/drawer_head.dart';
+import '../../../ui/panel_head.dart';
 import '../document_resolve.dart';
 import '../room_alert.dart';
-import 'chapter_drawer_state.dart';
+import 'chapter_nav_state.dart';
 import 'chapter_tile.dart';
-import 'drawer_items.dart';
+import 'nav_items.dart';
 import 'folder_tile.dart';
 import 'hold_to_drag.dart';
 import 'row_sheets.dart';
 import 'section_header.dart';
 
-/// The chapters/notes panel: the project name at its head is the way back to
-/// the rooms; search (reaches notes too), plan dots, and it opens on the
-/// chapter you are in. ONE scroll view over both sections, every row a fixed
-/// extent — a hundred-chapter book mounts a screenful, which matters because
-/// the drawer is built the moment it starts to open.
+/// The chapters/notes panel, unfolded from the title above it: which book you
+/// are in, search (reaches notes too), plan dots, and it opens on the chapter
+/// you are in. ONE scroll view over both sections, every row a fixed extent —
+/// a hundred-chapter book mounts a screenful, which matters because the panel
+/// is built as it starts to open.
 ///
-/// Mounted fresh on every open (Flutter's drawer holds no content while
-/// closed), which is what makes the reveal a starting offset rather than a
-/// jump: the list is built already positioned, from the same layout table it
-/// draws by, so a row it has never mounted is landed on exactly.
-class ChapterDrawer extends ConsumerStatefulWidget {
-  const ChapterDrawer({super.key, required this.state, required this.rename});
-  final ChapterDrawerState state;
+/// It carries no way out of the room: that is the chevron in the room's own
+/// chrome now, and a second door at the head of this list is what used to make
+/// leaving Apparition a door behind a door.
+///
+/// Mounted fresh on every open (the panel is a route, gone when it closes),
+/// which is what makes the reveal a starting offset rather than a jump: the
+/// list is built already positioned, from the same layout table it draws by,
+/// so a row it has never mounted is landed on exactly.
+class ChapterNav extends ConsumerStatefulWidget {
+  const ChapterNav({super.key, required this.state, required this.rename});
+  final ChapterNavState state;
   final RecentRename rename;
 
   @override
-  ConsumerState<ChapterDrawer> createState() => _ChapterDrawerState();
+  ConsumerState<ChapterNav> createState() => _ChapterNavState();
 }
 
-class _ChapterDrawerState extends ConsumerState<ChapterDrawer> {
+class _ChapterNavState extends ConsumerState<ChapterNav> {
   late final ScrollController _scroll;
   late final TextEditingController _search = TextEditingController(text: widget.state.query);
 
@@ -71,27 +75,18 @@ class _ChapterDrawerState extends ConsumerState<ChapterDrawer> {
     super.dispose();
   }
 
-  DrawerLayout _layout(ProjectFull data) {
+  NavLayout _layout(ProjectFull data) {
     final state = widget.state;
     final rows = filterChapterTree(state.chaptersOf(data), state.query, state.isCollapsed);
     final notes = state.notesOf(data).where((n) => matchesQuery(n.label, state.query)).toList();
-    return layoutDrawer(rows, notes, state.query);
+    return layoutNav(rows, notes, state.query);
   }
 
-  void _closeDrawer() => Scaffold.of(context).closeDrawer();
+  void _close() => Navigator.of(context).pop();
 
   void _select(String filename) {
     ref.read(activeProjectProvider.notifier).setActiveChapter(filename);
-    _closeDrawer();
-  }
-
-  // Up one level, not out: the project home is where the rooms are, and
-  // closing the book is its own back from there. The editor's unsaved text
-  // goes with it — its autosave flushes as the room unmounts.
-  void _leaveRoom() {
-    final nav = Navigator.of(context);
-    _closeDrawer();
-    nav.pop();
+    _close();
   }
 
   Future<void> _guard(Future<void> Function() action, String title) async {
@@ -142,8 +137,6 @@ class _ChapterDrawerState extends ConsumerState<ChapterDrawer> {
     final words = ref.watch(projectWordCountProvider(_projectId)).value;
     final markers = planMarkers(ref.watch(projectPlanProvider(_projectId)).value);
     final active = ref.watch(activeProjectProvider.select((p) => p.activeChapter));
-    final top = MediaQuery.paddingOf(context).top;
-    final bottom = MediaQuery.paddingOf(context).bottom;
 
     return ListenableBuilder(
       listenable: widget.state,
@@ -152,7 +145,7 @@ class _ChapterDrawerState extends ConsumerState<ChapterDrawer> {
         final project = data?.project;
         final title = project?.displayTitle ?? 'Project';
         final chapterCount = data == null ? 0 : chaptersInTree(state.chaptersOf(data)).length;
-        final layout = data == null ? layoutDrawer(const [], const [], state.query) : _layout(data);
+        final layout = data == null ? layoutNav(const [], const [], state.query) : _layout(data);
         // A search shows matches out of their places, so there is nowhere to drop.
         final canReorder = state.query.isEmpty && !state.pending;
 
@@ -160,12 +153,10 @@ class _ChapterDrawerState extends ConsumerState<ChapterDrawer> {
           color: Ds.panel,
           child: Column(
             children: [
-              SizedBox(height: top),
-              DrawerHead(
+              PanelHead(
                 title: title,
                 meta: '$chapterCount ${chapterCount == 1 ? 'chapter' : 'chapters'}'
                     '${words != null ? ' · ${formatWords(words)} words' : ''}',
-                onLeave: _leaveRoom,
               ),
               _SearchRow(controller: _search, query: state.query, onChanged: state.setQuery),
               Expanded(
@@ -218,7 +209,7 @@ class _ChapterDrawerState extends ConsumerState<ChapterDrawer> {
                         },
                       ),
                     if (layout.showNotes) ...[
-                      const SliverToBoxAdapter(child: SizedBox(height: drawerGapHeight)),
+                      const SliverToBoxAdapter(child: SizedBox(height: navGapHeight)),
                       SliverToBoxAdapter(
                         child: SectionHeader(
                           label: 'Notes',
@@ -255,9 +246,9 @@ class _ChapterDrawerState extends ConsumerState<ChapterDrawer> {
                         },
                       ),
                     ],
-                    // The list runs to the bottom edge now that nothing sits
-                    // under it, so it carries the safe area itself.
-                    SliverToBoxAdapter(child: SizedBox(height: bottom + 12)),
+                    // The panel keeps the safe area off its own edges, so the
+                    // list only owes its last row a little air.
+                    const SliverToBoxAdapter(child: SizedBox(height: 12)),
                   ],
                 ),
               ),
@@ -349,7 +340,7 @@ class _Message extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        height: drawerMessageHeight,
+        height: navMessageHeight,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: DsStyle.ui(DsText.body, color: Ds.low)),

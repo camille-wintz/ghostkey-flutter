@@ -4,7 +4,7 @@ import '../../../core/plan_markers.dart';
 import '../../../ds/tokens.dart';
 import '../../../ui/press.dart';
 
-/// One chapter (or note) in the drawer: its title, the plan's dot, and the
+/// One chapter (or note) in the panel: its title, the plan's dot, and the
 /// 2px rule when it is the one open. Every row is `DsGeom.row` tall — the
 /// drag is slot arithmetic on it, as is the reveal.
 class ChapterTile extends StatelessWidget {

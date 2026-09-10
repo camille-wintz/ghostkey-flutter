@@ -12,16 +12,15 @@ import '../../ui/state_screen.dart';
 import '../project/project_root.dart';
 import '../project/room_entering.dart';
 import 'chat_screen.dart';
-import 'chat_sessions_drawer.dart';
 
-/// The PhantomMemory room: the chat behind a sessions drawer — the same
-/// idiom as Apparition, "hamburger opens the room's list". The room gates
-/// itself on `room.phantom` again (the home already did) for the
-/// downgrade-while-open case, the desktop's RoomGate behaviour.
+/// The PhantomMemory room: the chat, with your other chats one press of its
+/// name away — the same idiom as Apparition, "the title opens the room's
+/// list". The room gates itself on `room.phantom` again (the home already
+/// did) for the downgrade-while-open case, the desktop's RoomGate behaviour.
 ///
 /// Built after the push lands rather than during it (`Entered`): the turn
-/// owner, the drawer and the session list all mount at once, and doing that
-/// inside the entry animation reads as a freeze.
+/// owner and the thread mount at once, and doing that inside the entry
+/// animation reads as a freeze.
 class PhantomScreen extends StatelessWidget {
   const PhantomScreen({super.key});
   static const route = '/phantom';
@@ -73,14 +72,6 @@ class _PhantomRoomState extends ConsumerState<_PhantomRoom> {
 
     return Scaffold(
       backgroundColor: Ds.void_,
-      drawerEdgeDragWidth: 60,
-      drawerScrimColor: const Color(0x80000000),
-      drawer: Drawer(
-        width: MediaQuery.sizeOf(context).width * 0.87,
-        backgroundColor: Ds.panel,
-        shape: const RoundedRectangleBorder(),
-        child: ChatSessionsDrawer(projectId: widget.projectId),
-      ),
       body: ChatScreen(projectId: widget.projectId),
     );
   }

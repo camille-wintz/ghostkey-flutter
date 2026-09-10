@@ -43,6 +43,11 @@ class ProjectHomeScreen extends ConsumerWidget {
 
     void goHome() => ref.read(activeProjectProvider.notifier).close();
 
+    // The SafeArea below deliberately lets the backdrop run under the gesture
+    // bar, so the scroll has to reserve that inset itself or the last room row
+    // ends up sitting on it.
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+
     return Scaffold(
       backgroundColor: Ds.void_,
       body: Stack(
@@ -85,7 +90,7 @@ class ProjectHomeScreen extends ConsumerWidget {
                 Expanded(
                   child: RepaintBoundary(
                     child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 36),
+                    padding: EdgeInsets.fromLTRB(20, 8, 20, 36 + bottomInset),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [

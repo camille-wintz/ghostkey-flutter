@@ -9,20 +9,19 @@ import '../project/project_root.dart';
 import '../project/room_entering.dart';
 import 'chapter_screen.dart';
 import 'document_resolve.dart';
-import 'drawer/chapter_drawer.dart';
-import 'drawer/chapter_drawer_state.dart';
+import 'nav/chapter_nav_state.dart';
 
-/// The writing room: the chapter editor behind a chapters/notes drawer.
-/// `activeChapter` belongs here and nowhere else.
+/// The writing room: the chapter editor, with the chapters/notes list one
+/// press of the title away. `activeChapter` belongs here and nowhere else.
 ///
 /// The room is built AFTER the push lands, not during it (`Entered`). What
-/// mounts here is a drawer, and an editor holding a whole chapter in one
-/// field — that in the frames the entry animation needs is what made
-/// opening Apparition feel like the app had stopped rather than moved.
+/// mounts here is an editor holding a whole chapter in one field — that in the
+/// frames the entry animation needs is what made opening Apparition feel like
+/// the app had stopped rather than moved.
 ///
-/// What the drawer remembers between opens (its query, its folded folders,
-/// an order that has not landed) lives here, above it: Flutter's drawer
-/// holds no content while closed.
+/// What the list remembers between opens (its query, its folded folders, an
+/// order that has not landed) lives here, above it: the panel is a route that
+/// is gone the moment it closes.
 class ApparitionScreen extends ConsumerStatefulWidget {
   const ApparitionScreen({super.key});
   static const route = '/apparition';
@@ -32,14 +31,14 @@ class ApparitionScreen extends ConsumerStatefulWidget {
 }
 
 class _ApparitionScreenState extends ConsumerState<ApparitionScreen> {
-  ChapterDrawerState? _drawer;
+  ChapterNavState? _nav;
   final RecentRename _rename = RecentRename();
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final projectId = ProjectScope.of(context);
-    _drawer ??= ChapterDrawerState(
+    _nav ??= ChapterNavState(
       projectId: projectId,
       refreshProject: () => ref.invalidate(projectProvider(projectId)),
     );
@@ -47,7 +46,7 @@ class _ApparitionScreenState extends ConsumerState<ApparitionScreen> {
 
   @override
   void dispose() {
-    _drawer?.dispose();
+    _nav?.dispose();
     super.dispose();
   }
 
@@ -56,17 +55,12 @@ class _ApparitionScreenState extends ConsumerState<ApparitionScreen> {
         room: roomFor(RoomKey.apparition),
         builder: (context) => Scaffold(
           backgroundColor: Ds.void_,
-          // 318 of the design's 390pt frame — the page stays visible beside it.
-          drawer: Drawer(
-            width: MediaQuery.sizeOf(context).width * 0.82,
-            backgroundColor: Ds.panel,
-            elevation: 0,
-            shape: const RoundedRectangleBorder(),
-            child: ChapterDrawer(state: _drawer!, rename: _rename),
+          body: ChapterScreen(
+            nav: _nav!,
+            rename: _rename,
+            onDictate: CaptureLaunchers.dictate,
+            onScan: CaptureLaunchers.scan,
           ),
-          drawerEdgeDragWidth: 60,
-          drawerScrimColor: const Color(0x8C000000),
-          body: ChapterScreen(rename: _rename, onDictate: CaptureLaunchers.dictate, onScan: CaptureLaunchers.scan),
         ),
       );
 }
