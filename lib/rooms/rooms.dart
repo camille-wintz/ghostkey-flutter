@@ -66,7 +66,7 @@ const List<Room> rooms = [
   Room(
     key: RoomKey.phantom,
     title: 'Phantom Memory',
-    subtitle: 'Analyze and brainstorm',
+    subtitle: 'Plan, analyze and brainstorm',
     mark: RoomMark.phantom,
     tile: TileGradient(Color(0xFF7D4ECD), Color(0xFF472585)),
   ),
