@@ -11,7 +11,6 @@ import '../../server/profile/api.dart';
 import '../../server/projects/api.dart';
 import '../../server/providers.dart';
 import '../../store/active_project.dart';
-import '../../ui/button.dart';
 import '../../ui/field.dart';
 import '../../ui/press.dart';
 import '../../ui/text.dart';
@@ -213,8 +212,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 const SizedBox(height: 24),
                 Center(
                   child: Press(
-                    onPressed: _busy ? null : _skip,
-                    semanticLabel: 'Skip these questions',
+                    onPressed: _busy
+                        ? null
+                        : _step == _Step.title
+                            ? () => _to(_Step.intent)
+                            : _skip,
+                    semanticLabel: _step == _Step.title
+                        ? 'Skip naming the book'
+                        : 'Skip these questions',
                     builder: (context, pressed) => Padding(
                       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                       child: Text(
@@ -280,22 +285,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               eyebrow: 'It can change later',
               title: 'Does it have a title yet?',
             ),
+            // No button under the field: it said 'Skip' too, and between two
+            // skips authors read the lower one as the button and left the flow
+            // entirely. The keyboard's Go submits, and on this step the lower
+            // one is the skip — of the name, not the questions.
             GkField(
               controller: _title,
               placeholder: 'Working title…',
               autofocus: true,
               textInputAction: TextInputAction.go,
               onSubmitted: (_) => _to(_Step.intent),
-            ),
-            const SizedBox(height: 12),
-            ListenableBuilder(
-              listenable: _title,
-              builder: (context, _) => GkButton(
-                label: _title.text.trim().isEmpty ? 'Skip' : 'Next',
-                wide: true,
-                disabled: _busy,
-                onPressed: () => _to(_Step.intent),
-              ),
             ),
           ],
         _Step.intent => [
