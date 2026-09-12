@@ -121,6 +121,16 @@ class RecorderError extends RecorderEvent {
   final String message;
 }
 
+/// Raw PCM decoded back out of a finished chunk file, for the silence pass.
+/// 16-bit mono, little-endian, in a scratch file beside the chunk — the
+/// caller reads it and deletes it.
+class DecodedPcm {
+  const DecodedPcm({required this.path, required this.sampleRate, required this.samples});
+  final String path;
+  final int sampleRate;
+  final int samples;
+}
+
 class RecorderPermissions {
   const RecorderPermissions({required this.sdk, required this.microphone, required this.notifications});
   final int sdk;
@@ -209,6 +219,28 @@ class NativeRecorder {
       await _methods.invokeMethod<bool>('requestNotifications') ?? false;
 
   Future<String> chunkDirectory() async => await _methods.invokeMethod<String>('chunkDirectory') ?? '';
+
+  /// Decode a finished chunk to raw mono PCM beside it. Null when the audio
+  /// cannot be read at all — no audio track, a decoder that refuses it, a
+  /// truncated file — which is a verdict about the chunk, not a failure of
+  /// the call: see erase_silence.dart on why that is a drop.
+  Future<DecodedPcm?> decodePcm(String path) async {
+    try {
+      final map = await _methods.invokeMapMethod<String, Object?>('decodePcm', {'path': path});
+      if (map == null) return null;
+      final out = map['path'] as String?;
+      if (out == null || out.isEmpty) return null;
+      return DecodedPcm(
+        path: out,
+        sampleRate: (map['sampleRate'] as num?)?.toInt() ?? DictationPolicy.sampleRate,
+        samples: (map['samples'] as num?)?.toInt() ?? 0,
+      );
+    } on PlatformException {
+      return null;
+    } on MissingPluginException {
+      return null;
+    }
+  }
 
   /// Start a session. Resolves with the session id once the service has been
   /// asked to start; the session is live when the `started` event arrives.

@@ -12,6 +12,7 @@ lost between chunk *N* and *N+1*.
 | `RecorderPlugin.kt` | The Flutter plugin: `MethodChannel ghostkey/recorder`, `EventChannel ghostkey/recorder/events`, runtime permissions. Registered from `MainActivity`. |
 | `DictationService.kt` | The microphone-type foreground service that owns the session: the capture thread, metering, wake lock, notification with Stop. Singleton (`instance`). |
 | `AacChunkWriter.kt` | The encoder + per-file `MediaMuxer`; `cutAt()` rotates files on an AU boundary. |
+| `AudioDecoder.kt` | Decodes a finished chunk back to raw mono PCM for the Dart silence pass. Not part of the capture path. |
 
 Dart side: `lib/dictation/recorder_channel.dart` is the only caller.
 
@@ -23,12 +24,22 @@ Dart side: `lib/dictation/recorder_channel.dart` is the only caller.
 | `requestMicrophone` | — | `bool` (RECORD_AUDIO) |
 | `requestNotifications` | — | `bool` (POST_NOTIFICATIONS; always true below API 33) |
 | `chunkDirectory` | — | `<cacheDir>/dictation` |
+| `decodePcm` | `{path}` | `{path, sampleRate, samples}` — 16-bit mono little-endian PCM in `<path>.pcm`, for the caller to read and delete — or **null** when the audio cannot be read at all. Off the main thread, one decode at a time. |
 | `start` | `{sessionId, sampleRate=16000, bitRate=64000, silenceDb=-30, minVoicedMs=300, wakeLockMs, audioSource='mic'|'voice_recognition'|'voice_communication', title, text}` | `sessionId`; the session is live once the `started` event arrives. Errors: `microphone_denied`, `service_start_refused`. |
 | `cut` | — | path of the file being finished (the `chunk` event follows), or null with no session |
 | `pause` | — | same as `cut`; the mic stays open, nothing is encoded until `resume` |
 | `resume` | — | null |
 | `stop` | — | path of the last file (the `chunk` and `stopped` events follow), or null |
 | `isRunning` | — | `bool` |
+
+`decodePcm` answers null rather than an error for a file with no audio
+track, a decoder that refuses the format, a truncated file or a stall:
+to the caller that is a verdict about the chunk (drop it — see
+`lib/dictation/erase_silence.dart`), not a failure of the call. It decodes
+the finished file rather than teeing PCM off the capture thread on purpose,
+because the seam below lives on an access-unit boundary the PCM stream knows
+nothing about, and a second copy cut a few milliseconds elsewhere would lose
+or double a word at exactly the boundary this recorder exists to get right.
 
 `start` must be called while the activity is visible (Android 14's rule for a
 microphone service). It checks RECORD_AUDIO itself; POST_NOTIFICATIONS is
@@ -96,8 +107,15 @@ word across the boundary must appear once, whole, across the two transcripts.
 ## Not verified here
 
 The Kotlin was written against API 24–37 without a compile (one phone, one
-Gradle lock, several agents). First build: check `MediaCodec` input buffer
+Gradle lock, several agents). It COMPILES as of 2026-09-12 — `flutter build
+apk --debug` is clean — but nothing here has run on a device. First run: check `MediaCodec` input buffer
 capacity on the device (the writer slices to it), that `c2.android.aac.encoder`
 accepts 16 kHz mono at 64 kbps (the writer falls back to 44.1/48 kHz for
 `AudioRecord` only; the bit rate is fixed), and that a 20 ms `read` on a
 2-second buffer keeps up under lock on a Samsung.
+
+`AudioDecoder` is newer and unproven on a device too. First build: check that
+`decodePcm` on a real chunk comes back non-null with `sampleRate` 16000 and
+`samples ≈ durationMs × 16`, and time it — a ten-minute cap chunk is the
+worst case, and if the decode is slow enough to be felt it belongs behind the
+upload rather than in front of it.

@@ -99,7 +99,8 @@ lib/
   core/                     pure modules (see above)
   access/                   capability (optimistic until the snapshot lands) · plans · welcome_notices
   editor/ autosave/         editor_controller · inline_markdown | the autosave owner · draft journal
-  dictation/ scan/          recorder channel · session · seam ledger · anchors | camera · OCR · insert
+  dictation/ scan/          recorder channel · session · policy + room meter · silence pass ·
+                            seam ledger · anchors | camera · OCR · insert
   chat/ veil/ poltergeist/  the logic half of those three rooms (see below)
   rooms/                    the rooms table · marks · tile
   backdrop/                 glow · motes · ambient_motion

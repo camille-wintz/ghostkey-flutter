@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.media.MediaRecorder
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -14,6 +16,8 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.PluginRegistry
 import java.io.File
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 /**
  * The Dart-facing surface of the recorder: `ghostkey/recorder` (methods) and
@@ -33,6 +37,12 @@ class RecorderPlugin :
   private var activity: Activity? = null
   private var binding: ActivityPluginBinding? = null
   private val permissionResults = HashMap<Int, MethodChannel.Result>()
+  private val main = Handler(Looper.getMainLooper())
+
+  /** One decode at a time: two ten-minute chunks decoding at once on a
+   *  mid-range phone is memory and heat for no gain, and chunks are already
+   *  queued behind each other by the time they get here. */
+  private val decoders: ExecutorService = Executors.newSingleThreadExecutor()
 
   override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     context = binding.applicationContext
@@ -46,6 +56,7 @@ class RecorderPlugin :
     methods = null
     events = null
     RecorderBus.listener = null
+    decoders.shutdown()
   }
 
   override fun onAttachedToActivity(binding: ActivityPluginBinding) {
@@ -84,6 +95,7 @@ class RecorderPlugin :
         }
       }
       "chunkDirectory" -> result.success(chunkDir().absolutePath)
+      "decodePcm" -> decodePcm(call, result)
       "start" -> start(call, result)
       "cut" -> result.success(DictationService.instance?.cut())
       "pause" -> result.success(DictationService.instance?.pause())
@@ -127,6 +139,35 @@ class RecorderPlugin :
       // Android 12+ throws here when a foreground service may not be started
       // from where the app currently is (it is in the background).
       result.error("service_start_refused", e.message ?: e.toString(), null)
+    }
+  }
+
+  /**
+   * Decode a finished chunk to raw mono PCM beside it, for the Dart silence
+   * pass. Off the main thread — a ten-minute chunk is a real decode — and it
+   * answers null rather than an error for audio that cannot be read, because
+   * to the caller that is a verdict about the chunk (drop it), not a failure
+   * of the call.
+   */
+  private fun decodePcm(call: MethodCall, result: MethodChannel.Result) {
+    val path = call.argument<String>("path")
+    if (path.isNullOrEmpty()) {
+      result.error("bad_arguments", "path is required", null)
+      return
+    }
+    val input = File(path)
+    val output = File(input.parentFile ?: chunkDir(), "${input.name}.pcm")
+    decoders.execute {
+      val decoded = try {
+        AudioDecoder.decode(input, output)
+      } catch (e: Throwable) {
+        null
+      }
+      val answer = decoded?.let {
+        mapOf("path" to it.file.absolutePath, "sampleRate" to it.sampleRate, "samples" to it.samples)
+      }
+      if (decoded == null) output.delete()
+      main.post { result.success(answer) }
     }
   }
 

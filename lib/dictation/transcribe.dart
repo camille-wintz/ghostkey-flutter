@@ -1,15 +1,21 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import '../server/client.dart';
 import '../server/dto/transcribe.dart';
 import '../server/errors.dart';
+import 'chunk_audio.dart';
 import 'policy.dart';
 
 // Ships one finished chunk to POST /api/transcribe. Ported from
-// ghostkey-mobile `src/audio/transcribe.ts`. Recording, metering and chunking
-// happen locally; the provider keys and both pipelines live on the server.
+// ghostkey-mobile `src/audio/transcribe.ts`. Recording, metering, chunking
+// and the silence pass happen locally; the provider keys and both pipelines
+// live on the server.
+//
+// The audio arrives as a [ChunkPayload] rather than a path because it is not
+// always the recorded file any more: a chunk whose silence was erased goes
+// up as a rebuilt WAV (chunk_audio.dart), which the server's Gemini pipeline
+// accepts alongside `.m4a`.
 //
 // `projectId` has the server inject the project's world-bible spellings into
 // its cleanup pass. `previous` is the manuscript just before the insertion
@@ -28,12 +34,11 @@ class Transcript {
 }
 
 Future<Transcript> transcribeAudioChunk(
-  String path, {
+  ChunkPayload audio, {
   String? projectId,
   String? previous,
   List<TranscriptTurn> turns = const [],
 }) async {
-  final bytes = await File(path).readAsBytes();
   final fields = <String, String>{
     'project_id': ?projectId,
     if (previous != null && previous.isNotEmpty) 'previous': previous,
@@ -53,7 +58,12 @@ Future<Transcript> transcribeAudioChunk(
       method: 'POST',
       fields: fields,
       files: [
-        ApiFilePart(field: 'file', filename: 'chunk.m4a', bytes: bytes, contentType: 'audio/m4a'),
+        ApiFilePart(
+          field: 'file',
+          filename: audio.filename,
+          bytes: audio.bytes,
+          contentType: audio.contentType,
+        ),
       ],
     ).timeout(const Duration(milliseconds: DictationPolicy.uploadTimeoutMs));
   } on TimeoutException {

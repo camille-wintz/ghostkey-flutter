@@ -32,6 +32,16 @@ abstract final class DictationPolicy {
   /// A chunk with less speech than this is dropped without a round trip.
   static const int minVoicedMs = 300;
 
+  /// A chunk file under this holds no recording worth sending. A cheap
+  /// pre-filter on the way to the silence pass, which asks the same question
+  /// properly off the decoded duration — bytes are only ever a hint, since
+  /// the container's overhead is not the audio's. The case it exists for is
+  /// an `.m4a` whose audio track never got a frame; at the ~8 KB/s this
+  /// recorder produces it is ~250 ms, so [minVoicedMs] is reached long
+  /// before it and no spoken word is at risk here. The drop that matters is
+  /// the decoder's (chunk_audio.dart).
+  static const int minChunkBytes = 2048;
+
   /// The metering cadence the native side reports at; one policy tick each.
   static const int pollIntervalMs = 100;
 

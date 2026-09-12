@@ -6,9 +6,10 @@ import 'package:path_provider/path_provider.dart';
 import 'policy.dart';
 
 // The recorder writes each chunk to `<cache>/dictation/<session>-<n>.m4a`
-// and the session deletes it once it has been transcribed (or judged
-// silent). A process kill mid-session — the writer force-stopping the app, a
-// vendor battery manager — leaves the chunk in flight behind. Its audio
+// (and the silence pass a `.m4a.pcm` scratch beside it) and the session
+// deletes both once it has been transcribed (or judged silent). A process
+// kill mid-session — the writer force-stopping the app, a vendor battery
+// manager — leaves the chunk in flight behind. Its audio
 // cannot be replayed into the manuscript (the insertion anchor died with the
 // session), so the next launch deletes it; the count is logged so a field
 // report of "it stopped in my pocket" comes with a number. Ported from
@@ -26,7 +27,7 @@ Future<int> sweepOrphanedRecordings() async {
     final cutoff = DateTime.now().subtract(DictationPolicy.orphanAge);
     var removed = 0;
     await for (final entry in dir.list()) {
-      if (entry is! File || !entry.path.endsWith('.m4a')) continue;
+      if (entry is! File || !(entry.path.endsWith('.m4a') || entry.path.endsWith('.pcm'))) continue;
       final stat = await entry.stat();
       // Younger than the cutoff and a live session may still own it (a hot
       // restart mid-chunk is the case the guard exists for).

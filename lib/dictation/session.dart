@@ -7,6 +7,8 @@ import 'package:flutter/widgets.dart';
 import '../server/dto/transcribe.dart';
 import '../server/errors.dart';
 import 'background_mode.dart';
+import 'chunk_audio.dart';
+import 'erase_silence.dart';
 import 'notices.dart';
 import 'policy.dart';
 import 'recorder_channel.dart';
@@ -72,6 +74,12 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
   // insertion is chained behind the previous chunk's.
   Future<void> _delivery = Future<void>.value();
 
+  // Every chunk's measured noise floor, oldest first — the session's memory
+  // of the room when nobody is speaking. A chunk holding no speech cannot
+  // answer that question about itself (its own quietest frames ARE the
+  // room), so it is answered against this instead. See erase_silence.dart.
+  final List<double> _floors = [];
+
   // A cut/pause/stop resolves with the path of the file being finished; its
   // `chunk` event follows on the capture thread's own time. Waiters by path,
   // and events that beat their waiter.
@@ -130,6 +138,11 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
       _lastElapsedMs = 0;
       _durationBase = durationMs;
       _policy.startSession(_now);
+      // A new take is a new room, and both readings of it start empty: the
+      // live one the policy judges samples against, and the pooled chunk
+      // floors the silence pass judges whole chunks against.
+      _policy.room.reset();
+      _floors.clear();
       WidgetsBinding.instance.addObserver(this);
       notifyListeners();
     } on RecorderStartException catch (e) {
@@ -351,6 +364,30 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
   /// Ship one chunk, retrying what may pass. The file goes either way.
   Future<TranscriptTurn> _transcribe(String path) async {
     try {
+      // The silence comes out BEFORE the chunk is sent, never after the text
+      // comes back: the transcription model invents words over non-speech,
+      // and what it invents reaches the server's faithfulness gate already
+      // agreeing with itself, so nothing downstream can tell that prose from
+      // dictation. See erase_silence.dart. It answers `dropped` only when the
+      // whole chunk stood inside its own noise floor, or when its audio could
+      // not be read at all — a second opinion on `chunkVoiced`, taken per
+      // region and relative to this room rather than against a fixed level.
+      final prepared = await prepareChunk(path, sessionFloor: sessionFloorOf(_floors), recorder: _native);
+      // Pooled before the verdict is read, and a dropped chunk's reading is
+      // pooled too — a chunk that turned out to be nothing but room is the
+      // cleanest measurement of that room the session will get.
+      if (prepared.floor > 0) {
+        _floors.add(prepared.floor);
+        if (_floors.length > sessionFloorChunks) _floors.removeAt(0);
+      }
+      final audio = prepared.payload;
+      if (audio == null) {
+        debugPrint('[dictation] chunk dropped — ${prepared.dropped}');
+        return const TranscriptTurn(verbatim: '', cleaned: '');
+      }
+      if (prepared.removedMs > 0) {
+        debugPrint('[dictation] erased ${prepared.removedMs}ms of silence from a chunk');
+      }
       for (var attempt = 0;; attempt++) {
         try {
           // Read per attempt, not once: a chunk that retries through a
@@ -358,12 +395,14 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
           // anything that landed while it was failing sits between it and
           // its own context. The turns are read the same way: chunks upload
           // in parallel, so a chunk's history is whatever has landed by the
-          // time it ships.
+          // time it ships. The AUDIO is not: it was read, judged and (where
+          // it helped) rebuilt once, before the first attempt, and a retry
+          // re-uploads that same payload rather than decoding it again.
           final before = previousText();
           final previous =
               before.length > DictationPolicy.previousChars ? before.substring(before.length - DictationPolicy.previousChars) : before;
           final res = await transcribeAudioChunk(
-            path,
+            audio,
             projectId: projectId,
             previous: previous,
             turns: List.of(_turns),
