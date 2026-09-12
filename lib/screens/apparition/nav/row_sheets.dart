@@ -57,7 +57,7 @@ Future<bool> confirmDelete(BuildContext context, {required String label}) async 
           const SizedBox(height: 10),
           Text('Its text goes with it.', style: DsStyle.ui(DsText.body, color: Ds.mid)),
           const SizedBox(height: 20),
-          _DestructiveButton(label: 'Delete', onPressed: () => Navigator.of(context).pop(true)),
+          GkButton(label: 'Delete', variant: ButtonVariant.destructive, wide: true, onPressed: () => Navigator.of(context).pop(true)),
           const SizedBox(height: 10),
           GkButton(label: 'Keep', variant: ButtonVariant.outline, wide: true, onPressed: () => Navigator.of(context).pop(false)),
         ],
@@ -139,28 +139,3 @@ class _MenuRow extends StatelessWidget {
   }
 }
 
-/// The one button that is not the accent: the hue means what will happen.
-class _DestructiveButton extends StatelessWidget {
-  const _DestructiveButton({required this.label, required this.onPressed});
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) => Press(
-        onPressed: onPressed,
-        semanticLabel: label,
-        builder: (context, pressed) => Container(
-          height: 44,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(DsGeom.radius),
-            border: Border.all(color: Ds.destructive.withValues(alpha: pressed ? 1 : 0.55)),
-            color: Ds.destructive.withValues(alpha: pressed ? 0.2 : 0.12),
-          ),
-          child: Text(
-            label.toUpperCase(),
-            style: DsStyle.ui(DsText.ui, color: Ds.destructive, weight: FontWeight.w600, tracking: DsTracking.control),
-          ),
-        ),
-      );
-}

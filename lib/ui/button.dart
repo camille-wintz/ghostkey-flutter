@@ -3,7 +3,13 @@ import 'package:flutter/material.dart';
 import '../ds/tokens.dart';
 import 'press.dart';
 
-enum ButtonVariant { primary, outline }
+enum ButtonVariant {
+  primary,
+  outline,
+
+  /// The hue means what will happen: the one commit that cannot be taken back.
+  destructive,
+}
 
 /// The one button, and it is the same object in every room: one 16px corner,
 /// one blue, no lift. If a surface wants a button that looks different, the
@@ -37,7 +43,8 @@ class GkButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final inert = disabled || busy;
     final outline = variant == ButtonVariant.outline;
-    final ink = outline ? Ds.soft : Ds.accent;
+    final destructive = variant == ButtonVariant.destructive;
+    final ink = outline ? Ds.soft : destructive ? Ds.destructive : Ds.accent;
 
     return Press(
       onPressed: onPressed,
@@ -52,11 +59,15 @@ class GkButton extends StatelessWidget {
           border: Border.all(
             color: outline
                 ? (pressed ? Ds.edgeHi : Ds.edge)
-                : (pressed ? Ds.accent : Ds.accentMix(55)),
+                : destructive
+                    ? Ds.destructive.withValues(alpha: pressed ? 1 : 0.55)
+                    : (pressed ? Ds.accent : Ds.accentMix(55)),
           ),
           color: outline
               ? (pressed ? Ds.veil : const Color(0x00000000))
-              : Ds.accentMix(pressed ? 20 : 12),
+              : destructive
+                  ? Ds.destructive.withValues(alpha: pressed ? 0.2 : 0.12)
+                  : Ds.accentMix(pressed ? 20 : 12),
         ),
         child: Opacity(
           opacity: disabled ? 0.45 : 1,
