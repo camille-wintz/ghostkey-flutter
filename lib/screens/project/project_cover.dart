@@ -11,9 +11,20 @@ const double _height = 297;
 /// down the spine edge and a sheen that crosses the face every eight seconds,
 /// over a slow float. A project with no cover gets the same frame around a
 /// gradient plate carrying its title.
+///
+/// Both loops are phased off the wall clock rather than off when this widget
+/// was built. A book opens on one cover (the loading stage) and lands on
+/// another (the home); anchored to the clock, the second picks up exactly
+/// where the first was, instead of dropping the book back to the bottom of
+/// its float.
 class ProjectCover extends StatefulWidget {
-  const ProjectCover({super.key, required this.coverUrl, required this.title});
+  const ProjectCover({super.key, required this.coverUrl, required this.title, this.thumbnailUrl});
   final String? coverUrl;
+
+  /// The shelf's 600px cover — already in the image cache from the shelf, so
+  /// it paints on the first frame. Drawn under the full cover, which covers
+  /// it once decoded, so the face is never empty while the megabytes arrive.
+  final String? thumbnailUrl;
   final String title;
 
   @override
@@ -21,7 +32,10 @@ class ProjectCover extends StatefulWidget {
 }
 
 class _ProjectCoverState extends State<ProjectCover> with TickerProviderStateMixin {
-  late final AnimationController _float = AnimationController(vsync: this, duration: const Duration(milliseconds: 3750));
+  // One up-and-down is a single forward pass, folded in [_rise], so the
+  // clock alone fixes the phase — a reversing repeat would also need a
+  // direction.
+  late final AnimationController _float = AnimationController(vsync: this, duration: const Duration(milliseconds: 7500));
   late final AnimationController _sheen = AnimationController(vsync: this, duration: const Duration(milliseconds: 8000));
 
   @override
@@ -31,10 +45,18 @@ class _ProjectCoverState extends State<ProjectCover> with TickerProviderStateMix
     super.dispose();
   }
 
+  static double _rise(double t) => Curves.easeInOut.transform(t < 0.5 ? t * 2 : 2 - t * 2);
+
+  static void _startOnClock(AnimationController controller) {
+    final period = controller.duration!.inMilliseconds;
+    controller.value = (DateTime.now().millisecondsSinceEpoch % period) / period;
+    controller.repeat();
+  }
+
   void _sync(bool moving) {
     if (moving) {
-      if (!_float.isAnimating) _float.repeat(reverse: true);
-      if (!_sheen.isAnimating) _sheen.repeat();
+      if (!_float.isAnimating) _startOnClock(_float);
+      if (!_sheen.isAnimating) _startOnClock(_sheen);
     } else {
       _float.stop();
       _sheen.stop();
@@ -76,15 +98,25 @@ class _ProjectCoverState extends State<ProjectCover> with TickerProviderStateMix
       child: Stack(
         fit: StackFit.expand,
         children: [
+          if (widget.thumbnailUrl != null)
+            Image.network(
+              widget.thumbnailUrl!,
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+              errorBuilder: (context, _, _) => _Plate(title: widget.title),
+            )
+          else if (widget.coverUrl == null)
+            _Plate(title: widget.title),
           if (widget.coverUrl != null)
             Image.network(
               widget.coverUrl!,
               fit: BoxFit.cover,
               semanticLabel: 'Cover of ${widget.title}',
-              errorBuilder: (context, _, _) => _Plate(title: widget.title),
-            )
-          else
-            _Plate(title: widget.title),
+              // With a thumbnail under it, a full cover that will not load
+              // just leaves the thumbnail showing.
+              errorBuilder: (context, _, _) =>
+                  widget.thumbnailUrl != null ? const SizedBox.shrink() : _Plate(title: widget.title),
+            ),
           // The spine edge: the one place the cover catches the room light.
           const Positioned(
             left: 0,
@@ -138,7 +170,7 @@ class _ProjectCoverState extends State<ProjectCover> with TickerProviderStateMix
     return AnimatedBuilder(
       animation: _float,
       builder: (context, child) => Transform.translate(
-        offset: Offset(0, -15 * Curves.easeInOut.transform(_float.value)),
+        offset: Offset(0, -15 * _rise(_float.value)),
         child: child,
       ),
       child: Transform(

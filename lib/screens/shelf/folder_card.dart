@@ -83,7 +83,7 @@ class _FolderBooks extends ConsumerWidget {
                   Press(
                     onPressed: () {
                       Navigator.of(context).pop();
-                      ref.read(activeProjectProvider.notifier).open(project.id);
+                      ref.read(activeProjectProvider.notifier).open(project);
                     },
                     builder: (context, pressed) => Container(
                       height: DsGeom.row,

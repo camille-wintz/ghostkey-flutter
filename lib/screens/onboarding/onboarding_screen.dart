@@ -79,7 +79,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   /// closed it, having already been answered.
   void _land(ProjectMeta project, {Intent? mark, String? ask}) {
     ref.invalidate(authorProfileProvider);
-    ref.read(activeProjectProvider.notifier).open(project.id, mark: mark, ask: ask);
+    ref.read(activeProjectProvider.notifier).open(project, mark: mark, ask: ask);
   }
 
   Future<void> _guided() async {

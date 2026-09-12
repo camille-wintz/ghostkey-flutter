@@ -48,7 +48,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _name.clear();
       // No navigate: the open project is what decides whether the shelf or
       // the book is mounted at the root.
-      ref.read(activeProjectProvider.notifier).open(project.id);
+      ref.read(activeProjectProvider.notifier).open(project);
     } catch (e) {
       if (mounted) _say('Could not create', messageFor(e));
     } finally {
@@ -84,7 +84,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           if (chapters != null && chapters > 0) {
             _importStatus = '$chapters ${chapters == 1 ? 'chapter' : 'chapters'} imported.';
           }
-          ref.read(activeProjectProvider.notifier).open(project.id);
+          ref.read(activeProjectProvider.notifier).open(project);
       }
     } finally {
       if (mounted) {

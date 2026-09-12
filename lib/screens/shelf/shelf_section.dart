@@ -65,7 +65,7 @@ class ShelfSection extends ConsumerWidget {
           _Grid(
             projects: projectList,
             series: series,
-            onOpen: (project) => ref.read(activeProjectProvider.notifier).open(project.id),
+            onOpen: (project) => ref.read(activeProjectProvider.notifier).open(project),
           ),
         ],
       ],

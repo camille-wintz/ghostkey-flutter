@@ -71,7 +71,11 @@ class _Root extends ConsumerWidget {
           ? const OnboardingScreen(key: ValueKey('onboarding'))
           : projectId == null
               ? const ShelfRoot(key: ValueKey('shelf'))
-              : ProjectRoot(key: ValueKey('project-$projectId'), projectId: projectId),
+              : ProjectRoot(
+                  key: ValueKey('project-$projectId'),
+                  projectId: projectId,
+                  preview: ref.read(activeProjectProvider).preview,
+                ),
     };
 
     return AnimatedSwitcher(

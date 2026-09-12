@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app.dart';
 import '../../rooms/rooms.dart';
+import '../../ds/tokens.dart';
+import '../../server/dto/projects.dart';
 import '../../server/errors.dart';
 import '../../server/providers.dart';
 import '../../store/active_project.dart';
@@ -12,6 +14,7 @@ import '../phantom/phantom_screen.dart';
 import '../poltergeist/poltergeist_screen.dart';
 import '../veil/veil_screen.dart';
 import 'project_home_screen.dart';
+import 'project_stage.dart';
 
 /// One open project: a stack whose first screen is the project home (cover,
 /// title, rooms) and whose other screens are the rooms themselves. Opening a
@@ -22,8 +25,13 @@ import 'project_home_screen.dart';
 /// store would spend the slide-out drawing "no project" over a screen the
 /// author can still see.
 class ProjectRoot extends ConsumerStatefulWidget {
-  const ProjectRoot({super.key, required this.projectId});
+  const ProjectRoot({super.key, required this.projectId, this.preview});
   final String projectId;
+
+  /// The shelf's summary of the book, when it was opened from one. It is
+  /// what the book opens on: its cover, title and backdrop, while the full
+  /// project loads.
+  final ProjectMeta? preview;
 
   @override
   ConsumerState<ProjectRoot> createState() => _ProjectRootState();
@@ -57,9 +65,12 @@ class _ProjectRootState extends ConsumerState<ProjectRoot> {
     // Both waiting states are drawn INSTEAD of the project stack, so they
     // answer the back button themselves.
     if (project.isLoading && !project.hasValue) {
+      final preview = widget.preview;
       return HardwareBack(
         onBack: _close,
-        child: StateScreen(spinner: true, message: 'Loading project…', actionLabel: 'Back to Home', onAction: _close),
+        child: preview != null
+            ? ProjectStage(project: preview, onHome: _close, below: const _Opening())
+            : StateScreen(spinner: true, message: 'Loading project…', actionLabel: 'Back to Home', onAction: _close),
       );
     }
     if (project.hasError && !project.hasValue) {
@@ -103,6 +114,24 @@ class _ProjectRootState extends ConsumerState<ProjectRoot> {
       ),
     );
   }
+}
+
+/// Where the rooms will be: a small light rather than a word, because the book
+/// above it already says what is opening.
+class _Opening extends StatelessWidget {
+  const _Opening();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 6),
+        child: Center(
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2, color: Ds.accent, semanticsLabel: 'Opening project'),
+          ),
+        ),
+      );
 }
 
 /// The open project's id, for every screen under the project navigator.

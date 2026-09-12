@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../server/dto/profile.dart';
+import '../server/dto/projects.dart';
 
 /// The open project (or none) and the chapter being written in it.
 ///
@@ -8,8 +9,13 @@ import '../server/dto/profile.dart';
 /// `open(id)` / `close()` here IS the navigation, nothing calls a navigator
 /// to get between them.
 class ActiveProject {
-  const ActiveProject({this.projectId, this.activeChapter, this.mark, this.ask});
+  const ActiveProject({this.projectId, this.preview, this.activeChapter, this.mark, this.ask});
   final String? projectId;
+
+  /// The summary the book was opened from — the shelf's copy, already
+  /// holding the cover thumbnail it drew — so the book can open ON its cover
+  /// while the full project loads instead of on a spinner.
+  final ProjectMeta? preview;
 
   /// The active chapter's FILENAME, as the RN app kept it.
   final String? activeChapter;
@@ -32,13 +38,14 @@ class ActiveProjectNotifier extends Notifier<ActiveProject> {
   @override
   ActiveProject build() => const ActiveProject();
 
-  void open(String projectId, {Intent? mark, String? ask}) =>
-      state = ActiveProject(projectId: projectId, mark: mark, ask: ask);
+  void open(ProjectMeta project, {Intent? mark, String? ask}) =>
+      state = ActiveProject(projectId: project.id, preview: project, mark: mark, ask: ask);
 
   void close() => state = const ActiveProject();
 
   void setActiveChapter(String? filename) => state = ActiveProject(
         projectId: state.projectId,
+        preview: state.preview,
         activeChapter: filename,
         mark: state.mark,
         ask: state.ask,
@@ -47,6 +54,7 @@ class ActiveProjectNotifier extends Notifier<ActiveProject> {
   /// The room grid has pointed at what it was going to point at.
   void clearMark() => state = ActiveProject(
         projectId: state.projectId,
+        preview: state.preview,
         activeChapter: state.activeChapter,
         ask: state.ask,
       );
@@ -54,6 +62,7 @@ class ActiveProjectNotifier extends Notifier<ActiveProject> {
   /// The chat has the question; it must not be sent twice.
   void clearAsk() => state = ActiveProject(
         projectId: state.projectId,
+        preview: state.preview,
         activeChapter: state.activeChapter,
         mark: state.mark,
       );
