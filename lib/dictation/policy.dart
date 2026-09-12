@@ -5,10 +5,20 @@
 // Pure: fed level samples and a clock, it answers with a decision. The
 // recorder (session.dart) owns the clocks and the microphone; this file owns
 // the numbers. Tested in test/dictation/policy_test.dart.
+//
+// What counts as speech is NOT one of the numbers here any more — it is read
+// from the room, sample by sample (room_meter.dart). [silenceDbThreshold]
+// survives as that module's warm-up line and its fallback.
+
+import 'room_meter.dart';
 
 abstract final class DictationPolicy {
-  /// Below this the sample is silence (RMS dBFS, metered every 100 ms).
-  static const double silenceDbThreshold = -30;
+  /// The silence line before the room has been measured, and the fallback
+  /// whenever a reading cannot be taken (RMS dBFS, metered every 100 ms) —
+  /// room_meter.dart owns it and says why. Also what the native side counts
+  /// its own `voicedMs` against (see the README in android/…/recorder);
+  /// that count only ever ORs with this side's, so it cannot take words away.
+  static const double silenceDbThreshold = fallbackThresholdDb;
 
   /// Gap that ends a chunk. The RN app holds 3000 ms because ITS recorder
   /// loses audio at every cut (stop → re-arm), so it cuts as rarely as it can.
@@ -108,6 +118,10 @@ class SessionPolicy {
 
   final int maxChunkMs;
 
+  /// What silence sounds like in this room, right now. Fed every sample this
+  /// policy judges, and consulted for the judgement.
+  final RoomMeter room = RoomMeter();
+
   int _sessionStartedAt = 0;
   int _lastActivityAt = 0;
   int _chunkStartedAt = 0;
@@ -124,6 +138,10 @@ class SessionPolicy {
   /// Whether the running chunk holds enough speech to be worth a round trip.
   bool get chunkVoiced => voicedMs >= DictationPolicy.minVoicedMs;
 
+  /// Restart the clocks. NOT the room: [room] is a time-evicting window, so
+  /// a pause long enough to have moved the author empties it on its own, and
+  /// a short one keeps a reading that is still true. The take's start is
+  /// where it is reset (session.dart).
   void startSession(int nowMs) {
     _sessionStartedAt = nowMs;
     _lastActivityAt = nowMs;
@@ -140,15 +158,20 @@ class SessionPolicy {
   /// that came back with text.
   void noteActivity(int nowMs) => _lastActivityAt = nowMs;
 
-  /// One metering sample of [sampleMs] of audio at [db], at wall time [nowMs].
-  /// Same order of checks as the RN loop: silence hold, ceiling, idle,
-  /// never-voiced cut, cap.
+  /// One metering sample of [sampleMs] of audio at [db], at wall time
+  /// [nowMs]. Same order of checks as the RN loop: silence hold, ceiling,
+  /// idle, never-voiced cut, cap — the one change being that "is this
+  /// speech" asks [room] rather than a constant.
   PolicyDecision onLevel({
     required double db,
     required int nowMs,
     int sampleMs = DictationPolicy.pollIntervalMs,
   }) {
-    if (db >= DictationPolicy.silenceDbThreshold) {
+    // Measured first, then compared: this sample is evidence about the room
+    // as well as a thing to judge, and a sample left out of the window would
+    // be judged against a room it never contributed to.
+    room.push(db, nowMs);
+    if (db >= room.threshold(nowMs)) {
       voicedMs += sampleMs;
       silenceMs = 0;
     } else if (voicedMs >= DictationPolicy.minVoicedMs) {

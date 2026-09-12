@@ -67,6 +67,19 @@ recents — and the Dart loop treats it as an auto-stop, not as its own.
 - While paused the mic keeps running (a resume has no re-arm); nothing is
   encoded except the ≤2 AUs of silence a pending cut still needs to emerge.
 
+## What counts as speech
+
+`silenceDb` (−30 dBFS) is the line the capture loop counts `voicedMs`
+against, and it is a fixed one. Dart's is not any more: `room_meter.dart`
+reads the line from the room continuously, so a fan above −30 no longer makes
+every sample speech and a soft voice under it is no longer lost. The two can
+therefore disagree — and where they do, this side's answer is ORed with the
+Dart one (`session.dart`, `_onChunk`), never ANDed, so a stricter native
+count can only ever fail to volunteer a chunk, never veto one. `heardSpeech`
+matters only for a chunk the native side finished on its own (the
+notification's Stop, a task removal), where Dart may not have seen the last
+levels.
+
 **Accounting.** `samplesIn` (PCM fed) and `framesOut` (AUs written) are
 carried on `stopped`; every `chunk` carries `startFrame`/`endFrame`. The
 Dart `SeamLedger` (`lib/dictation/seam_ledger.dart`, unit-tested) checks
