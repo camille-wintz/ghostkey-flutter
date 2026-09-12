@@ -86,6 +86,12 @@ Future<void> postForgotPassword(String email) async {
   await _postAuth('/api/auth/forgot-password', {'email': email});
 }
 
+/// `DELETE /api/me` — the account and everything it owns, permanently. Throws
+/// [ServerError] when the server did not delete it.
+Future<void> deleteAccount() async {
+  await apiFetch('/api/me', method: 'DELETE');
+}
+
 Future<void> postSignout(String refreshToken) async {
   try {
     await http.post(

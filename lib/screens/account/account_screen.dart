@@ -14,6 +14,9 @@ import '../../store/active_project.dart';
 import '../../ui/button.dart';
 import '../../ui/press.dart';
 import '../../ui/text.dart';
+import '../../server/errors.dart';
+import '../../ui/notice_modal.dart';
+import 'delete_account_dialog.dart';
 import 'verify_email_notice.dart';
 
 /// Where an author changes what they pay: the website, not a checkout in the
@@ -33,6 +36,7 @@ class AccountScreen extends ConsumerStatefulWidget {
 
 class _AccountScreenState extends ConsumerState<AccountScreen> {
   bool _signingOut = false;
+  bool _deleting = false;
 
   Future<void> _signOut() async {
     final email = ref.read(sessionProvider).user?.email ?? '';
@@ -54,6 +58,39 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     setState(() => _signingOut = true);
     final token = ref.read(sessionProvider).refreshToken;
     if (token != null) await postSignout(token);
+    await _forgetSession();
+  }
+
+  Future<void> _deleteAccount() async {
+    final subscription = ref.read(subscriptionProvider).value?.subscription;
+    final confirmed = await confirmDeleteAccount(
+      context,
+      email: ref.read(sessionProvider).user?.email ?? '',
+      hasLiveSubscription: subscription != null && subscription.status != 'canceled',
+    );
+    if (!confirmed || !mounted) return;
+    setState(() => _deleting = true);
+    try {
+      await deleteAccount();
+    } catch (e) {
+      debugPrint('[account] delete failed: $e');
+      if (!mounted) return;
+      setState(() => _deleting = false);
+      await showNoticeModal(
+        context,
+        eyebrow: 'Something went wrong',
+        title: 'Your account wasn\'t deleted',
+        action: 'OK',
+        children: [NoticeText(messageFor(e))],
+      );
+      return;
+    }
+    await _forgetSession();
+  }
+
+  /// What this phone holds for the session, gone — shared by signing out and
+  /// by deleting the account.
+  Future<void> _forgetSession() async {
     // The next account to sign in on this phone is not the one that just
     // registered — an unconsumed arrival flag would greet them with someone
     // else's welcome week.
@@ -229,6 +266,34 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                           ),
                         );
                       },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Press(
+                    onPressed: _deleteAccount,
+                    enabled: !_deleting && !_signingOut,
+                    semanticLabel: 'Delete account',
+                    builder: (context, pressed) => Container(
+                      height: 44,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: pressed ? Ds.veil : const Color(0x00000000),
+                        borderRadius: BorderRadius.circular(DsGeom.radius),
+                      ),
+                      child: _deleting
+                          ? SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Ds.destructive),
+                            )
+                          : Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(LucideIcons.trash2, size: 14, color: Ds.low),
+                                const SizedBox(width: 8),
+                                UiText('Delete account', step: DsText.ui, color: Ds.low),
+                              ],
+                            ),
                     ),
                   ),
                 ],
