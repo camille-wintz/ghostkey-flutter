@@ -11,6 +11,7 @@ import '../../server/profile/api.dart';
 import '../../server/projects/api.dart';
 import '../../server/providers.dart';
 import '../../store/active_project.dart';
+import '../../ui/button.dart';
 import '../../ui/field.dart';
 import '../../ui/press.dart';
 import '../../ui/text.dart';
@@ -285,16 +286,29 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               eyebrow: 'It can change later',
               title: 'Does it have a title yet?',
             ),
-            // No button under the field: it said 'Skip' too, and between two
-            // skips authors read the lower one as the button and left the flow
-            // entirely. The keyboard's Go submits, and on this step the lower
-            // one is the skip — of the name, not the questions.
+            // Next stays disabled until there is a title. When the button under
+            // the field said 'Skip' too, authors read the lower one as the
+            // button and left the flow entirely; a Next that cannot be pressed
+            // empty is never a second skip. The lower one is the skip — of the
+            // name, not the questions.
             GkField(
               controller: _title,
               placeholder: 'Working title…',
               autofocus: true,
               textInputAction: TextInputAction.go,
-              onSubmitted: (_) => _to(_Step.intent),
+              onSubmitted: (text) {
+                if (text.trim().isNotEmpty) _to(_Step.intent);
+              },
+            ),
+            const SizedBox(height: 12),
+            ValueListenableBuilder(
+              valueListenable: _title,
+              builder: (context, value, _) => GkButton(
+                label: 'Next',
+                wide: true,
+                disabled: _busy || value.text.trim().isEmpty,
+                onPressed: () => _to(_Step.intent),
+              ),
             ),
           ],
         _Step.intent => [
