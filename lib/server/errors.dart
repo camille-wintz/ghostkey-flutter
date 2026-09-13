@@ -92,6 +92,11 @@ const Map<String, String> _messages = {
 String messageFor(Object? err) {
   if (err is ServerError) {
     if (err.code == 'plan_insufficient') return _planMessage(err.denial);
+    // The canned line names chat; any other counter names itself from the 402.
+    final quota = err.quota;
+    if (err.code == 'quota_exceeded' && quota != null && quota.feature != 'phantom_chat') {
+      return "${quota.label}: this period's allowance is used up.";
+    }
     return _messages[err.code] ?? _messages['unknown']!;
   }
   if (err is StateError) return err.message;
