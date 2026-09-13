@@ -29,9 +29,6 @@ List<ChaptersListEntry> removeDocumentFromTree(List<ChaptersListEntry> tree, Str
       for (final entry in tree)
         switch (entry) {
           DocumentSummary() => entry.id == documentId ? null : entry,
-          ChapterGroup() => ChapterGroup(
-              name: entry.name,
-              chapters: entry.chapters.where((d) => d.id != documentId).toList(),
-            ),
+          ChapterGroup() => entry.withChapters(entry.chapters.where((d) => d.id != documentId).toList()),
         },
     ].nonNulls.toList();

@@ -44,11 +44,12 @@ class HeaderItem extends NavItem {
 }
 
 class FolderItem extends NavItem {
-  const FolderItem({required this.name, required this.index});
+  const FolderItem({required this.folderId, required this.name, required this.index});
+  final String folderId;
   final String name;
   final int index;
   @override
-  String get id => 'g-$name';
+  String get id => 'g-$folderId';
 }
 
 class ChapterItem extends NavItem {
@@ -138,7 +139,7 @@ NavLayout layoutNav(List<ChapterListRow> rows, List<DocumentSummary> shownNotes,
   if (chaptersMessage != null) items.add(MessageItem(chaptersMessage));
   for (var index = 0; index < rows.length; index++) {
     items.add(switch (rows[index]) {
-      FolderRow(:final name) => FolderItem(name: name, index: index),
+      FolderRow(:final id, :final name) => FolderItem(folderId: id, name: name, index: index),
       ChapterRow(:final doc, :final nested) => ChapterItem(doc: doc, nested: nested, index: index),
     });
   }

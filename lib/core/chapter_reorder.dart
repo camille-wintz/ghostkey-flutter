@@ -24,7 +24,7 @@ List<ChaptersListEntry> moveChapterRow(
   List<ChapterListRow> rows,
   int from,
   int to,
-  bool Function(String folder) isCollapsed,
+  bool Function(String folderId) isCollapsed,
 ) {
   final moved = from >= 0 && from < rows.length ? rows[from] : null;
   if (moved is! ChapterRow || from == to) return List.of(tree);
@@ -33,7 +33,7 @@ List<ChaptersListEntry> moveChapterRow(
   final above = to > 0 ? placed[to - 1] : null;
   final nested = switch (above) {
     null => false,
-    FolderRow() => !isCollapsed(above.name),
+    FolderRow() => !isCollapsed(above.id),
     ChapterRow() => above.nested,
   };
   placed[to] = moved.withNested(nested);
@@ -44,7 +44,7 @@ List<ChaptersListEntry> moveChapterRow(
 List<ChaptersListEntry> _rowsToTree(
   List<ChaptersListEntry> tree,
   List<ChapterListRow> rows,
-  bool Function(String folder) isCollapsed,
+  bool Function(String folderId) isCollapsed,
 ) {
   final out = <ChaptersListEntry>[];
   List<DocumentSummary>? open;
@@ -52,11 +52,11 @@ List<ChaptersListEntry> _rowsToTree(
   for (final row in rows) {
     switch (row) {
       case FolderRow():
-        final collapsed = isCollapsed(row.name);
+        final collapsed = isCollapsed(row.id);
         final chapters = collapsed
-            ? List<DocumentSummary>.of(_originalGroup(tree, row.name)?.chapters ?? const [])
+            ? List<DocumentSummary>.of(_originalGroup(tree, row.id)?.chapters ?? const [])
             : <DocumentSummary>[];
-        out.add(ChapterGroup(name: row.name, chapters: chapters));
+        out.add(ChapterGroup(id: row.id, name: row.name, chapters: chapters));
         open = collapsed ? null : chapters;
       case ChapterRow():
         if (row.nested && open != null) {
@@ -70,9 +70,9 @@ List<ChaptersListEntry> _rowsToTree(
   return out;
 }
 
-ChapterGroup? _originalGroup(List<ChaptersListEntry> tree, String name) {
+ChapterGroup? _originalGroup(List<ChaptersListEntry> tree, String id) {
   for (final entry in tree) {
-    if (entry is ChapterGroup && entry.name == name) return entry;
+    if (entry is ChapterGroup && entry.id == id) return entry;
   }
   return null;
 }

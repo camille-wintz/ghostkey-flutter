@@ -16,7 +16,7 @@ DocumentSummary _doc(String id, {DocumentKind kind = DocumentKind.chapter}) => D
 void main() {
   final tree = <ChaptersListEntry>[
     _doc('one'),
-    ChapterGroup(name: 'Part 2', chapters: [_doc('two'), _doc('three')]),
+    ChapterGroup(id: 'g2', name: 'Part 2', chapters: [_doc('two'), _doc('three')]),
     _doc('four'),
   ];
   final notes = [_doc('n1', kind: DocumentKind.note), _doc('n2', kind: DocumentKind.note)];
@@ -55,7 +55,7 @@ void main() {
     });
 
     test('a collapsed folder contributes only its heading', () {
-      final rows = filterChapterTree(tree, '', (name) => name == 'Part 2');
+      final rows = filterChapterTree(tree, '', (id) => id == 'g2');
       final layout = layoutNav(rows, notes, '');
       expect(layout.offsetOfChapter('four.md'), 3 * DsGeom.row);
     });

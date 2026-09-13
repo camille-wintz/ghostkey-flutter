@@ -249,18 +249,27 @@ class DocumentSummary implements ChaptersListEntry {
       };
 }
 
+/// A folder of chapters. `id` is its identity — collapse state, list keys and
+/// lookups go by it — and `name` is only a display title, which may repeat
+/// within a tree the way a chapter's filename does. This app never mints one:
+/// it carries the server's id and always sends it back.
 class ChapterGroup implements ChaptersListEntry {
-  const ChapterGroup({required this.name, required this.chapters});
+  const ChapterGroup({required this.id, required this.name, required this.chapters});
+  final String id;
   final String name;
   final List<DocumentSummary> chapters;
 
   static ChapterGroup fromJson(Json json) => ChapterGroup(
+        id: asString(json['id']),
         name: asString(json['name']),
         chapters: asJsonList(json['chapters']).map(DocumentSummary.fromJson).toList(),
       );
 
+  ChapterGroup withChapters(List<DocumentSummary> next) => ChapterGroup(id: id, name: name, chapters: next);
+
   @override
   Json toJson() => {
+        'id': id,
         'name': name,
         'chapters': chapters.map((c) => c.toJson()).toList(),
       };
@@ -397,10 +406,7 @@ class ProjectFull {
         for (final entry in chapters)
           switch (entry) {
             DocumentSummary() => rename(entry),
-            ChapterGroup() => ChapterGroup(
-                name: entry.name,
-                chapters: entry.chapters.map(rename).toList(),
-              ),
+            ChapterGroup() => entry.withChapters(entry.chapters.map(rename).toList()),
           },
       ],
       notes: notes.map(rename).toList(),

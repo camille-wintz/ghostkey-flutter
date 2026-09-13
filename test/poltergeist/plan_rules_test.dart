@@ -27,7 +27,7 @@ void main() {
       final plan = seedPlan(
         [
           doc('a', 'One.md'),
-          ChapterGroup(name: 'Part 2', chapters: [doc('b', 'Two.md', words: 0), doc('c', 'Three.md')]),
+          ChapterGroup(id: 'g2', name: 'Part 2', chapters: [doc('b', 'Two.md', words: 0), doc('c', 'Three.md')]),
         ],
         now: now,
         newId: ids(),

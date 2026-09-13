@@ -18,7 +18,7 @@ void main() {
   test('removeDocumentFromTree drops the document and keeps an emptied folder', () {
     final tree = <ChaptersListEntry>[
       _doc('a'),
-      ChapterGroup(name: 'Part', chapters: [_doc('b')]),
+      ChapterGroup(id: 'g1', name: 'Part', chapters: [_doc('b')]),
     ];
     final next = removeDocumentFromTree(tree, 'b');
     expect(next.length, 2);

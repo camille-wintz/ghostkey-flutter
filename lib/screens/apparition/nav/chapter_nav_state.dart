@@ -47,10 +47,11 @@ class ChapterNavState extends ChangeNotifier {
   }
 
   /// Folders are expanded by default; tapping the row collapses them.
-  bool isCollapsed(String folder) => _collapsed.contains(folder);
+  /// Keyed by folder id: two folders may share a name.
+  bool isCollapsed(String folderId) => _collapsed.contains(folderId);
 
-  void toggleFolder(String folder) {
-    if (!_collapsed.remove(folder)) _collapsed.add(folder);
+  void toggleFolder(String folderId) {
+    if (!_collapsed.remove(folderId)) _collapsed.add(folderId);
     notifyListeners();
   }
 

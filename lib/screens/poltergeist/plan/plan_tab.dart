@@ -33,6 +33,7 @@ class PlanTab extends ConsumerStatefulWidget {
 }
 
 class _PlanTabState extends ConsumerState<PlanTab> {
+  /// Folder ids, not names: two folders may share a name.
   final Set<String> _collapsed = {};
   String? _expandedId;
   bool _adding = false;
@@ -125,9 +126,9 @@ class _PlanTabState extends ConsumerState<PlanTab> {
     final tree = project?.chapters ?? const <ChaptersListEntry>[];
     final wordsById = {for (final d in chaptersInTree(tree)) d.id: d.wordCount};
     final entries = planTree(state.plan.chapters, tree);
-    final folderNames = [for (final e in entries) if (e is PlanFolderEntry) e.name];
-    final allCollapsed = folderNames.isNotEmpty && folderNames.every(_collapsed.contains);
-    final items = planListItems(entries, (name) => !_collapsed.contains(name));
+    final folderIds = [for (final e in entries) if (e is PlanFolderEntry) e.id];
+    final allCollapsed = folderIds.isNotEmpty && folderIds.every(_collapsed.contains);
+    final items = planListItems(entries, (id) => !_collapsed.contains(id));
     // Seed and reconcile write the plan from the notifier's build — freeze
     // hand edits while one is in flight so the two writers can't race.
     final frozen = board.isLoading || _adding;
@@ -138,7 +139,7 @@ class _PlanTabState extends ConsumerState<PlanTab> {
       children: [
         PlanBoardHeader(
           chapterCount: state.plan.chapters.length,
-          folderCount: folderNames.length,
+          folderCount: folderIds.length,
           words: words,
           isReconciling: board.isLoading,
           allCollapsed: allCollapsed,
@@ -146,7 +147,7 @@ class _PlanTabState extends ConsumerState<PlanTab> {
             if (allCollapsed) {
               _collapsed.clear();
             } else {
-              _collapsed.addAll(folderNames);
+              _collapsed.addAll(folderIds);
             }
           }),
           onAddChapter: () => _addChapter(projectId),
@@ -187,12 +188,12 @@ class _PlanTabState extends ConsumerState<PlanTab> {
       itemBuilder: (context, i) {
         if (i == 0) return header;
         return switch (items[i - 1]) {
-          PlanFolderHeaderItem(:final name, :final rows, :final open) => PlanFolderHeader(
-              key: ValueKey('folder-$name'),
+          PlanFolderHeaderItem(:final id, :final name, :final rows, :final open) => PlanFolderHeader(
+              key: ValueKey('folder-$id'),
               name: name,
               rows: rows,
               open: open,
-              onToggle: () => setState(() => _collapsed.contains(name) ? _collapsed.remove(name) : _collapsed.add(name)),
+              onToggle: () => setState(() => _collapsed.contains(id) ? _collapsed.remove(id) : _collapsed.add(id)),
             ),
           PlanRowItem(:final row, :final inFolder, :final last) => PlanRowFrame(
               key: ValueKey(row.id),

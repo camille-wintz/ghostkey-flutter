@@ -7,7 +7,10 @@ sealed class ChapterListRow {
 }
 
 class FolderRow extends ChapterListRow {
-  const FolderRow(this.name);
+  const FolderRow({required this.id, required this.name});
+
+  /// The folder's id — what collapse state and list keys go by.
+  final String id;
   final String name;
 }
 
@@ -27,7 +30,7 @@ class ChapterRow extends ChapterListRow {
 List<ChapterListRow> filterChapterTree(
   List<ChaptersListEntry> tree,
   String query,
-  bool Function(String folder) isCollapsed,
+  bool Function(String folderId) isCollapsed,
 ) {
   final needle = fold(query);
   final rows = <ChapterListRow>[];
@@ -42,8 +45,8 @@ List<ChapterListRow> filterChapterTree(
           }
           continue;
         }
-        rows.add(FolderRow(entry.name));
-        if (isCollapsed(entry.name)) continue;
+        rows.add(FolderRow(id: entry.id, name: entry.name));
+        if (isCollapsed(entry.id)) continue;
         for (final doc in entry.chapters) {
           rows.add(ChapterRow(doc, nested: true));
         }

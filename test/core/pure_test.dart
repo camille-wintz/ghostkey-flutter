@@ -41,7 +41,7 @@ void main() {
     test('flattens the tree and hides collapsed folders', () {
       final tree = <ChaptersListEntry>[
         doc('a', 'Prologue.md'),
-        ChapterGroup(name: 'Part One', chapters: [doc('b', 'One.md'), doc('c', 'Two.md')]),
+        ChapterGroup(id: 'g1', name: 'Part One', chapters: [doc('b', 'One.md'), doc('c', 'Two.md')]),
         doc('d', 'Epilogue.md'),
       ];
       final open = filterChapterTree(tree, '', (_) => false);
@@ -49,7 +49,7 @@ void main() {
       expect(open[1], isA<FolderRow>());
       expect((open[2] as ChapterRow).nested, isTrue);
 
-      final collapsed = filterChapterTree(tree, '', (f) => f == 'Part One');
+      final collapsed = filterChapterTree(tree, '', (f) => f == 'g1');
       expect(collapsed.length, 3);
 
       final searched = filterChapterTree(tree, 'two', (_) => true);
@@ -61,7 +61,7 @@ void main() {
   group('chapter reorder', () {
     final tree = <ChaptersListEntry>[
       doc('a', 'A.md'),
-      ChapterGroup(name: 'F', chapters: [doc('b', 'B.md'), doc('c', 'C.md')]),
+      ChapterGroup(id: 'gF', name: 'F', chapters: [doc('b', 'B.md'), doc('c', 'C.md')]),
       doc('d', 'D.md'),
     ];
     List<ChapterListRow> rows(bool Function(String) collapsed) => filterChapterTree(tree, '', collapsed);
@@ -83,7 +83,7 @@ void main() {
 
     test('a collapsed folder travels as a unit and keeps its chapters', () {
       // rows: A, F, D → move D (2) above F (1)
-      final next = moveChapterRow(tree, rows((f) => f == 'F'), 2, 1, (f) => f == 'F');
+      final next = moveChapterRow(tree, rows((f) => f == 'gF'), 2, 1, (f) => f == 'gF');
       expect(next.map((e) => e is ChapterGroup ? 'F' : (e as DocumentSummary).id), ['a', 'd', 'F']);
       expect((next[2] as ChapterGroup).chapters.length, 2);
     });
@@ -91,6 +91,50 @@ void main() {
     test('a folder row is never moved', () {
       final next = moveChapterRow(tree, rows((_) => false), 1, 0, (_) => false);
       expect(next.length, tree.length);
+    });
+
+    group('two folders with the same name', () {
+      final twins = <ChaptersListEntry>[
+        ChapterGroup(id: 'g1', name: 'Part', chapters: [doc('a', 'A.md'), doc('b', 'B.md')]),
+        doc('x', 'X.md'),
+        ChapterGroup(id: 'g2', name: 'Part', chapters: [doc('c', 'C.md')]),
+      ];
+      bool firstCollapsed(String id) => id == 'g1';
+
+      test('carry their ids through the wire', () {
+        final entry = chaptersListEntryFromJson({'id': 'g2', 'name': 'Part', 'chapters': <Object>[]});
+        expect(entry, isA<ChapterGroup>());
+        expect((entry as ChapterGroup).id, 'g2');
+        expect(entry.toJson(), {'id': 'g2', 'name': 'Part', 'chapters': <Object>[]});
+      });
+
+      test('collapse independently', () {
+        // rows: Part(g1), X, Part(g2), C
+        final drawn = filterChapterTree(twins, '', firstCollapsed);
+        expect(drawn.map((r) => r is FolderRow ? r.id : (r as ChapterRow).doc.id), ['g1', 'x', 'g2', 'c']);
+      });
+
+      test('reorder independently, keeping their ids', () {
+        // rows: Part(g1), X, Part(g2), C → move X (1) under the open g2 heading (2)
+        final drawn = filterChapterTree(twins, '', firstCollapsed);
+        final next = moveChapterRow(twins, drawn, 1, 2, firstCollapsed);
+        expect(next.length, 2);
+        final first = next[0] as ChapterGroup;
+        final second = next[1] as ChapterGroup;
+        expect(first.id, 'g1');
+        expect(first.chapters.map((c) => c.id), ['a', 'b']);
+        expect(second.id, 'g2');
+        expect(second.chapters.map((c) => c.id), ['x', 'c']);
+      });
+
+      test('a collapsed twin keeps its own chapters, not its namesake\'s', () {
+        bool secondCollapsed(String id) => id == 'g2';
+        // rows: Part(g1), A, B, X, Part(g2) → move X (3) to the top (0)
+        final drawn = filterChapterTree(twins, '', secondCollapsed);
+        final next = moveChapterRow(twins, drawn, 3, 0, secondCollapsed);
+        expect(next.map((e) => e is ChapterGroup ? e.id : (e as DocumentSummary).id), ['x', 'g1', 'g2']);
+        expect((next[2] as ChapterGroup).chapters.map((c) => c.id), ['c']);
+      });
     });
   });
 

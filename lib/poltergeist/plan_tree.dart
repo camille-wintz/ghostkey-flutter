@@ -12,7 +12,10 @@ class PlanRowEntry extends PlanTreeEntry {
 }
 
 class PlanFolderEntry extends PlanTreeEntry {
-  const PlanFolderEntry({required this.name, required this.rows});
+  const PlanFolderEntry({required this.id, required this.name, required this.rows});
+
+  /// The folder's id — what open/closed state and list keys go by.
+  final String id;
   final String name;
   final List<PlanChapter> rows;
 }
@@ -64,7 +67,7 @@ List<PlanTreeEntry> planTree(List<PlanChapter> rows, List<ChaptersListEntry> cha
         pushOrphansAfter(row.id);
       case ChapterGroup():
         final folderRows = [for (final c in entry.chapters) ?rowByDocId[c.id]];
-        entries.add(PlanFolderEntry(name: entry.name, rows: folderRows));
+        entries.add(PlanFolderEntry(id: entry.id, name: entry.name, rows: folderRows));
         for (final row in folderRows) {
           placed.add(row.id);
           pushOrphansAfter(row.id);
@@ -85,7 +88,8 @@ sealed class PlanListItem {
 }
 
 class PlanFolderHeaderItem extends PlanListItem {
-  const PlanFolderHeaderItem({required this.name, required this.rows, required this.open});
+  const PlanFolderHeaderItem({required this.id, required this.name, required this.rows, required this.open});
+  final String id;
   final String name;
   final List<PlanChapter> rows;
   final bool open;
@@ -100,7 +104,7 @@ class PlanRowItem extends PlanListItem {
   final bool last;
 }
 
-List<PlanListItem> planListItems(List<PlanTreeEntry> entries, bool Function(String folder) isOpen) {
+List<PlanListItem> planListItems(List<PlanTreeEntry> entries, bool Function(String folderId) isOpen) {
   final items = <PlanListItem>[];
   for (var i = 0; i < entries.length; i++) {
     final entry = entries[i];
@@ -109,8 +113,8 @@ List<PlanListItem> planListItems(List<PlanTreeEntry> entries, bool Function(Stri
         final next = i + 1 < entries.length ? entries[i + 1] : null;
         items.add(PlanRowItem(entry.row, inFolder: false, last: next is! PlanRowEntry));
       case PlanFolderEntry():
-        final open = isOpen(entry.name);
-        items.add(PlanFolderHeaderItem(name: entry.name, rows: entry.rows, open: open));
+        final open = isOpen(entry.id);
+        items.add(PlanFolderHeaderItem(id: entry.id, name: entry.name, rows: entry.rows, open: open));
         if (!open) continue;
         for (var j = 0; j < entry.rows.length; j++) {
           items.add(PlanRowItem(entry.rows[j], inFolder: true, last: j == entry.rows.length - 1));

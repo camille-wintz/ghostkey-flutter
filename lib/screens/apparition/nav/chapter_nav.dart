@@ -186,11 +186,11 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
                         itemBuilder: (context, i) {
                           final row = layout.chapterRows[i];
                           return switch (row) {
-                            FolderRow(:final name) => FolderTile(
-                                key: ValueKey('g-$name'),
+                            FolderRow(:final id, :final name) => FolderTile(
+                                key: ValueKey('g-$id'),
                                 name: name,
-                                open: !state.isCollapsed(name),
-                                onToggle: () => state.toggleFolder(name),
+                                open: !state.isCollapsed(id),
+                                onToggle: () => state.toggleFolder(id),
                               ),
                             ChapterRow(:final doc, :final nested) => HoldToDrag(
                                 key: ValueKey('c-${doc.id}'),

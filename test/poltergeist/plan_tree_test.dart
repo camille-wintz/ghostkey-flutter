@@ -22,7 +22,7 @@ String Function() ids() {
 void main() {
   final tree = [
     doc('a', 'One.md'),
-    ChapterGroup(name: 'Part 2', chapters: [doc('b', 'Two.md'), doc('c', 'Three.md')]),
+    ChapterGroup(id: 'g2', name: 'Part 2', chapters: [doc('b', 'Two.md'), doc('c', 'Three.md')]),
     doc('d', 'Four.md'),
   ];
 
@@ -39,7 +39,7 @@ void main() {
 
   test('a missing row trails the row it followed, at the top level', () {
     final plan = seedPlan(tree, now: now, newId: ids());
-    final without = [doc('a', 'One.md'), ChapterGroup(name: 'Part 2', chapters: [doc('b', 'Two.md')]), doc('d', 'Four.md')];
+    final without = [doc('a', 'One.md'), ChapterGroup(id: 'g2', name: 'Part 2', chapters: [doc('b', 'Two.md')]), doc('d', 'Four.md')];
     final reconciled = reconcilePlan(plan, without, now: now, newId: ids()).plan;
     final entries = planTree(reconciled.chapters, without);
     expect(entries.length, 4);
