@@ -48,6 +48,7 @@ enum Intent {
   plot,
   draft,
   worldbuild,
+  edit,
   pitch,
   guided;
 
@@ -55,6 +56,7 @@ enum Intent {
         'plot' => Intent.plot,
         'draft' => Intent.draft,
         'worldbuild' => Intent.worldbuild,
+        'edit' => Intent.edit,
         'pitch' => Intent.pitch,
         'guided' => Intent.guided,
         _ => null,
