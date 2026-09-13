@@ -181,6 +181,33 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                           ],
                         ),
                       ),
+                      const SizedBox(width: 12),
+                      // Across the header from Sign out at the bottom, so a
+                      // thumb reaching for one never lands on the other. Just
+                      // the can: a phone has no hover to spell it out on, and
+                      // the confirm it opens names what it deletes.
+                      Press(
+                        onPressed: _deleteAccount,
+                        enabled: !_deleting && !_signingOut,
+                        semanticLabel: 'Delete account',
+                        builder: (context, pressed) => Container(
+                          width: 44,
+                          height: 44,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: Ds.destructive.withValues(alpha: pressed ? 0.2 : 0.12),
+                            border: Border.all(color: Ds.destructive.withValues(alpha: pressed ? 1 : 0.55)),
+                            borderRadius: BorderRadius.circular(DsGeom.radius),
+                          ),
+                          child: _deleting
+                              ? SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Ds.destructive),
+                                )
+                              : Icon(LucideIcons.trash2, size: 16, color: Ds.destructive),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -266,34 +293,6 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                           ),
                         );
                       },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Press(
-                    onPressed: _deleteAccount,
-                    enabled: !_deleting && !_signingOut,
-                    semanticLabel: 'Delete account',
-                    builder: (context, pressed) => Container(
-                      height: 44,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: pressed ? Ds.veil : const Color(0x00000000),
-                        borderRadius: BorderRadius.circular(DsGeom.radius),
-                      ),
-                      child: _deleting
-                          ? SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Ds.destructive),
-                            )
-                          : Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(LucideIcons.trash2, size: 14, color: Ds.low),
-                                const SizedBox(width: 8),
-                                UiText('Delete account', step: DsText.ui, color: Ds.low),
-                              ],
-                            ),
                     ),
                   ),
                 ],
