@@ -30,20 +30,25 @@ class ModelDef {
   final String? quota;
 }
 
-/// The included set first, then the premium band, so the one padlock a Basic
-/// author sees sits at the bottom. The head of the list is the default, and it
-/// has to be a model every paying plan includes: Sol leads again since
-/// 2026-09-10, where Opus led for a day from the same date, when the
-/// `models.advanced` band dropped to Basic — the id stays on Sol and Opus
-/// because the padlock reads it, and the server keeps it granted at Basic so
-/// that read draws no lock.
+/// Auto first, then the included set, then the premium band, so the one
+/// padlock a Basic author sees sits at the bottom. The head of the list is the
+/// default, and every model behind it has to be one every paying plan
+/// includes.
 ///
-/// Sol over Opus because of the voice a new author meets first: on an empty
-/// project's opening turn Opus was cold and self-justifying where Sol was warm.
+/// Auto since 2026-09-13, and it is the one row that is not a registry model:
+/// the server hands the turn to Opus for work (plotting, edits, writing into
+/// the project) or Sol for feedback, off one Flash Lite call over the newest
+/// message (ghostkey-server/src/lib/chat/turnRoute.ts). Both sit on
+/// `models.advanced`, granted at Basic since 2026-09-10. Before that the seat
+/// was Sol — Opus worked best but was cold on a new author's opening turn, and
+/// the split is what stops that being a choice. Picking a model by name skips
+/// the router.
+///
 /// Keep this order in step with the server's `DEFAULT_CHAT_MODEL`
 /// (ghostkey-server/src/lib/chat/turn.ts) and the desktop catalog
 /// (ghost-key/src/shared/models/models.ts) — nothing gates the drift.
 const List<ModelDef> models = [
+  ModelDef(id: 'auto', name: 'Auto'),
   ModelDef(id: 'gpt-5-6-sol', name: 'GPT-5.6 Sol', capability: ModelCapability.advanced),
   ModelDef(id: 'opus-4-8', name: 'Claude Opus 4.8', capability: ModelCapability.advanced),
   ModelDef(id: 'gpt-5-6-terra', name: 'GPT-5.6 Terra'),
@@ -62,7 +67,7 @@ const List<ModelDef> models = [
   //   ModelDef(id: 'gpt-6-astra', name: 'GPT-6 Astra', capability: ModelCapability.premium, quota: 'fable_chat'),
 ];
 
-const String defaultModel = 'gpt-5-6-sol';
+const String defaultModel = 'auto';
 
 /// The weekly counter every chat message draws from.
 const String chatQuotaFeature = 'phantom_chat';
