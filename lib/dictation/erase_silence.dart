@@ -58,9 +58,18 @@
 // model cannot read what the decoder could not either, passing it through
 // buys nothing to set against the invention, and unreadable audio holds no
 // words to protect. If it cannot be read, it is dropped.
+//
+// And a THIRD speech test (2026-09-13, voicing.dart): whether anything above
+// the threshold is periodic. Done pressed more than a second after the last
+// word leaves a final chunk holding nothing but the writer stopping — a hand
+// to the phone, the tap — which is as loud and as uneven as speech, so the
+// two level tests pass it and the model turns it into a couple of words. A
+// voice has a pitch; a hand on a desk does not.
 
 import 'dart:math' as math;
 import 'dart:typed_data';
+
+import 'voicing.dart';
 
 /// 20 ms of audio per measurement — short enough to land a gap between
 /// words, long enough that one glottal pulse is not a region of its own.
@@ -206,10 +215,26 @@ Erasure eraseSilence(Int16List samples, int sampleRate, {double? sessionFloor}) 
   //
   // What it catches that the modulation test does not is non-speech sitting
   // AT room level that happens to fluctuate. What neither catches is
-  // fluctuating noise that is LOUD — a door, cutlery, a chair — which clears
-  // the room easily and reads as modulated. Separating that from a voice
-  // needs spectral structure, not levels, and is not attempted here.
+  // fluctuating noise that is LOUD — a door, cutlery, a chair, a hand on the
+  // desk — which clears the room easily and reads as modulated. Separating
+  // that from a voice needs periodicity, not levels: the third test, below,
+  // once the threshold that says which frames to judge is known.
   if (sessionFloor != null && sessionFloor > 0 && speechLevel < sessionFloor * roomSnr) {
+    return Erasure(speech: false, floor: floor);
+  }
+
+  // Which frames stand above the background — the ones this pass would
+  // keep, and the ones the voice test judges. Reads the chunk floor, never
+  // the session one: the threshold has to describe the noise actually
+  // present in this audio.
+  final threshold = math.min(floor * floorMultiple, speechLevel * speechFraction);
+  final loud = [for (final l in levels) l >= threshold];
+
+  // The third speech test: is any of what stands above the threshold a
+  // VOICE? Loud, uneven non-speech clears both tests above; what it lacks is
+  // a pitch. Asked before the cut-or-pass decision below on purpose, so a
+  // chunk that goes up untouched is judged too. See voicing.dart.
+  if (pitchedMs(pcm, rate, frameMs, loud) < minPitchedMs) {
     return Erasure(speech: false, floor: floor);
   }
 
@@ -220,11 +245,9 @@ Erasure eraseSilence(Int16List samples, int sampleRate, {double? sessionFloor}) 
   // erasing a syllable.
   if (speechLevel < floor * minSnr) return Erasure(speech: true, floor: floor);
 
-  final threshold = math.min(floor * floorMultiple, speechLevel * speechFraction);
   final padFrames = (padMs / frameMs).ceil();
   // Widen each speech region by the pad before anything is cut, so the pad
   // is measured from the speech rather than from the last surviving frame.
-  final loud = [for (final l in levels) l >= threshold];
   final keep = List<bool>.generate(levels.length, (i) {
     final from = math.max(0, i - padFrames);
     final to = math.min(loud.length, i + padFrames + 1);

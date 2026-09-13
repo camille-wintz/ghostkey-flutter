@@ -25,9 +25,26 @@ Int16List _room(int ms, int amplitude, [int seed = 1]) {
   ]);
 }
 
-/// Noise under a syllabic envelope — what separates speech from a room is
-/// that the level MOVES, so that is what the fixture has to have.
+/// A pulse train at a speaking pitch under a syllabic envelope, with a little
+/// breath on it. What separates speech from a room is that the level MOVES;
+/// what separates it from a hand on the desk is that it has a PITCH — so the
+/// fixture has to have both.
 Int16List _speech(int ms, int amplitude, [int seed = 2]) {
+  final rnd = Random(seed);
+  final n = ms * rate ~/ 1000;
+  const syllableMs = 80;
+  const period = rate ~/ 120; // 120 Hz
+  return Int16List.fromList([
+    for (var i = 0; i < n; i++)
+      (((i % period) / period * 2 - 1) * 0.9 + (rnd.nextDouble() * 2 - 1) * 0.1) *
+          ((i ~/ (syllableMs * rate ~/ 1000)).isEven ? amplitude : amplitude ~/ 20) ~/
+          1,
+  ]);
+}
+
+/// The same syllabic envelope over noise with no pitch in it — a rustle, a
+/// hand on the desk, cloth on the microphone.
+Int16List _rustle(int ms, int amplitude, [int seed = 2]) {
   final rnd = Random(seed);
   final n = ms * rate ~/ 1000;
   const syllableMs = 80;
@@ -37,6 +54,28 @@ Int16List _speech(int ms, int amplitude, [int seed = 2]) {
               ((i ~/ (syllableMs * rate ~/ 1000)).isEven ? amplitude : amplitude ~/ 20)) ~/
           1,
   ]);
+}
+
+/// The final chunk of a take when Done comes more than a second after the
+/// last word: room, a hand reaching across the desk (low, swelling, uneven),
+/// a click, room. Loud enough and uneven enough to pass every level gate.
+Int16List _stopping() {
+  final rnd = Random(4);
+  final n = 1250 * rate ~/ 1000;
+  final out = List<double>.generate(n, (_) => (rnd.nextDouble() * 2 - 1) * 130);
+  final rumble = 600 * rate ~/ 1000;
+  var lp = 0.0;
+  for (var i = 0; i < rumble; i++) {
+    lp = lp * 0.97 + (rnd.nextDouble() * 2 - 1) * 0.03;
+    final env = pow(sin(i / rumble * pi), 2) * (0.8 + 0.2 * sin(i / 400));
+    out[300 * rate ~/ 1000 + i] += lp * 1.2 * env * 32767;
+  }
+  for (final (at, amp) in [(880, 0.4), (960, 0.2)]) {
+    for (var i = 0; i < 6 * rate ~/ 1000; i++) {
+      out[at * rate ~/ 1000 + i] += (rnd.nextDouble() * 2 - 1) * amp * exp(-i / (1.5 * rate / 1000)) * 32767;
+    }
+  }
+  return Int16List.fromList([for (final v in out) v.clamp(-32768, 32767).toInt()]);
 }
 
 void main() {
@@ -92,9 +131,22 @@ void main() {
     expect(sentMs, greaterThanOrEqualTo(1500 + 2 * (padMs + maxGapMs) - 2 * frameMs));
   });
 
-  test('a rustle that does not clear the room is dropped', () {
-    // Modulated, so the movement test passes it — but its loudest moments
-    // are barely over a room measured across the rest of the take.
+  test('a hand reaching for the phone, and the tap, are dropped', () {
+    final verdict = eraseSilence(_stopping(), rate, sessionFloor: 0.004);
+    expect(verdict.speech, isFalse);
+    // …and with no session floor to compare to, since the two level tests
+    // cannot tell it from a voice and the pitch test does not need the room.
+    expect(eraseSilence(_stopping(), rate).speech, isFalse);
+  });
+
+  test('noise under a syllabic envelope is not a voice', () {
+    expect(eraseSilence(_rustle(4000, 6000), rate).speech, isFalse);
+  });
+
+  test('a quiet voice that does not clear the room is dropped', () {
+    // Modulated and pitched, so the movement and voice tests pass it — but
+    // its loudest moments are barely over a room measured across the rest
+    // of the take.
     final verdict = eraseSilence(_speech(4000, 200), rate, sessionFloor: 0.05);
     expect(verdict.speech, isFalse);
     // The same audio with no session floor to compare to is kept: a chunk
