@@ -138,7 +138,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     padding: EdgeInsets.fromLTRB(20, 28, 20, 0),
                     child: Column(
                       children: [
-                        BrandTitle('GhostKey.AI', align: TextAlign.center),
+                        BrandTitle('Ghostkey', align: TextAlign.center),
                         SizedBox(height: 10),
                         _Tagline(),
                       ],

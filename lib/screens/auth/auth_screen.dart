@@ -101,7 +101,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const BrandTitle('GhostKey.AI', align: TextAlign.center),
+              const BrandTitle('Ghostkey', align: TextAlign.center),
               const SizedBox(height: 10),
               UiText(_blurb[_mode]!, color: Ds.mid, align: TextAlign.center),
               const SizedBox(height: 32),
