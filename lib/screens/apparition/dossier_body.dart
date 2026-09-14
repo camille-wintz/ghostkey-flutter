@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../ds/tokens.dart';
 import '../../server/dto/bible.dart';
+import '../veil/gmc_grid.dart';
 
 /// A written dossier, as the sheet reads it: the glance grid, the overview,
 /// what the entity looks like, its sections, its ties, and the
@@ -157,14 +158,9 @@ class _GlanceGrid extends StatelessWidget {
     // Two columns on a hairline grid; an odd last cell spans the row rather
     // than leaving a hole showing the grid's own hairline as a block. A
     // character's GMC is sentences rather than phrases, so it stacks instead.
+    final gmc = gmcRows(cells);
+    if (gmc != null) return gmc.isEmpty ? const SizedBox.shrink() : GmcGrid(rows: gmc);
     final rows = <Widget>[];
-    if (isGmcGlance(cells)) {
-      for (final (i, cell) in cells.indexed) {
-        rows.add(_GlanceCell(cell, gmc: true));
-        if (i + 1 < cells.length) rows.add(const SizedBox(height: 1));
-      }
-      return _glanceFrame(rows);
-    }
     for (var i = 0; i < cells.length; i += 2) {
       final left = cells[i];
       final right = i + 1 < cells.length ? cells[i + 1] : null;
@@ -196,11 +192,8 @@ class _GlanceGrid extends StatelessWidget {
 }
 
 class _GlanceCell extends StatelessWidget {
-  const _GlanceCell(this.cell, {this.gmc = false});
+  const _GlanceCell(this.cell);
   final DossierGlanceItem cell;
-  /// A GMC cell names its question in words rather than as an eyebrow, and
-  /// carries what that question asks underneath it.
-  final bool gmc;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -209,18 +202,9 @@ class _GlanceCell extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (gmc) ...[
-              Text(cell.label, style: DsStyle.prose(DsText.body, color: Ds.accent200)),
-              if (glanceGmcMeaning[cell.label] != null)
-                Text(glanceGmcMeaning[cell.label]!,
-                    style: DsStyle.ui(DsText.eyebrow, color: Ds.faint)),
-              const SizedBox(height: 6),
-              Text(cell.value, style: DsStyle.prose(DsText.body, color: Ds.ink)),
-            ] else ...[
-              Text(cell.label.toUpperCase(), style: DsStyle.eyebrow()),
-              const SizedBox(height: 4),
-              Text(cell.value, style: DsStyle.ui(DsText.body, color: Ds.hi)),
-            ],
+            Text(cell.label.toUpperCase(), style: DsStyle.eyebrow()),
+            const SizedBox(height: 4),
+            Text(cell.value, style: DsStyle.ui(DsText.body, color: Ds.hi)),
           ],
         ),
       );

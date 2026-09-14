@@ -278,29 +278,48 @@ class DossierGlanceItem {
       DossierGlanceItem(label: asString(json['label']), value: asString(json['value']));
 }
 
-/// A CHARACTER's glance cells, in the order the server sends them: the story's
-/// GMC plus the arc the conflict demands. Fixed and server-enforced, so these
-/// are the one dossier labels a client may switch on. Places and terms have no
-/// GMC and keep model-chosen labels.
-const glanceGmc = ['Goal', 'Motivation', 'Conflict', 'Arc'];
+/// A CHARACTER's glance questions, in the order the server sends them: the
+/// story's GMC plus the arc the conflict demands, each answered externally and
+/// internally. A cell's label is `"<Side> <question>"` ("External goal",
+/// "Internal arc"). Fixed and server-enforced, so these are the one dossier
+/// labels a client may switch on. Places and terms have no GMC and keep
+/// model-chosen labels.
+const glanceGmcQuestions = ['Goal', 'Motivation', 'Conflict', 'Arc'];
+const glanceGmcSides = ['External', 'Internal'];
 
-/// What each GMC cell asks, shown under the label — "Motivation" alone reads
-/// as "how motivated they are" rather than as the backstory the want comes
-/// out of.
+String gmcLabel(String side, String question) => '$side ${question.toLowerCase()}';
+
+/// What each GMC question asks, shown under it — "Motivation" alone reads as
+/// "how motivated they are" rather than as why they want it.
 const glanceGmcMeaning = {
   'Goal': 'What they want',
-  'Motivation': 'The backstory that makes them want it',
+  'Motivation': 'Why they want it',
   'Conflict': 'What stands in their way',
   'Arc': 'How they have to change to overcome it',
 };
 
-/// Whether a glance is a character's GMC — the cells are sentences then, not
-/// the eight-word phrases the two-column grid was drawn for, so the surfaces
-/// stack them instead. Read off the labels rather than the entity type: the
-/// cells are all these widgets are handed, and a character with none of them
-/// (nothing in the excerpts to fill one) correctly reads as not-GMC.
-bool isGmcGlance(List<DossierGlanceItem> glance) =>
-    glance.isNotEmpty && glance.every((c) => glanceGmc.contains(c.label));
+/// One question of the GMC grid: its two answers, either possibly "".
+typedef GmcRow = ({String question, String meaning, String external, String internal});
+
+/// A glance laid out as the GMC grid — one row per question with at least one
+/// side filled — or null when it is not a GMC. The cells are sentences then,
+/// not the eight-word phrases the two-column grid was drawn for. Read off the
+/// labels rather than the entity type: the cells are all these widgets are
+/// handed, and a character with none of them correctly reads as not-GMC.
+List<GmcRow>? gmcRows(List<DossierGlanceItem> glance) {
+  final known = {for (final q in glanceGmcQuestions) for (final s in glanceGmcSides) gmcLabel(s, q)};
+  if (glance.isEmpty || !glance.every((c) => known.contains(c.label))) return null;
+  final byLabel = {for (final c in glance) c.label: c.value};
+  return [
+    for (final q in glanceGmcQuestions)
+      (
+        question: q,
+        meaning: glanceGmcMeaning[q]!,
+        external: byLabel[gmcLabel('External', q)] ?? '',
+        internal: byLabel[gmcLabel('Internal', q)] ?? '',
+      ),
+  ].where((r) => r.external.isNotEmpty || r.internal.isNotEmpty).toList();
+}
 
 class DossierTie {
   const DossierTie({required this.key, required this.name, required this.relation});
