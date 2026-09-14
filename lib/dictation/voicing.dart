@@ -18,8 +18,11 @@
 // the noise clips; the line is 0.2.
 //
 // A DROP gate, so it errs towards the writer: only frames already above the
-// erasure threshold are judged, a chunk needs just [minPitchedMs] of them,
-// and the count stops the moment it gets there.
+// erasure threshold are judged, and a chunk needs just [minPitchedMs] of them.
+//
+// What periodicity cannot separate is a voice from MUSIC, which is pitched
+// too. That is erase_silence.dart's fourth test, which reads how loud the
+// frames found here are against the author's own voice.
 
 import 'dart:typed_data';
 
@@ -86,9 +89,11 @@ bool isPitched(Int16List samples, int rate, int start) {
   return false;
 }
 
-/// Milliseconds of pitched audio among the frames [judge] marks true, where
-/// frame `i` is the [frameMs] starting at `i * frameMs`. Returns as soon as
-/// [minPitchedMs] is reached, so the answer is "at least this much".
+/// The indices of the pitched frames among those [judge] marks true, where
+/// frame `i` is the [frameMs] starting at `i * frameMs`; each is [frameMs] of
+/// voice. Every marked frame is judged rather than stopping at
+/// [minPitchedMs], because the caller also reads how LOUD the voice is off
+/// these frames, and an early stop would read it off the first words only.
 ///
 /// When more than [maxJudgedFrames] frames are marked, every k-th one is
 /// judged — a long chunk is sampled across its whole length rather than only
@@ -96,16 +101,15 @@ bool isPitched(Int16List samples, int rate, int start) {
 /// standing in for twenty would let a single false positive pass a
 /// ten-minute chunk of noise, and speech is dense enough with pitched frames
 /// that sampling it costs nothing.
-int pitchedMs(Int16List samples, int rate, int frameMs, List<bool> judge) {
+List<int> pitchedFrames(Int16List samples, int rate, int frameMs, List<bool> judge) {
   final marked = [
     for (var i = 0; i < judge.length; i++)
       if (judge[i]) i,
   ];
   final stride = marked.length > maxJudgedFrames ? (marked.length / maxJudgedFrames).ceil() : 1;
   final frameLen = frameMs * rate ~/ 1000;
-  var ms = 0;
-  for (var k = 0; k < marked.length && ms < minPitchedMs; k += stride) {
-    if (isPitched(samples, rate, marked[k] * frameLen)) ms += frameMs;
-  }
-  return ms;
+  return [
+    for (var k = 0; k < marked.length; k += stride)
+      if (isPitched(samples, rate, marked[k] * frameLen)) marked[k],
+  ];
 }

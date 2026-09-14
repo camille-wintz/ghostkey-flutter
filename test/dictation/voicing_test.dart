@@ -41,14 +41,12 @@ void main() {
     expect(isPitched(_tone(30, 120), rate, 0), isFalse);
   });
 
-  test('pitchedMs counts only the frames it is asked about and stops early', () {
+  test('pitchedFrames judges only the frames it is asked about, all of them', () {
     final chunk = _tone(2000, 120);
-    final all = List<bool>.filled(100, true);
-    expect(pitchedMs(chunk, rate, 20, all), minPitchedMs);
-    final none = List<bool>.filled(100, false);
-    expect(pitchedMs(chunk, rate, 20, none), 0);
-    final two = [for (var i = 0; i < 100; i++) i < 2];
-    expect(pitchedMs(chunk, rate, 20, two), 40);
+    expect(pitchedFrames(chunk, rate, 20, List<bool>.filled(100, true)), hasLength(100));
+    expect(pitchedFrames(chunk, rate, 20, List<bool>.filled(100, false)), isEmpty);
+    final two = [for (var i = 0; i < 100; i++) i == 3 || i == 40];
+    expect(pitchedFrames(chunk, rate, 20, two), [3, 40]);
   });
 
   test('a long chunk is sampled across its length, not read from the start', () {
@@ -60,6 +58,6 @@ void main() {
       ..setRange(0, noise.length, noise)
       ..setRange(noise.length, noise.length + voice.length, voice);
     final frames = chunk.length ~/ (20 * rate ~/ 1000);
-    expect(pitchedMs(chunk, rate, 20, List<bool>.filled(frames, true)), greaterThanOrEqualTo(minPitchedMs));
+    expect(pitchedFrames(chunk, rate, 20, List<bool>.filled(frames, true)).length * 20, greaterThanOrEqualTo(minPitchedMs));
   });
 }
