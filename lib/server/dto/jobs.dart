@@ -42,6 +42,11 @@ class JobProgress {
 
 /// One job's state. `errorDetail` is the author-facing explanation — render it
 /// rather than branching on `error`, which is a wire code.
+///
+/// `subject` is what the run is about in the kind's own vocabulary (an
+/// `edit_pass` names a chapter's document id or `outline`); `result` is what
+/// a finished run left on its row when the kind keeps its answer there (the
+/// pass's notes, an `EditPassResult`). Both null for every other kind.
 class JobSnapshot {
   const JobSnapshot({
     required this.id,
@@ -53,6 +58,8 @@ class JobSnapshot {
     required this.error,
     required this.errorDetail,
     required this.summary,
+    required this.subject,
+    required this.result,
   });
 
   final String id;
@@ -64,6 +71,8 @@ class JobSnapshot {
   final String? error;
   final String? errorDetail;
   final String? summary;
+  final String? subject;
+  final Object? result;
 
   bool get isRunning => status == JobStatus.running;
 
@@ -77,5 +86,7 @@ class JobSnapshot {
         error: json['error'] as String?,
         errorDetail: json['error_detail'] as String?,
         summary: json['summary'] as String?,
+        subject: json['subject'] as String?,
+        result: json['result'],
       );
 }
