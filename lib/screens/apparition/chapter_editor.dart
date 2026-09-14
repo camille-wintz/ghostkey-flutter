@@ -349,55 +349,61 @@ class _Page extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    return CustomScrollView(
       controller: scroll,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-      padding: const EdgeInsets.only(top: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.only(top: 8),
           // The controller notifies for readOnly only — never per keystroke.
-          ListenableBuilder(
-            listenable: editor,
-            builder: (context, _) => TextField(
-              controller: editor.textController,
-              focusNode: focus,
-              readOnly: editor.readOnly,
-              inputFormatters: [editor.inputFormatter],
-              maxLines: null,
-              keyboardType: TextInputType.multiline,
-              textCapitalization: TextCapitalization.sentences,
-              textInputAction: TextInputAction.newline,
-              autocorrect: true,
-              enableSuggestions: true,
-              cursorColor: Ds.accent,
-              // The whole band above the keyboard, so a caret never parks
-              // behind the +.
-              scrollPadding: const EdgeInsets.only(top: 8, bottom: _toolsHeight + 12),
-              style: TextStyle(
-                fontFamily: DsFonts.manuscript,
-                fontSize: DsText.prose.size,
-                height: DsText.prose.height,
-                color: Ds.ink,
-                leadingDistribution: TextLeadingDistribution.even,
-              ),
-              decoration: InputDecoration(
-                isDense: true,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-                hintText: 'Start writing…',
-                hintStyle: TextStyle(
+          sliver: SliverToBoxAdapter(
+            child: ListenableBuilder(
+              listenable: editor,
+              builder: (context, _) => TextField(
+                controller: editor.textController,
+                focusNode: focus,
+                readOnly: editor.readOnly,
+                inputFormatters: [editor.inputFormatter],
+                maxLines: null,
+                keyboardType: TextInputType.multiline,
+                textCapitalization: TextCapitalization.sentences,
+                textInputAction: TextInputAction.newline,
+                autocorrect: true,
+                enableSuggestions: true,
+                cursorColor: Ds.accent,
+                // The whole band above the keyboard, so a caret never parks
+                // behind the +.
+                scrollPadding: const EdgeInsets.only(top: 8, bottom: _toolsHeight + 12),
+                style: TextStyle(
                   fontFamily: DsFonts.manuscript,
                   fontSize: DsText.prose.size,
                   height: DsText.prose.height,
-                  color: Ds.faint,
+                  color: Ds.ink,
+                  leadingDistribution: TextLeadingDistribution.even,
+                ),
+                decoration: InputDecoration(
+                  isDense: true,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                  hintText: 'Start writing…',
+                  hintStyle: TextStyle(
+                    fontFamily: DsFonts.manuscript,
+                    fontSize: DsText.prose.size,
+                    height: DsText.prose.height,
+                    color: Ds.faint,
+                  ),
                 ),
               ),
             ),
           ),
-          // The blank foot of the page is still the page: a tap there puts
-          // the caret at the end, as it does on paper.
-          GestureDetector(
+        ),
+        // The blank foot of the page is still the page: a tap there puts the
+        // caret at the end, as it does on paper. It fills the viewport under a
+        // short chapter — sized to the padding alone, the screen below it was
+        // dead to a tap.
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {
               final end = editor.text.length;
@@ -406,8 +412,8 @@ class _Page extends StatelessWidget {
             },
             child: SizedBox(height: bottomPadding),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
