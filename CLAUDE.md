@@ -134,7 +134,9 @@ adb install -r build/app/outputs/flutter-apk/app-debug.apk
 adb shell am start -n com.ghostkey.mobile.dev/com.ghostkey.ghostkey.MainActivity
 ```
 
-`.vscode/launch.json` carries staging / prod / LAN configurations.
+The last three lines in one: `dart tool/phone.dart [staging|prod|lan|<url>]`
+(staging by default). Its server URLs mirror `.vscode/launch.json`, which
+carries the same staging / prod / LAN configurations — change one, change both.
 `flutter analyze` and `flutter test` are the gates; a debug APK on the phone
 is the proof.
 
