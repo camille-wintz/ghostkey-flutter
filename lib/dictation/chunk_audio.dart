@@ -24,7 +24,7 @@ class ChunkPayload {
 
 /// The verdict on one chunk.
 class PreparedChunk {
-  const PreparedChunk({this.payload, this.floor = 0, this.voice = 0, this.removedMs = 0, this.dropped});
+  const PreparedChunk({this.payload, this.floor = 0, this.removedMs = 0, this.dropped});
 
   /// What to upload, or null to drop the chunk without a round trip or the
   /// charge.
@@ -36,10 +36,6 @@ class PreparedChunk {
   /// when no reading could be taken, which is not a reading of silence.
   final double floor;
 
-  /// How loud the voice in it was, to pool into [sessionVoiceOf]. 0 when it
-  /// was dropped.
-  final double voice;
-
   final int removedMs;
 
   /// Why it was dropped, for the log. Null when it was not.
@@ -50,11 +46,9 @@ class PreparedChunk {
 ///
 /// [sessionFloor] is [sessionFloorOf] over the floors of this take's recent
 /// chunks; null on the first chunk, where there is nothing to compare to yet.
-/// [sessionVoice] is [sessionVoiceOf] over the voices of its kept chunks.
 Future<PreparedChunk> prepareChunk(
   String path, {
   double? sessionFloor,
-  double? sessionVoice,
   NativeRecorder? recorder,
 }) async {
   final file = File(path);
@@ -93,14 +87,13 @@ Future<PreparedChunk> prepareChunk(
     unawaited(_discard(decoded.path));
   }
 
-  final erased = eraseSilence(samples, decoded.sampleRate, sessionFloor: sessionFloor, sessionVoice: sessionVoice);
+  final erased = eraseSilence(samples, decoded.sampleRate, sessionFloor: sessionFloor);
   if (!erased.speech) {
-    return PreparedChunk(floor: erased.floor, dropped: 'it held no voice, or none as loud as the author\'s');
+    return PreparedChunk(floor: erased.floor, dropped: 'nothing in it stood above its own noise floor');
   }
   final wav = erased.wav;
   return PreparedChunk(
     floor: erased.floor,
-    voice: erased.voice,
     removedMs: erased.removedMs,
     payload: wav == null
         ? ChunkPayload(bytes: bytes, filename: 'chunk.m4a', contentType: 'audio/m4a')

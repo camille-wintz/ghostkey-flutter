@@ -79,7 +79,6 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
   // answer that question about itself (its own quietest frames ARE the
   // room), so it is answered against this instead. See erase_silence.dart.
   final List<double> _floors = [];
-  final List<double> _voices = [];
 
   // A cut/pause/stop resolves with the path of the file being finished; its
   // `chunk` event follows on the capture thread's own time. Waiters by path,
@@ -144,7 +143,6 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
       // floors the silence pass judges whole chunks against.
       _policy.room.reset();
       _floors.clear();
-      _voices.clear();
       WidgetsBinding.instance.addObserver(this);
       notifyListeners();
     } on RecorderStartException catch (e) {
@@ -374,12 +372,7 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
       // whole chunk stood inside its own noise floor, or when its audio could
       // not be read at all — a second opinion on `chunkVoiced`, taken per
       // region and relative to this room rather than against a fixed level.
-      final prepared = await prepareChunk(
-        path,
-        sessionFloor: sessionFloorOf(_floors),
-        sessionVoice: sessionVoiceOf(_voices),
-        recorder: _native,
-      );
+      final prepared = await prepareChunk(path, sessionFloor: sessionFloorOf(_floors), recorder: _native);
       // Pooled before the verdict is read, and a dropped chunk's reading is
       // pooled too — a chunk that turned out to be nothing but room is the
       // cleanest measurement of that room the session will get.
@@ -387,9 +380,6 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
         _floors.add(prepared.floor);
         if (_floors.length > sessionFloorChunks) _floors.removeAt(0);
       }
-      // The author's voice, learnt from the take's first voiced chunks and
-      // then held — see voiceFraction in erase_silence.dart.
-      if (prepared.voice > 0 && _voices.length < sessionVoiceChunks) _voices.add(prepared.voice);
       final audio = prepared.payload;
       if (audio == null) {
         debugPrint('[dictation] chunk dropped — ${prepared.dropped}');

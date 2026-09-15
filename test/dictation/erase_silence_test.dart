@@ -56,26 +56,6 @@ Int16List _rustle(int ms, int amplitude, [int seed = 2]) {
   ]);
 }
 
-/// A melody from across the room: one sawtooth line stepping through notes,
-/// each note swelling and fading, over a quiet room. Pitched and modulated,
-/// so it is a voice to every test that reads shape rather than level.
-Int16List _music(int ms, int amplitude, [int seed = 5]) {
-  final rnd = Random(seed);
-  final n = ms * rate ~/ 1000;
-  const noteMs = 250;
-  const notes = [220.0, 247.0, 262.0, 294.0, 330.0, 294.0, 262.0, 196.0];
-  final noteLen = noteMs * rate ~/ 1000;
-  return Int16List.fromList([
-    for (var i = 0; i < n; i++)
-      (() {
-        final hz = notes[(i ~/ noteLen) % notes.length];
-        final phase = (i * hz / rate) % 1;
-        final env = sin((i % noteLen) / noteLen * pi);
-        return ((phase * 2 - 1) * env * amplitude + (rnd.nextDouble() * 2 - 1) * 120) ~/ 1;
-      })(),
-  ]);
-}
-
 /// The final chunk of a take when Done comes more than a second after the
 /// last word: room, a hand reaching across the desk (low, swelling, uneven),
 /// a click, room. Loud enough and uneven enough to pass every level gate.
@@ -174,24 +154,6 @@ void main() {
     expect(eraseSilence(_speech(4000, 200), rate).speech, isTrue);
   });
 
-  test('music in the room is dropped once the author has spoken', () {
-    final author = eraseSilence(_speech(4000, 6000), rate);
-    expect(author.speech, isTrue);
-    expect(author.voice, greaterThan(0));
-    // Pitched, moving and above the room: every shape test passes it…
-    expect(eraseSilence(_music(4000, 1500), rate, sessionFloor: 0.004).speech, isTrue);
-    // …and only its level, against the author's, gives it away.
-    final music = eraseSilence(_music(4000, 1500), rate, sessionFloor: 0.004, sessionVoice: author.voice);
-    expect(music.speech, isFalse);
-    expect(music.voice, 0, reason: 'a dropped chunk is no reading of the voice');
-  });
-
-  test('the author a little quieter than they started is still the author', () {
-    final author = eraseSilence(_speech(4000, 6000), rate);
-    final softer = eraseSilence(_speech(4000, 3000, 7), rate, sessionFloor: 0.004, sessionVoice: author.voice);
-    expect(softer.speech, isTrue);
-  });
-
   test('a chunk recorded above 16 kHz is decimated, not refused', () {
     final at48k = _concat([
       _speech(1200, 6000).let48k(),
@@ -218,22 +180,6 @@ void main() {
     expect(view.getUint32(40, Endian.little), 8); // 4 samples
     expect(wav.length, 44 + 8);
     expect(view.getInt16(44 + 6, Endian.little), 32767);
-  });
-
-  group('sessionVoiceOf', () {
-    test('is null until a chunk has held a voice', () {
-      expect(sessionVoiceOf([]), isNull);
-      expect(sessionVoiceOf([0, 0]), isNull);
-    });
-
-    test('a take that opens on the music corrects itself when the author speaks', () {
-      expect(sessionVoiceOf([0.01, 0.08]), 0.08);
-    });
-
-    test('is the median of the first few, and then holds', () {
-      expect(sessionVoiceOf([0.06, 0.01, 0.08]), 0.06);
-      expect(sessionVoiceOf([0.06, 0.01, 0.08, 0.001, 0.001, 0.001]), 0.06);
-    });
   });
 
   group('sessionFloorOf', () {

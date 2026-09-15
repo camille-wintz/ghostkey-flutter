@@ -65,14 +65,6 @@
 // to the phone, the tap — which is as loud and as uneven as speech, so the
 // two level tests pass it and the model turns it into a couple of words. A
 // voice has a pitch; a hand on a desk does not.
-//
-// And a FOURTH (2026-09-14): whether the voice is loud enough to be the
-// author's. Background music is pitched, modulated and above the room, so it
-// passes all three, and the model wrote words over it (Cleo, dictating with
-// music on). What music in the room is not is as loud as someone speaking
-// into the microphone, so the take learns the author's level from its first
-// voiced chunks ([sessionVoiceOf]) and drops a chunk whose voice sits well
-// under it — see [voiceFraction].
 
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -133,21 +125,6 @@ const double speechFraction = 0.25;
 /// How many recent chunks the session floor is taken from.
 const int sessionFloorChunks = 8;
 
-/// How far under the author's voice a chunk's voice may sit and still be
-/// theirs — a third of the level, about 9.5 dB. Music or a video in the room
-/// reaches the microphone from metres away and sits well under that; one
-/// author's chunks vary by a few dB. Tuned towards the drop (a missed word is
-/// fine, an invented one is not): an author who moves the phone a long way
-/// off loses those words, and music as loud at the mic as the author's voice
-/// is not caught.
-const double voiceFraction = 1 / 3;
-
-/// How many kept chunks the author's voice is learnt from — the FIRST ones of
-/// the take, and then it holds. Unlike the room floor it must not follow the
-/// take: the chunks this test drops are the ones that would walk it down, and
-/// minutes of music between two sentences would become the voice.
-const int sessionVoiceChunks = 3;
-
 /// Less kept audio than this and there was no speech here — the same floor
 /// the chunk gate uses, applied to what survived rather than to what was
 /// recorded.
@@ -171,7 +148,7 @@ const int maxWavBytes = 9 * 1024 * 1024;
 
 /// What [eraseSilence] decided about one chunk.
 class Erasure {
-  const Erasure({required this.speech, this.wav, this.removedMs = 0, this.floor = 0, this.voice = 0});
+  const Erasure({required this.speech, this.wav, this.removedMs = 0, this.floor = 0});
 
   /// False when nothing in the chunk stood above its own noise floor, or the
   /// audio could not be read at all: there is nothing here to transcribe and
@@ -192,11 +169,6 @@ class Erasure {
   /// to get. 0 when the chunk could not be analysed, which is not the same
   /// as a reading of silence.
   final double floor;
-
-  /// How loud the voice in this chunk is — the median level of its pitched
-  /// frames — to pool into [sessionVoiceOf]. 0 on every dropped chunk: a
-  /// chunk that was not the author's is no reading of their voice.
-  final double voice;
 }
 
 /// Remove the stretches of a dictation chunk that hold no speech.
@@ -205,11 +177,10 @@ class Erasure {
 /// its rate. [sessionFloor] is the room's level when nobody is speaking,
 /// measured across this session's recent chunks; omit it on the first chunk
 /// of a take, where the chunk is judged on its own — which is all this pass
-/// could ever do before. [sessionVoice] is the author's voice level learnt
-/// from this take's first voiced chunks; omit it until there is one.
+/// could ever do before.
 ///
 /// Never throws. `speech: false` is the verdict to act on.
-Erasure eraseSilence(Int16List samples, int sampleRate, {double? sessionFloor, double? sessionVoice}) {
+Erasure eraseSilence(Int16List samples, int sampleRate, {double? sessionFloor}) {
   const unreadable = Erasure(speech: false);
 
   final rate = sampleRate > targetRate ? targetRate : sampleRate;
@@ -263,16 +234,7 @@ Erasure eraseSilence(Int16List samples, int sampleRate, {double? sessionFloor, d
   // VOICE? Loud, uneven non-speech clears both tests above; what it lacks is
   // a pitch. Asked before the cut-or-pass decision below on purpose, so a
   // chunk that goes up untouched is judged too. See voicing.dart.
-  final pitched = pitchedFrames(pcm, rate, frameMs, loud);
-  if (pitched.length * frameMs < minPitchedMs) {
-    return Erasure(speech: false, floor: floor);
-  }
-
-  // The fourth: is the voice the AUTHOR's? Read as the median of the pitched
-  // frames, so a chunk is judged by the bulk of its voice rather than by one
-  // loud note or one soft word.
-  final voice = _percentile([for (final i in pitched) levels[i]]..sort(), 0.5);
-  if (sessionVoice != null && sessionVoice > 0 && voice < sessionVoice * voiceFraction) {
+  if (pitchedMs(pcm, rate, frameMs, loud) < minPitchedMs) {
     return Erasure(speech: false, floor: floor);
   }
 
@@ -281,7 +243,7 @@ Erasure eraseSilence(Int16List samples, int sampleRate, {double? sessionFloor, d
   // clipping it. When it does not, the chunk goes as recorded — with the
   // silence still in it, which is worse than erasing it and much better than
   // erasing a syllable.
-  if (speechLevel < floor * minSnr) return Erasure(speech: true, floor: floor, voice: voice);
+  if (speechLevel < floor * minSnr) return Erasure(speech: true, floor: floor);
 
   final padFrames = (padMs / frameMs).ceil();
   // Widen each speech region by the pad before anything is cut, so the pad
@@ -328,15 +290,15 @@ Erasure eraseSilence(Int16List samples, int sampleRate, {double? sessionFloor, d
   }
 
   final removedMs = removedFrames * frameMs;
-  if (removedMs < minRemovedMs) return Erasure(speech: true, floor: floor, voice: voice);
+  if (removedMs < minRemovedMs) return Erasure(speech: true, floor: floor);
 
   final rebuilt = Int16List(out.length * frameLen);
   for (var n = 0; n < out.length; n++) {
     rebuilt.setRange(n * frameLen, (n + 1) * frameLen, pcm, out[n] * frameLen);
   }
   final wav = encodeWav(rebuilt, rate);
-  if (wav.length > maxWavBytes) return Erasure(speech: true, floor: floor, voice: voice);
-  return Erasure(speech: true, wav: wav, removedMs: removedMs, floor: floor, voice: voice);
+  if (wav.length > maxWavBytes) return Erasure(speech: true, floor: floor);
+  return Erasure(speech: true, wav: wav, removedMs: removedMs, floor: floor);
 }
 
 /// The session's noise floor from the chunk floors seen so far: the quietest
@@ -353,19 +315,6 @@ double? sessionFloorOf(List<double> floors) {
   if (recent.isEmpty) return null;
   final window = recent.length > sessionFloorChunks ? recent.sublist(recent.length - sessionFloorChunks) : recent;
   return window.reduce(math.min);
-}
-
-/// The author's voice level from the voice readings of this take's kept
-/// chunks, oldest first: the median of the first [sessionVoiceChunks], or null
-/// before any chunk has held a voice.
-///
-/// The median of the first few rather than the first alone, so a take that
-/// opens on a chunk of the music corrects itself as soon as the author has
-/// spoken twice — with two readings the upper one wins. Louder than the
-/// calibration always passes; only quieter is judged.
-double? sessionVoiceOf(List<double> voices) {
-  final first = voices.where((v) => v > 0).take(sessionVoiceChunks).toList()..sort();
-  return first.isEmpty ? null : _percentile(first, 0.5);
 }
 
 /// Mono 16-bit PCM in a WAV container. Uncompressed on purpose: the point is
