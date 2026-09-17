@@ -139,6 +139,30 @@ class ChatSessionSummary {
       );
 }
 
+/// What a turn opened for the author to look at: a chapter (`id` is the
+/// document id), one of their boards (`id` is the StoryMap id), the Outline
+/// page or the Chapters page (neither carries an id). The desk seats it beside
+/// the conversation; the phone reviews it behind a button. `title` is a
+/// courtesy for a header; the id is the address.
+class ChatView {
+  const ChatView({required this.kind, this.id, this.title});
+  final ChatViewKind kind;
+  final String? id;
+  final String? title;
+
+  /// Null for a shape this client does not know — read as nothing open.
+  static ChatView? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final kind = ChatViewKind.values.where((k) => k.name == json['kind']).firstOrNull;
+    if (kind == null) return null;
+    return ChatView(kind: kind, id: json['id'] as String?, title: json['title'] as String?);
+  }
+
+  Json toJson() => {'kind': kind.name, 'id': ?id, 'title': ?title};
+}
+
+enum ChatViewKind { chapter, board, outline, chapters }
+
 class ChatSession extends ChatSessionSummary {
   const ChatSession({
     required super.id,
@@ -148,10 +172,12 @@ class ChatSession extends ChatSessionSummary {
     required this.projectId,
     required this.messages,
     required this.createdAt,
+    this.view,
   });
   final String projectId;
   final List<ChatMessage> messages;
   final String createdAt;
+  final ChatView? view;
 
   static ChatSession fromJson(Json json) => ChatSession(
         id: asString(json['id']),
@@ -161,6 +187,7 @@ class ChatSession extends ChatSessionSummary {
         projectId: asString(json['project_id']),
         messages: asJsonList(json['messages']).map(ChatMessage.fromJson).toList(),
         createdAt: asString(json['created_at']),
+        view: ChatView.fromJson(json['view']),
       );
 }
 
@@ -296,6 +323,7 @@ sealed class ChatTurnFrame {
   static ChatTurnFrame fromJson(Json json) {
     if (json['step'] is Map) return StepFrame(ChatToolStep.fromJson(asJson(json['step'])));
     if (json['result'] is Map) return ResultFrame(ChatTurnResult.fromJson(asJson(json['result'])));
+    if (json['view'] is Map) return ViewFrame(ChatView.fromJson(json['view']));
     if (json['error'] is String) return ErrorFrame(asString(json['error']), json['detail'] as String?);
     return TextFrame(asString(json['text']));
   }
@@ -304,6 +332,12 @@ sealed class ChatTurnFrame {
 class StepFrame extends ChatTurnFrame {
   const StepFrame(this.step);
   final ChatToolStep step;
+}
+
+/// A tool opened something for the author to look at.
+class ViewFrame extends ChatTurnFrame {
+  const ViewFrame(this.view);
+  final ChatView? view;
 }
 
 class TextFrame extends ChatTurnFrame {

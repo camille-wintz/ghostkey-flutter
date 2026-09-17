@@ -23,10 +23,16 @@ Future<ChatSession> getSession(String projectId, String sessionId) async {
   return ChatSession.fromJson(asJson(res.jsonObject()['session']));
 }
 
-Future<ChatSession> createSession(String projectId, {required String title, List<ChatMessage>? messages}) async {
+Future<ChatSession> createSession(
+  String projectId, {
+  required String title,
+  List<ChatMessage>? messages,
+  ChatView? view,
+}) async {
   final res = await apiFetch('${_base(projectId)}/sessions', method: 'POST', body: {
     'title': title,
     'messages': ?messages?.map((m) => m.toJson()).toList(),
+    'view': ?view?.toJson(),
   });
   return ChatSession.fromJson(asJson(res.jsonObject()['session']));
 }
@@ -84,6 +90,7 @@ Future<TurnHandle> streamTurn(
   String? sessionId,
   required void Function(ChatToolStep step) onStep,
   required void Function(String chunk) onText,
+  required void Function(ChatView view) onView,
 }) async {
   final res = await apiStream(
     '${_base(projectId)}/turn',
@@ -94,6 +101,9 @@ Future<TurnHandle> streamTurn(
       'model': ?model,
       'manuscript': ?manuscript,
       'session_id': ?sessionId,
+      // The phone has no desk beside the chat, but what a tool opens is
+      // still where its work landed: the Review button seats it on demand.
+      'views': 'beside',
     },
   );
 
@@ -114,6 +124,10 @@ Future<TurnHandle> streamTurn(
       switch (ChatTurnFrame.fromJson(json)) {
         case StepFrame(:final step):
           onStep(step);
+        case ViewFrame(:final view?):
+          onView(view);
+        case ViewFrame():
+          break;
         case TextFrame(:final text):
           onText(text);
         case ResultFrame(result: final r):

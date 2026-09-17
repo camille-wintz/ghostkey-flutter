@@ -74,19 +74,22 @@ Future<JobOutcome> awaitJob(String projectId, JobSnapshot job, JobWatch watch) a
 
 /// Start a job and watch it to the end. A 409 `job_running` is answered by
 /// attaching to that run, never by reporting a failure; if it has already
-/// finished in the gap, `JobFinished(null)`.
+/// finished in the gap, `JobFinished(null)`. A kind whose running slot is per
+/// subject (`book_analysis`, `edit_pass`) passes it, so the run attached to is
+/// this subject's and not a sibling's.
 Future<JobOutcome> runJobToCompletion(
   String projectId,
   String kind,
   Map<String, dynamic> params,
-  JobWatch watch,
-) async {
+  JobWatch watch, {
+  String? subject,
+}) async {
   JobSnapshot job;
   try {
     job = await startJob(projectId, kind, params: params);
   } on ServerError catch (e) {
     if (e.code != 'job_running') rethrow;
-    final running = (await listJobs(projectId)).where((j) => j.kind == kind && j.isRunning).firstOrNull;
+    final running = (await listJobs(projectId)).where((j) => j.kind == kind && j.subject == subject && j.isRunning).firstOrNull;
     if (running == null) return const JobFinished(null);
     job = running;
   }

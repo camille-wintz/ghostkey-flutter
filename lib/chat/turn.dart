@@ -70,6 +70,7 @@ class ChatTurnState {
     this.stepsByIndex = const {},
     this.notesByIndex = const {},
     this.editsByIndex = const {},
+    this.view,
   });
 
   final List<ChatMessage> messages;
@@ -87,6 +88,10 @@ class ChatTurnState {
   /// shape as the notes.
   final Map<int, ChatTurnEdits> editsByIndex;
 
+  /// What this conversation's tools last opened — the session row's `view`,
+  /// and what the Review button shows.
+  final ChatView? view;
+
   ChatTurnState copyWith({
     List<ChatMessage>? messages,
     String? activeSessionId,
@@ -99,6 +104,7 @@ class ChatTurnState {
     Map<int, List<ChatToolStep>>? stepsByIndex,
     Map<int, List<ChatSavedNote>>? notesByIndex,
     Map<int, ChatTurnEdits>? editsByIndex,
+    ChatView? view,
   }) =>
       ChatTurnState(
         messages: messages ?? this.messages,
@@ -109,6 +115,7 @@ class ChatTurnState {
         stepsByIndex: stepsByIndex ?? this.stepsByIndex,
         notesByIndex: notesByIndex ?? this.notesByIndex,
         editsByIndex: editsByIndex ?? this.editsByIndex,
+        view: view ?? this.view,
       );
 }
 
@@ -188,6 +195,9 @@ class ChatTurnNotifier extends Notifier<ChatTurnState> with WidgetsBindingObserv
           pending.text.value = '';
         },
         onText: (chunk) => pending.text.value = pending.text.value + chunk,
+        onView: (view) {
+          if (token == _token && _alive) state = state.copyWith(view: view);
+        },
       );
       // Stopped while the request was still opening: nothing to read.
       if (stop.isCompleted) {
@@ -212,6 +222,7 @@ class ChatTurnNotifier extends Notifier<ChatTurnState> with WidgetsBindingObserv
               ? null
               : {...state.notesByIndex, assistantIndex: result.savedNotes},
           editsByIndex: result.edits.isEmpty ? null : {...state.editsByIndex, assistantIndex: result.edits},
+          view: result.session?.view,
         );
       }
       _persist = _persistTurn(finalMessages, result.session, sessionId, token);
@@ -263,7 +274,9 @@ class ChatTurnNotifier extends Notifier<ChatTurnState> with WidgetsBindingObserv
       if (sessionId == null) {
         final firstUser = finalMessages.where((m) => m.role == ChatRole.user).firstOrNull;
         final placeholder = placeholderTitle(firstUser);
-        final created = await createSession(projectId, title: placeholder, messages: finalMessages);
+        // A first turn names no session, so the server had no row to write
+        // what its tools opened into; the stream told us instead.
+        final created = await createSession(projectId, title: placeholder, messages: finalMessages, view: token == _token ? state.view : null);
         if (token == _token && _alive) state = state.copyWith(activeSessionId: created.id);
         _invalidateSessions();
         // After the transcript is safe, never before: naming is a model
@@ -292,7 +305,7 @@ class ChatTurnNotifier extends Notifier<ChatTurnState> with WidgetsBindingObserv
     try {
       final session = await getSession(projectId, id);
       if (token != _token || !_alive) return;
-      state = ChatTurnState(activeSessionId: id, messages: session.messages);
+      state = ChatTurnState(activeSessionId: id, messages: session.messages, view: session.view);
       _awaiting = null;
     } catch (e) {
       if (_alive) state = state.copyWith(error: messageFor(e));
@@ -344,7 +357,7 @@ class ChatTurnNotifier extends Notifier<ChatTurnState> with WidgetsBindingObserv
       _abort();
       _token++;
       _awaiting = null;
-      state = state.copyWith(messages: session.messages, clearPending: true, sending: false);
+      state = state.copyWith(messages: session.messages, clearPending: true, sending: false, view: session.view);
       _invalidateSessions();
     }).catchError((_) {});
   }

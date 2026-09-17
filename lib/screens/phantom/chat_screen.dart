@@ -1,6 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../chat/composer.dart';
 import '../../chat/models.dart';
@@ -8,6 +9,7 @@ import '../../chat/providers.dart';
 import '../../chat/quota_feature.dart';
 import '../../chat/refusals.dart';
 import '../../ds/tokens.dart';
+import '../../server/dto/chat.dart';
 import '../../server/dto/projects.dart';
 import '../../server/errors.dart';
 import '../../server/media/api.dart';
@@ -17,17 +19,20 @@ import 'attachment_tray.dart';
 import 'chapter_picker_sheet.dart';
 import 'chat_composer.dart';
 import '../../ui/anchored_panel.dart';
+import '../../ui/room_bar_action.dart';
+import '../../ui/room_title_bar.dart';
 import 'chat_intro.dart';
 import 'chat_thread.dart';
 import 'chat_sessions_panel.dart';
-import 'chat_top_bar.dart';
+import 'chat_settings_sheet.dart';
 import 'error_bar.dart';
 import 'long_thread_note.dart';
-import 'model_sheet.dart';
 import 'plan_notice.dart';
 import 'quota_notice.dart';
+import 'review/review_button.dart';
+import 'review/review_screen.dart';
 
-/// Top bar (back · the chat's name · model chip) · the thread · the pending
+/// Top bar (back · the chat's name · settings) · the thread · the pending
 /// turn · composer. It also owns the chat list, because the name in that bar
 /// is what opens it.
 class ChatScreen extends ConsumerStatefulWidget {
@@ -104,10 +109,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  Future<void> _pickModel() async {
-    final picked = await showModelSheet(context, model: _model);
-    if (picked != null && mounted) setState(() => _model = picked);
-  }
+  void _openSettings() => showChatSettingsSheet(
+        context,
+        model: _model,
+        manuscriptWrites: _manuscriptWrites,
+        onModel: (model) => setState(() => _model = model),
+        onManuscriptWrites: (writes) => setState(() => _manuscriptWrites = writes),
+      );
+
+  void _openReview(ChatView view) => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => ReviewScreen(projectId: _projectId, view: view)),
+      );
 
   Future<void> _attach() async {
     final choice = await showAttachMenuSheet(context);
@@ -182,14 +194,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         bottom: false,
         child: Column(
           children: [
-            ChatTopBar(
+            RoomTitleBar(
               title: title,
-              modelName: modelName(_model),
-              manuscriptWrites: _manuscriptWrites,
+              titleLabel: '$title, open your chats',
               onBack: () => Navigator.of(context).pop(),
-              onOpenChats: _openChats,
-              onModel: _pickModel,
-              onManuscript: () => setState(() => _manuscriptWrites = !_manuscriptWrites),
+              onTitle: _openChats,
+              trailing: RoomBarAction(
+                icon: LucideIcons.settings,
+                onPressed: _openSettings,
+                semanticLabel: _manuscriptWrites
+                    ? 'Chat settings: ${modelName(_model)}, writing in the manuscript'
+                    : 'Chat settings: ${modelName(_model)}, read only',
+              ),
             ),
             Expanded(
               child: ChatThread(
@@ -210,6 +226,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               builder: (context, _) => Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (chat.view case final view? when canReview(view))
+                    ReviewButton(view: view, onPressed: () => _openReview(view)),
                   AttachmentTray(attachments: _composer.attachments, onRemove: _composer.remove),
                   ChatComposerBar(
                     controller: _composer.text,
