@@ -4,8 +4,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../ds/tokens.dart';
 import 'press.dart';
 
-/// The way out of a room, for the two rooms whose chrome is a title rather
-/// than [RoomHeader]'s labelled row — Apparition and PhantomMemory.
+/// The way out of a room: the corner of Apparition's title block and of every
+/// other room's [RoomTitleBar].
 ///
 /// One widget rather than one chevron per room: the mark, its weight and the
 /// box around it are the same in both, so moving between them reads as moving

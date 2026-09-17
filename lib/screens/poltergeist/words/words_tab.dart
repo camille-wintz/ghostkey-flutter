@@ -8,7 +8,6 @@ import '../../../poltergeist/providers.dart';
 import '../../../server/dto/poltergeist.dart';
 import '../../../server/errors.dart';
 import '../../../ui/state_screen.dart';
-import '../page_header.dart';
 import '../project_scope_id.dart';
 import 'ledger_row.dart';
 import 'ledger_week_header.dart';
@@ -52,18 +51,10 @@ class WordsTab extends ConsumerWidget {
 
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-      itemCount: 2 + items.length,
+      itemCount: 1 + items.length,
       itemBuilder: (context, i) {
-        if (i == 0) {
-          return PageHeader(
-            title: 'Word activity',
-            meta: '${formatWords(today?.total ?? 0)} in the manuscript',
-          );
-        }
-        if (i == 1) {
-          return _Hero(today: today, streak: streak, days: days);
-        }
-        return switch (items[i - 2]) {
+        if (i == 0) return _Hero(today: today, streak: streak, days: days);
+        return switch (items[i - 1]) {
           _WeekItem(:final week) => LedgerWeekHeader(week: week),
           _DayItem(:final day, :final isToday) => LedgerRow(day: day, peak: peak, isToday: isToday),
         };

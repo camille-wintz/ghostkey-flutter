@@ -79,7 +79,7 @@ class _PoltergeistShellState extends ConsumerState<PoltergeistShell> {
         body: SafeArea(
           child: Column(
             children: [
-              const PoltergeistHeader(),
+              PoltergeistHeader(tab: _tab),
               Expanded(
                 child: switch (_tab) {
                   PoltergeistTab.dashboard => const DashboardTab(),

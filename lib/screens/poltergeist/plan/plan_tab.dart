@@ -101,7 +101,6 @@ class _PlanTabState extends ConsumerState<PlanTab> {
     final projectId = projectIdOf(context);
     final board = ref.watch(planBoardProvider(projectId));
     final project = ref.watch(projectProvider(projectId)).value;
-    final words = ref.watch(projectWordCountProvider(projectId)).value;
     final state = board.value;
 
     if (state == null) {
@@ -140,8 +139,6 @@ class _PlanTabState extends ConsumerState<PlanTab> {
         PlanBoardHeader(
           chapterCount: state.plan.chapters.length,
           folderCount: folderIds.length,
-          words: words,
-          isReconciling: board.isLoading,
           allCollapsed: allCollapsed,
           onToggleAll: () => setState(() {
             if (allCollapsed) {

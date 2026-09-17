@@ -7,7 +7,6 @@ import '../../../poltergeist/providers.dart';
 import '../../../poltergeist/tasks_notifier.dart';
 import '../../../server/dto/poltergeist.dart';
 import '../../../ui/press.dart';
-import '../page_header.dart';
 import '../project_scope_id.dart';
 import 'task_add_row.dart';
 import 'task_row.dart';
@@ -36,12 +35,6 @@ class _TasksTabState extends ConsumerState<TasksTab> {
     final total = open.length + done.length;
     final donePct = total == 0 ? 0.0 : done.length / total;
 
-    final meta = !loaded
-        ? (state.hasError ? '—' : 'Loading…')
-        : open.isEmpty
-            ? 'All clear'
-            : '${open.length} open · ${done.length} done';
-
     final items = <Widget>[
       if (state.hasError && !loaded)
         _Notice(
@@ -51,7 +44,7 @@ class _TasksTabState extends ConsumerState<TasksTab> {
           onAction: () => ref.invalidate(tasksProvider(projectId)),
         ),
       if (loaded) ...[
-        // The rule under the header doubles as the ledger's completion
+        // The rule at the top of the list doubles as the ledger's completion
         // figure — how much of the list is crossed off.
         _ProgressRule(fraction: donePct),
         TaskAddRow(onAdd: notifier.add),
@@ -82,8 +75,8 @@ class _TasksTabState extends ConsumerState<TasksTab> {
 
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-      itemCount: 1 + items.length,
-      itemBuilder: (context, i) => i == 0 ? PageHeader(title: 'Tasks', meta: meta) : items[i - 1],
+      itemCount: items.length,
+      itemBuilder: (context, i) => items[i],
     );
   }
 
