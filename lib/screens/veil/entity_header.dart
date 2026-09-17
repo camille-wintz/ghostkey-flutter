@@ -2,70 +2,47 @@ import 'package:flutter/material.dart';
 
 import '../../ds/tokens.dart';
 import '../../server/dto/bible.dart';
-import '../../ui/text.dart';
-import '../../veil/roster.dart';
-import '../../veil/tone.dart';
 
-/// The entity's identity block: what kind of thing it is, how present it
-/// is, its name and the other names it answers to. No one-line summary,
-/// though the roster row carries one: the dossier's own opening paragraph
-/// is a few centimetres below, and the summary is its first sentence.
+/// What the entity answers to besides its name: its aliases, and the
+/// manuscript's own spelling when the author corrected it. The name itself,
+/// its type and its presence ride in the [VeilHeader] above the page.
+///
+/// No one-line summary, though the desktop's roster once carried one: the
+/// dossier's own opening paragraph is a few centimetres below, and the
+/// summary is its first sentence.
 class EntityHeader extends StatelessWidget {
   const EntityHeader({super.key, required this.entity});
   final BibleEntity entity;
 
-  @override
-  Widget build(BuildContext context) {
-    final renamed = !entity.isUser && entity.extractedName.isNotEmpty && entity.name != entity.extractedName;
-    final presence = [
-      chapterCount(entity.mentionCount),
-      if (entity.firstAppearance != null) 'first in ${chapterLabel(entity.firstAppearance!)}',
-      if (entity.plannedChapters.isNotEmpty) '${entity.plannedChapters.length} planned',
-    ].join(' · ');
+  /// Whether there is anything for this block to say at all.
+  static bool hasContent(BibleEntity entity) => entity.aliases.isNotEmpty || _renamed(entity);
 
-    return Container(
-      padding: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Ds.edge))),
-      child: Column(
+  static bool _renamed(BibleEntity entity) =>
+      !entity.isUser && entity.extractedName.isNotEmpty && entity.name != entity.extractedName;
+
+  @override
+  Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                margin: const EdgeInsets.only(right: 8),
-                decoration: BoxDecoration(color: typeTone(entity.type), shape: BoxShape.circle),
-              ),
-              Eyebrow('${entity.type.label}${entity.isUser ? ' · added by you' : ''}', semibold: false),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(presence, style: DsStyle.ui(DsText.ui, color: Ds.faint)),
-          const SizedBox(height: 10),
-          BrandTitle(titleCase(entity.name)),
           if (entity.aliases.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final alias in entity.aliases)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Ds.edge),
-                        borderRadius: BorderRadius.circular(DsGeom.radius),
-                      ),
-                      child: Text(alias, style: DsStyle.ui(DsText.ui, color: Ds.mid)),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final alias in entity.aliases)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Ds.edge),
+                      borderRadius: BorderRadius.circular(DsGeom.radius),
                     ),
-                ],
-              ),
+                    child: Text(alias, style: DsStyle.ui(DsText.ui, color: Ds.mid)),
+                  ),
+              ],
             ),
-          if (renamed)
+          if (_renamed(entity))
             Padding(
-              padding: const EdgeInsets.only(top: 12),
+              padding: EdgeInsets.only(top: entity.aliases.isNotEmpty ? 12 : 0),
               child: Text.rich(
                 TextSpan(
                   style: DsStyle.ui(DsText.ui, color: Ds.low),
@@ -78,7 +55,5 @@ class EntityHeader extends StatelessWidget {
               ),
             ),
         ],
-      ),
-    );
-  }
+      );
 }

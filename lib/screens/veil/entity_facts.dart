@@ -7,7 +7,8 @@ import '../../veil/roster.dart';
 
 /// The fixed, always-knowable things about an entity — derived from the
 /// bible itself, never from a model. The card's spine, so the prose below
-/// never has to restate where something first appears.
+/// never has to restate where something first appears. Kind, chapter count and
+/// first appearance sit under the name in the [VeilHeader]; these are the rest.
 class EntityFacts extends StatelessWidget {
   const EntityFacts({super.key, required this.entity});
   final BibleEntity entity;
@@ -18,10 +19,7 @@ class EntityFacts extends StatelessWidget {
     // the plan puts this entity in that it isn't already written into.
     final notedOnly = entity.notedChapters.where((f) => !entity.chapters.contains(f)).length;
     final facts = <(String, String)>[
-      ('Kind', entity.type.label),
       ('Source', entity.isUser ? 'Added by you' : 'Found in the manuscript'),
-      if (entity.firstAppearance != null) ('First seen', chapterLabel(entity.firstAppearance!)),
-      ('Chapters', entity.mentionCount == 0 ? 'None in this book' : '${entity.mentionCount} in this book'),
       if (entity.plannedChapters.isNotEmpty) ('Planned for', chapterCount(entity.plannedChapters.length)),
       if (notedOnly > 0) ('In your notes for', '${chapterCount(notedOnly)} not yet written'),
     ];
@@ -30,9 +28,8 @@ class EntityFacts extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (final (label, value) in facts)
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Ds.edge))),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

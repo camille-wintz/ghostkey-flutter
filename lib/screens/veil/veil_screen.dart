@@ -12,12 +12,13 @@ import '../../server/dto/projects.dart';
 import '../../server/errors.dart';
 import '../../server/providers.dart';
 import '../../ui/notice_modal.dart';
+import '../../ui/room_bar_action.dart';
+import '../../ui/room_title_bar.dart';
 import '../../ui/state_screen.dart';
 import '../../veil/providers.dart';
 import '../../veil/world_bible_run.dart';
 import '../project/project_root.dart';
 import '../project/room_entering.dart';
-import '../project/room_header.dart';
 import 'veil_actions_sheet.dart';
 import 'veil_roster.dart';
 import 'veil_run_banner.dart';
@@ -110,10 +111,11 @@ class _VeilRoom extends ConsumerWidget {
         bottom: false,
         child: Column(
           children: [
-            RoomHeader(
-              room: 'Veil',
+            RoomTitleBar(
+              title: project?.project.displayTitle ?? 'Project',
+              onBack: back,
               trailing: bible.hasValue
-                  ? RoomHeaderAction(
+                  ? RoomBarAction(
                       icon: LucideIcons.ellipsisVertical,
                       onPressed: openActions,
                       semanticLabel: 'More',

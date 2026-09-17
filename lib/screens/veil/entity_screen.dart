@@ -67,7 +67,7 @@ class _EntityScreenState extends ConsumerState<EntityScreen> {
     final chapters = project != null ? chaptersInTree(project.chapters) : const <DocumentSummary>[];
 
     final sections = <Widget>[
-      EntityHeader(entity: entity),
+      if (EntityHeader.hasContent(entity)) EntityHeader(entity: entity),
       if (entity.imageAssetId != null) EntityHeroPortrait(seriesId: seriesId, assetId: entity.imageAssetId!),
       EntityFacts(entity: entity),
       if (chapters.isNotEmpty) EntityPresence(entity: entity, chapters: chapters),
@@ -87,10 +87,10 @@ class _EntityScreenState extends ConsumerState<EntityScreen> {
         bottom: false,
         child: Column(
           children: [
-            VeilHeader(backLabel: 'Veil', onBack: () => Navigator.of(context).pop(), eyebrow: 'World bible'),
+            VeilHeader(entity: entity, onBack: () => Navigator.of(context).pop()),
             Expanded(
               child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 48),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 48),
                 itemCount: sections.length,
                 separatorBuilder: (context, i) => const SizedBox(height: 28),
                 itemBuilder: (context, i) => sections[i],

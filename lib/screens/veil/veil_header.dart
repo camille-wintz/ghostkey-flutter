@@ -1,56 +1,71 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../ds/tokens.dart';
-import '../../ui/press.dart';
-import '../../ui/text.dart';
+import '../../server/dto/bible.dart';
+import '../../ui/room_back_button.dart';
+import '../../veil/roster.dart';
+import '../../veil/tone.dart';
 
-/// The entity page's top row: the way back UP to the roster, not out to the
-/// project. The roster itself wears the shared [RoomHeader] — this one exists
-/// because a page one level deeper must go back one level, and saying "the
-/// book" there would skip the list the reader came from.
+/// The entity page's top row: the way back UP to the roster, then the name,
+/// with what it is and how present it is under it. The roster itself wears
+/// the shared [RoomTitleBar]; this one sits left rather than centred because
+/// the name is the page's title, not a room's.
 class VeilHeader extends StatelessWidget {
-  const VeilHeader({super.key, required this.backLabel, required this.onBack, required this.eyebrow});
+  const VeilHeader({super.key, required this.entity, required this.onBack});
 
-  final String backLabel;
+  final BibleEntity entity;
   final VoidCallback onBack;
-  final String eyebrow;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 52,
+    final facts = [
+      entity.type.label,
+      chapterCount(entity.mentionCount),
+      if (entity.firstAppearance != null) 'first in ${chapterLabel(entity.firstAppearance!)}',
+    ].join(' · ');
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(6, 10, 16, 4),
       child: Row(
         children: [
-          const SizedBox(width: 10),
-          Press(
-            onPressed: onBack,
-            semanticLabel: 'Back',
-            builder: (context, pressed) => Container(
-              height: 44,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                color: pressed ? Ds.veil : const Color(0x00000000),
-                borderRadius: BorderRadius.circular(DsGeom.radius),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(LucideIcons.chevronLeft, size: 17, color: Ds.mid),
-                  const SizedBox(width: 4),
-                  UiText(backLabel, color: Ds.mid),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
+          RoomBackButton(onPressed: onBack, semanticLabel: 'Back to Veil'),
+          const SizedBox(width: 4),
           Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Eyebrow(eyebrow, color: Ds.accent300),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Semantics(
+                  header: true,
+                  child: Text(
+                    titleCase(entity.name),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: DsStyle.prose(DsText.title, weight: FontWeight.w600, color: Ds.hi),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      margin: const EdgeInsets.only(right: 7),
+                      decoration: BoxDecoration(color: typeTone(entity.type), shape: BoxShape.circle),
+                    ),
+                    Expanded(
+                      child: Text(
+                        facts,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: DsStyle.ui(DsText.ui, color: Ds.low),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
         ],
       ),
     );
