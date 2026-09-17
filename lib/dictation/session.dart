@@ -33,6 +33,7 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
     required this.onTranscript,
     required this.previousText,
     this.onRefused,
+    this.onSettled,
   });
 
   final String projectId;
@@ -48,6 +49,10 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
   /// A plan refusal will refuse every chunk: the flow closes the dock rather
   /// than let it keep recording what can never land.
   final void Function(ServerError error)? onRefused;
+
+  /// The recording is not running (paused, stopped, auto-stopped) and every
+  /// chunk it sent has landed or been given up. May fire more than once.
+  final void Function()? onSettled;
 
   final NativeRecorder _native = NativeRecorder();
   final SessionPolicy _policy = SessionPolicy();
@@ -164,6 +169,7 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
     final voiced = _policy.chunkVoiced;
     final chunk = await _finishChunk(_native.pause);
     _handleFinished(chunk, voiced);
+    _settleIfIdle();
   }
 
   /// Play: resume the paused native session, or start a new one after an
@@ -278,6 +284,7 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
       case NativeStopReason.client:
         notifyListeners();
     }
+    _settleIfIdle();
   }
 
   /// Ask the native side to finish the running chunk and wait for its event.
@@ -322,6 +329,7 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
     final voiced = _policy.chunkVoiced;
     final chunk = await _finishChunk(_native.stop);
     _handleFinished(chunk, voiced);
+    _settleIfIdle();
   }
 
   // A foreground-only session meeting the lock screen: without a visible
@@ -357,6 +365,7 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
       } finally {
         _policy.pending = (_policy.pending - 1).clamp(0, 1 << 30);
         if (!_disposed) notifyListeners();
+        _settleIfIdle();
       }
     });
   }
@@ -443,6 +452,10 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   // ── Plumbing ──────────────────────────────────────────────────────────────
+
+  void _settleIfIdle() {
+    if (!isRecording && _policy.pending == 0) onSettled?.call();
+  }
 
   int get _now => DateTime.now().millisecondsSinceEpoch;
 

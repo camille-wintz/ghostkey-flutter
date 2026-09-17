@@ -94,8 +94,10 @@ class EditorController extends ChangeNotifier {
     _textController.value = TextEditingValue(text: next, selection: selection);
   }
 
-  /// Replace `[start, end)` with `replacement`; the caret lands after it.
-  void replaceRange(int start, int end, String replacement) {
+  /// Replace `[start, end)` with `replacement`. With `moveCaret` the caret
+  /// lands after it; without, the selection keeps its place in the text
+  /// around it (a position inside the replaced range lands after it).
+  void replaceRange(int start, int end, String replacement, {bool moveCaret = true}) {
     _checkAlive();
     final current = text;
     final from = start.clamp(0, current.length);
@@ -103,7 +105,9 @@ class EditorController extends ChangeNotifier {
     final next = current.replaceRange(from, to, replacement);
     _textController.value = TextEditingValue(
       text: next,
-      selection: TextSelection.collapsed(offset: from + replacement.length),
+      selection: moveCaret
+          ? TextSelection.collapsed(offset: from + replacement.length)
+          : _replaced(_textController.selection, from, to, replacement.length),
     );
   }
 
@@ -133,6 +137,13 @@ class EditorController extends ChangeNotifier {
 TextSelection _shifted(TextSelection selection, int at, int by) {
   if (!selection.isValid) return selection;
   int move(int p) => p < at ? p : p + by;
+  return selection.copyWith(baseOffset: move(selection.baseOffset), extentOffset: move(selection.extentOffset));
+}
+
+/// A selection mapped through `[from, to)` becoming `length` characters.
+TextSelection _replaced(TextSelection selection, int from, int to, int length) {
+  if (!selection.isValid) return selection;
+  int move(int p) => p < from ? p : (p >= to ? p + length - (to - from) : from + length);
   return selection.copyWith(baseOffset: move(selection.baseOffset), extentOffset: move(selection.extentOffset));
 }
 

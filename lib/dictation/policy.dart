@@ -75,6 +75,13 @@ abstract final class DictationPolicy {
   /// An upload that has not answered by then is a failure (retryable).
   static const int uploadTimeoutMs = 120000;
 
+  /// A paragraph pass that has not answered by now is dropped; the paragraph
+  /// keeps the seams the chunks gave it.
+  static const int paragraphTimeoutMs = 30000;
+
+  /// Dictated words between two paragraph passes over the same paragraph.
+  static const int wordsPerParagraphPass = 10;
+
   /// The recording preset: mono AAC-LC in `.m4a`. 64 kbps is the RN
   /// DICTATION_PRESET's bitrate; 16 kHz is speech-to-text's own rate and the
   /// one sample rate every Android device's AudioRecord supports.

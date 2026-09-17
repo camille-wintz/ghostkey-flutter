@@ -9,7 +9,9 @@ import '../server/errors.dart';
 import '../ui/notice_modal.dart';
 import 'anchor.dart';
 import 'dock/record_dock.dart';
+import 'paragraph_pass.dart';
 import 'session.dart';
+import 'transcribe.dart';
 
 // The entry point the editor's mic button calls (a `CaptureLauncher`).
 //
@@ -26,6 +28,10 @@ Future<void> startDictation(BuildContext context, EditorController editor) async
   final overlay = Overlay.of(context, rootOverlay: true);
 
   final anchor = DictationAnchor(editor)..open();
+  final paragraphs = ParagraphPass(
+    editor,
+    (paragraph, {required finished}) => cleanDictatedParagraph(paragraph, finished: finished, projectId: projectId),
+  );
   editor.readOnly = true;
 
   late final DictationSession session;
@@ -42,7 +48,12 @@ Future<void> startDictation(BuildContext context, EditorController editor) async
 
   session = DictationSession(
     projectId: projectId,
-    onTranscript: anchor.insertDictation,
+    onTranscript: (chunk) {
+      paragraphs.beforeLanding(anchor.landingPoint);
+      final landed = anchor.insertDictation(chunk);
+      if (landed != null) paragraphs.afterLanding(landed.insert, landed.point);
+    },
+    onSettled: () => paragraphs.finish(anchor.landingPoint),
     previousText: anchor.textBeforeDictation,
     // A plan refusal refuses every chunk: close the dock and say so once.
     onRefused: (ServerError e) {
@@ -67,7 +78,10 @@ Future<void> startDictation(BuildContext context, EditorController editor) async
   await session.start();
   await closed.future;
 
-  unawaited(session.drained.whenComplete(() {
+  // The last paragraph's finished pass is asked for as the session settles,
+  // so it is still in flight here: the anchor maps its edit like any other.
+  unawaited(session.drained.then((_) => paragraphs.idle).whenComplete(() {
+    paragraphs.dispose();
     anchor.dispose();
     session.dispose();
   }));

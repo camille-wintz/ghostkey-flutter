@@ -22,3 +22,12 @@ class TranscribeResponse {
         verbatim: json['verbatim'] as String?,
       );
 }
+
+/// POST /api/transcribe/paragraph response: the paragraph to write back,
+/// unchanged when nothing needed repair (or the model failed).
+class ParagraphResponse {
+  const ParagraphResponse({required this.paragraph});
+  final String paragraph;
+
+  static ParagraphResponse fromJson(Json json) => ParagraphResponse(paragraph: asString(json['paragraph']));
+}

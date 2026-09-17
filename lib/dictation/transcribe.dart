@@ -88,3 +88,16 @@ Future<Transcript> transcribeAudioChunk(
 
 /// The `turns` field: a JSON array of `{verbatim, cleaned}`, oldest first.
 String turnsJson(List<TranscriptTurn> turns) => jsonEncode([for (final t in turns) t.toJson()]);
+
+/// The paragraph pass: POST /api/transcribe/paragraph repairs the marks,
+/// capitals and misheard words at the seams of the paragraph the chunks
+/// built. `finished` lets it close the last sentence. Best-effort on the
+/// server — a model failure answers with the paragraph as sent.
+Future<String> cleanDictatedParagraph(String paragraph, {required bool finished, String? projectId}) async {
+  final res = await apiFetch(
+    '/api/transcribe/paragraph',
+    method: 'POST',
+    body: {'paragraph': paragraph, 'finished': finished, 'project_id': ?projectId},
+  ).timeout(const Duration(milliseconds: DictationPolicy.paragraphTimeoutMs));
+  return ParagraphResponse.fromJson(res.jsonObject()).paragraph;
+}

@@ -139,6 +139,10 @@ class DictationAnchor {
     return sel.isCollapsed && sel.baseOffset == at;
   }
 
+  /// Where the next chunk will land: the point, or the caret with no session
+  /// on record.
+  int get landingPoint => min(_anchor ?? editor.caret, editor.text.length);
+
   /// The manuscript before the insertion point, for the cleanup pass that
   /// needs to know what a chunk is continuing. Read at call time.
   String textBeforeDictation() {
@@ -152,16 +156,17 @@ class DictationAnchor {
   /// record, and never replaces a selection: a range the writer dragged out
   /// is theirs, not a target. The caret follows the words only when it was
   /// riding the point — a writer who has gone back into an earlier line keeps
-  /// their place.
-  void insertDictation(String chunk) {
+  /// their place. Answers what landed, or null when nothing did.
+  LandingPlan? insertDictation(String chunk) {
     final text = editor.text;
     final at = min(_anchor ?? editor.caret, text.length);
     final plan = planLanding(text, at, chunk, editor.typography);
-    if (plan.isEmpty) return;
+    if (plan.isEmpty) return null;
     final onPoint = isCaretOnPoint;
     if (plan.mark.isNotEmpty) _apply(() => editor.insertAt(plan.markAt, plan.mark, moveCaret: false));
     if (plan.insert.isNotEmpty) _apply(() => editor.insertAt(plan.insertAt, plan.insert, moveCaret: onPoint));
     _anchor = plan.point;
+    return plan;
   }
 
   void _apply(void Function() edit) {
