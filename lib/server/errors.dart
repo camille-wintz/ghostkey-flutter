@@ -63,6 +63,10 @@ const Map<String, String> _messages = {
   'invalid_credentials': 'Wrong email or password.',
   'invalid_refresh_token': 'Your session expired. Please sign in again.',
   'email_taken': 'An account with this email already exists.',
+  'invalid_google_token': "Google sign-in didn't go through. Please try again.",
+  'google_failed': "Google sign-in didn't go through. Please try again.",
+  'google_email_unverified':
+      "Google hasn't verified that address yet. Verify it with Google, or sign up with a password.",
   'conflict': 'This item was changed elsewhere. Refresh and try again.',
   'version_conflict':
       'The chapter list changed elsewhere and has been refreshed. Try the move again.',

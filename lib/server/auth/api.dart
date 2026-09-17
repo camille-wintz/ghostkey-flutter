@@ -56,6 +56,12 @@ Future<AuthSession> postSignup(String email, String password) =>
 Future<AuthSession> postSignin(String email, String password) =>
     _postSession('/api/auth/signin', {'email': email, 'password': password});
 
+/// Sign in — or register — with a Google ID token; [AuthSession.created] says
+/// which. `password_required` means an account already sits on that address
+/// and never confirmed it: same call, same token, with its [password].
+Future<AuthSession> postGoogle(String idToken, {String? password}) =>
+    _postSession('/api/auth/google', {'id_token': idToken, 'password': ?password});
+
 Future<AuthSession> postRefresh(String refreshToken) =>
     _postSession('/api/auth/refresh', {'refresh_token': refreshToken});
 

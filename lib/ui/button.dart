@@ -23,6 +23,7 @@ class GkButton extends StatelessWidget {
     this.disabled = false,
     this.busy = false,
     this.wide = false,
+    this.leading,
   });
 
   final String label;
@@ -38,6 +39,10 @@ class GkButton extends StatelessWidget {
   /// The create panel stacks two full-width 44px buttons; the default is the
   /// 34px inline control.
   final bool wide;
+
+  /// A mark ahead of the label — a brand's, say. The button sizes nothing in
+  /// it; hand it something already the size it should be.
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
@@ -78,16 +83,24 @@ class GkButton extends StatelessWidget {
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2, color: ink),
                   )
-                : Text(
-                    label.toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: DsStyle.ui(
-                      DsText.ui,
-                      color: ink,
-                      weight: FontWeight.w600,
-                      tracking: DsTracking.control,
-                    ),
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (leading != null) ...[leading!, const SizedBox(width: 10)],
+                      Flexible(
+                        child: Text(
+                          label.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: DsStyle.ui(
+                            DsText.ui,
+                            color: ink,
+                            weight: FontWeight.w600,
+                            tracking: DsTracking.control,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
           ),
         ),

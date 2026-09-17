@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../access/welcome_notices.dart';
+import '../../auth/google.dart';
 import '../../auth/session.dart';
 import '../../ds/tokens.dart';
 import '../../server/auth/api.dart';
@@ -12,16 +13,19 @@ import '../../ui/field.dart';
 import '../../ui/press.dart';
 import '../../ui/text.dart';
 import 'forgot_password_form.dart';
+import 'google_link_form.dart';
+import 'google_mark.dart';
 
-/// The two panes with a form, and the third you can only reach from the
-/// first — asking for a reset link is somewhere you go, never somewhere you
-/// arrive, so it gets no tab.
-enum _Mode { signin, signup, forgot }
+/// The two panes with a form, and two you can only reach from them — asking
+/// for a reset link, and the password a Google sign-in may be asked for, are
+/// somewhere you go, never somewhere you arrive, so they get no tab.
+enum _Mode { signin, signup, forgot, googleLink }
 
 const Map<_Mode, String> _blurb = {
   _Mode.signin: 'Sign in to sync your projects.',
   _Mode.signup: 'Create an account to sync your projects.',
   _Mode.forgot: 'Reset your password.',
+  _Mode.googleLink: 'One more step.',
 };
 
 class AuthScreen extends ConsumerStatefulWidget {
@@ -37,6 +41,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   final _password = TextEditingController();
   bool _pending = false;
   String? _error;
+
+  /// The Google token a `password_required` answer left waiting for one.
+  String? _googleIdToken;
 
   @override
   void initState() {
@@ -85,6 +92,40 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     }
   }
 
+  /// Google's door, and the second knock when it asks for a password. It both
+  /// signs in and registers; the server says which.
+  Future<void> _google({String? password}) async {
+    if (_pending) return;
+    setState(() {
+      _pending = true;
+      _error = null;
+    });
+    try {
+      final idToken = password == null ? await askGoogleForIdToken() : _googleIdToken;
+      if (idToken == null) return;
+      _googleIdToken = idToken;
+      final session = await postGoogle(idToken, password: password);
+      if (session.created) rememberSignupArrival();
+      // A password remembered for whoever was here before must not be what
+      // restores this session.
+      await clearStoredCredentials();
+      await ref.read(sessionProvider.notifier).setSession(session);
+    } on ServerError catch (e) {
+      if (!mounted) return;
+      if (e.code == 'password_required') {
+        setState(() => _mode = _Mode.googleLink);
+      } else {
+        setState(() => _error = password != null && e.code == 'invalid_credentials'
+            ? "That isn't this account's password."
+            : messageFor(e));
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = messageFor(e));
+    } finally {
+      if (mounted) setState(() => _pending = false);
+    }
+  }
+
   void _switch(_Mode next) => setState(() {
         _mode = next;
         _error = null;
@@ -105,7 +146,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               const SizedBox(height: 10),
               UiText(_blurb[_mode]!, color: Ds.mid, align: TextAlign.center),
               const SizedBox(height: 32),
-              if (_mode == _Mode.forgot)
+              if (_mode == _Mode.googleLink)
+                GoogleLinkForm(
+                  pending: _pending,
+                  error: _error,
+                  onSubmit: (password) => _google(password: password),
+                  onBack: () => _switch(_Mode.signin),
+                )
+              else if (_mode == _Mode.forgot)
                 ForgotPasswordForm(
                   email: _email,
                   onBack: () => _switch(_Mode.signin),
@@ -151,6 +199,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   busy: _pending,
                   disabled: !_canSubmit && !_pending,
                   onPressed: _submit,
+                ),
+                const SizedBox(height: 12),
+                GkButton(
+                  label: 'Continue with Google',
+                  variant: ButtonVariant.outline,
+                  wide: true,
+                  leading: const GoogleMark(),
+                  disabled: _pending,
+                  onPressed: _google,
                 ),
                 if (_mode == _Mode.signin)
                   Press(

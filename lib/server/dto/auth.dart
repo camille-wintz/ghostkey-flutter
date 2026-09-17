@@ -29,6 +29,7 @@ class AuthSession {
     required this.refreshToken,
     required this.expiresAt,
     required this.user,
+    this.created = false,
   });
 
   final String accessToken;
@@ -36,10 +37,15 @@ class AuthSession {
   final String expiresAt;
   final AuthUser user;
 
+  /// This call made the account. Google's door both signs in and registers,
+  /// and only the server knows which it just did.
+  final bool created;
+
   static AuthSession fromJson(Json json) => AuthSession(
         accessToken: asString(json['access_token']),
         refreshToken: asString(json['refresh_token']),
         expiresAt: asString(json['expires_at']),
         user: AuthUser.fromJson(asJson(json['user'])),
+        created: json['created'] == true,
       );
 }
