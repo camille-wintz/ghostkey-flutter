@@ -162,39 +162,16 @@ class ChapterOutline {
       );
 }
 
-enum OutlineBeat {
-  setup('Setup'),
-  incitingEvent('Inciting event'),
-  complication('Complication'),
-  crisis('Crisis'),
-  climax('Climax'),
-  resolution('Resolution');
-
-  const OutlineBeat(this.label);
-  final String label;
-
-  static OutlineBeat fromWire(String value) => switch (value) {
-        'inciting_event' => incitingEvent,
-        'complication' => complication,
-        'crisis' => crisis,
-        'climax' => climax,
-        'resolution' => resolution,
-        _ => setup,
-      };
-}
-
-/// A synopsis or extended outline: prose in six movements, in order. A
-/// section's text is paragraphs separated by a blank line.
+/// A synopsis or extended outline: continuous prose, setup to resolution,
+/// with no section headers. [text] is paragraphs separated by a blank line.
 class CondensedOutline {
-  const CondensedOutline({required this.wordCount, required this.sections});
+  const CondensedOutline({required this.wordCount, required this.text});
   final int wordCount;
-  final List<({OutlineBeat beat, String text})> sections;
+  final String text;
 
   static CondensedOutline fromJson(Json json) => CondensedOutline(
         wordCount: asInt(json['word_count']),
-        sections: asJsonList(json['sections'])
-            .map((s) => (beat: OutlineBeat.fromWire(asString(s['beat'])), text: asString(s['text'])))
-            .toList(),
+        text: asString(json['text']),
       );
 }
 

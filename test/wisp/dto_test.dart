@@ -11,22 +11,19 @@ void main() {
     expect(r.condensed(OutlineLength.synopsis), isNull);
   });
 
-  test('a condensed outline keeps its movements in order', () {
+  test('a condensed outline reads as its prose', () {
     final r = OutlineResult.fromJson({
       'outline': [
         {'chapter': '01.md', 'summary': 'A', 'word_count': 1200},
       ],
       'synopsis': {
         'word_count': 900,
-        'sections': [
-          {'beat': 'setup', 'text': 'x'},
-          {'beat': 'inciting_event', 'text': 'y'},
-        ],
+        'text': 'x\n\ny',
       },
       'extended': null,
     });
     expect(r.chapters.single.wordCount, 1200);
-    expect(r.synopsis!.sections.map((s) => s.beat), [OutlineBeat.setup, OutlineBeat.incitingEvent]);
+    expect(r.synopsis!.text, 'x\n\ny');
   });
 
   test('a continuity finding reads defensively', () {
