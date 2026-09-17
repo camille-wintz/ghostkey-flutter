@@ -55,7 +55,7 @@ class ReverseOutlinePage extends ConsumerStatefulWidget {
 }
 
 class _ReverseOutlinePageState extends ConsumerState<ReverseOutlinePage> {
-  OutlineLength _length = OutlineLength.detailed;
+  OutlineLength _length = OutlineLength.synopsis;
 
   @override
   Widget build(BuildContext context) {
