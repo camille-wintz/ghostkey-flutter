@@ -7,7 +7,7 @@ import 'icons.dart';
 // desktop's `RoomKey`s, which are also what the server's plan-access table
 // names a whole room by (`room.<key>`).
 
-enum RoomKey { apparition, veil, poltergeist, phantom }
+enum RoomKey { apparition, veil, poltergeist, phantom, wisp }
 
 /// Tile backgrounds for the room icons, as `[start, end]` pairs — the
 /// desktop's `linear-gradient(151deg, …)`, whose vector is (0,0) → (0.55,1).
@@ -52,23 +52,30 @@ const List<Room> rooms = [
   Room(
     key: RoomKey.veil,
     title: 'Veil',
-    subtitle: 'The world bible',
+    subtitle: 'Worldbuild',
     mark: RoomMark.veil,
     tile: TileGradient(Color(0xFF2E86B8), Color(0xFF123F66)),
   ),
   Room(
     key: RoomKey.poltergeist,
     title: 'Poltergeist',
-    subtitle: 'Words, tasks and the plan',
+    subtitle: 'Schedule and plan',
     mark: RoomMark.poltergeist,
     tile: TileGradient(Color(0xFFC08D33), Color(0xFF75521A)),
   ),
   Room(
     key: RoomKey.phantom,
     title: 'Phantom Memory',
-    subtitle: 'Plan, analyze and brainstorm',
+    subtitle: 'Book coach',
     mark: RoomMark.phantom,
     tile: TileGradient(Color(0xFF7D4ECD), Color(0xFF472585)),
+  ),
+  Room(
+    key: RoomKey.wisp,
+    title: 'Wisp',
+    subtitle: 'Editing',
+    mark: RoomMark.wisp,
+    tile: TileGradient(Color(0xFFD0714F), Color(0xFF87391F)),
   ),
 ];
 

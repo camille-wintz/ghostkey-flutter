@@ -15,14 +15,18 @@ load-bearing, feature count is not.**
 
 The rooms this app carries: **Apparition** (the editor), **Veil** (the world
 bible), **Poltergeist** (dashboard, words, tasks, plan board), **PhantomMemory**
-(chat), plus dictation and scan landing in the editor. Mara, Séance and
-Glamour are desk rooms and never come here.
+(chat), **Wisp** (editing: line edits per chapter, continuity, the theme /
+pacing / genre analyses, the reverse outline — its chapter review is
+PhantomMemory's), plus dictation and scan landing in the editor. Mara, Séance
+and Glamour are desk rooms and never come here.
 
 ## Stack
 
 - **Flutter 3.47 / Dart 3.13**, Android first (`applicationId
-  com.ghostkey.mobile`; debug builds get a `.dev` suffix so a debug and a
-  release build coexist on the same phone). iOS is in the tree but not built.
+  app.ghostkey`, the id the Play Console listing was made with; debug builds
+  get a `.dev` suffix so a debug and a release build coexist on the same
+  phone. The Kotlin `namespace` stays `com.ghostkey.ghostkey` — it names code,
+  not the app, and nothing outside the APK ever sees it). iOS is in the tree but not built.
 - **State**: `flutter_riverpod` 3. Two `Notifier`s hold app state —
   [lib/auth/session.dart](lib/auth/session.dart) (the session, hydrate,
   refresh) and [lib/store/active_project.dart](lib/store/active_project.dart)
@@ -86,7 +90,7 @@ lib/
   editor/ autosave/         editor_controller · inline_markdown | the autosave owner · draft journal
   dictation/ scan/          recorder channel · session · policy + room meter · silence pass ·
                             seam ledger · anchors | camera · OCR · insert
-  chat/ veil/ poltergeist/  the logic half of those three rooms (see below)
+  chat/ veil/ poltergeist/ wisp/   the logic half of those rooms (see below)
   rooms/                    the rooms table · marks · tile
   backdrop/                 glow · motes · ambient_motion
   ui/                       the primitives
@@ -94,7 +98,7 @@ lib/
     auth/                   sign-in
     shelf/ account/         the shelf (home, cards, create, notices) · account
     project/                project_root · project_home · cover · backdrop · room_row · room_entering
-    apparition/ veil/ poltergeist/ phantom/   the rooms
+    apparition/ veil/ poltergeist/ phantom/ wisp/   the rooms
 ```
 
 **A room is two directories.** `screens/<room>/` draws it — widgets only —
@@ -116,7 +120,7 @@ none fails on the first read with a message that says so.
 flutter run --dart-define=GHOSTKEY_SERVER_URL=https://ghostkey-server-staging.fly.dev
 flutter build apk --debug --dart-define=GHOSTKEY_SERVER_URL=https://ghostkey-server-staging.fly.dev
 adb install -r build/app/outputs/flutter-apk/app-debug.apk
-adb shell am start -n com.ghostkey.mobile.dev/com.ghostkey.ghostkey.MainActivity
+adb shell am start -n app.ghostkey.dev/com.ghostkey.ghostkey.MainActivity
 ```
 
 The last three lines in one: `dart tool/phone.dart [staging|prod|lan|<url>]`

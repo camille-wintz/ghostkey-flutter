@@ -13,6 +13,7 @@ import '../apparition/apparition_screen.dart';
 import '../phantom/phantom_screen.dart';
 import '../poltergeist/poltergeist_screen.dart';
 import '../veil/veil_screen.dart';
+import '../wisp/wisp_screen.dart';
 import 'project_home_screen.dart';
 import 'project_stage.dart';
 
@@ -91,6 +92,7 @@ class _ProjectRootState extends ConsumerState<ProjectRoot> {
               VeilScreen.route => const VeilScreen(),
               PoltergeistScreen.route => const PoltergeistScreen(),
               PhantomScreen.route => const PhantomScreen(),
+              WispScreen.route => const WispScreen(),
               _ => const ProjectHomeScreen(),
             },
           ),
@@ -136,4 +138,5 @@ String routeForRoom(RoomKey key) => switch (key) {
       RoomKey.veil => VeilScreen.route,
       RoomKey.poltergeist => PoltergeistScreen.route,
       RoomKey.phantom => PhantomScreen.route,
+      RoomKey.wisp => WispScreen.route,
     };

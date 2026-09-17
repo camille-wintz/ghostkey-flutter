@@ -6,7 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 // Drawn by flutter_svg from the markup rather than re-traced as paths, so a
 // glyph that changes on the design canvas is copied here, not redrawn.
 
-enum RoomMark { apparition, phantom, veil, poltergeist }
+enum RoomMark { apparition, phantom, veil, poltergeist, wisp }
 
 const String _apparition = '''
 <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="miter">
@@ -46,11 +46,21 @@ const String _poltergeist = '''
   <circle cx="20.4" cy="6.6" r="1.2" fill="#fff" stroke="none"/>
 </svg>''';
 
+// Wisp's mark is not from the design canvas, which has no Wisp yet: an ember.
+const String _wisp = '''
+<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M12 20.6C8.6 20.6 6.6 18 7.3 14.9C7.9 12.2 10.6 10.6 11 7.2C13.9 9 16.8 12 16.8 15.8C16.8 18.6 14.7 20.6 12 20.6Z"/>
+  <path d="M11 7.2C10.3 5 11.5 3.4 13.6 2.8" stroke-opacity="0.5"/>
+  <path d="M17.6 6.4C18.8 7.4 19.4 8.8 19.2 10.2" stroke-opacity="0.45"/>
+  <circle cx="12" cy="16.4" r="1.15" fill="#fff" stroke="none"/>
+</svg>''';
+
 String _markupFor(RoomMark mark) => switch (mark) {
       RoomMark.apparition => _apparition,
       RoomMark.phantom => _phantom,
       RoomMark.veil => _veil,
       RoomMark.poltergeist => _poltergeist,
+      RoomMark.wisp => _wisp,
     };
 
 /// One room's mark at the size of its neighbours, in one ink.

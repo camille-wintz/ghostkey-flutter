@@ -40,6 +40,38 @@ class JobProgress {
       );
 }
 
+/// A choice a question offers. With `inputPlaceholder`, picking it opens a
+/// free-text field first and the text rides the answer.
+class JobQuestionOption {
+  const JobQuestionOption({required this.id, required this.label, this.inputPlaceholder});
+  final String id;
+  final String label;
+  final String? inputPlaceholder;
+
+  static JobQuestionOption fromJson(Json json) => JobQuestionOption(
+        id: asString(json['id']),
+        label: asString(json['label']),
+        inputPlaceholder: json['input'] is Map ? asString(asJson(json['input'])['placeholder']) : null,
+      );
+}
+
+/// A non-blocking question a run asks the author — continuity's "which is
+/// the story?". Ids are stable across runs and rehydrations.
+class JobQuestion {
+  const JobQuestion({required this.id, required this.question, required this.detail, required this.options});
+  final String id;
+  final String question;
+  final String? detail;
+  final List<JobQuestionOption> options;
+
+  static JobQuestion fromJson(Json json) => JobQuestion(
+        id: asString(json['id']),
+        question: asString(json['question']),
+        detail: json['detail'] as String?,
+        options: asJsonList(json['options']).map(JobQuestionOption.fromJson).toList(),
+      );
+}
+
 /// One job's state. `errorDetail` is the author-facing explanation — render it
 /// rather than branching on `error`, which is a wire code.
 ///
@@ -55,6 +87,7 @@ class JobSnapshot {
     required this.label,
     required this.status,
     required this.progress,
+    this.questions = const [],
     required this.error,
     required this.errorDetail,
     required this.summary,
@@ -68,6 +101,7 @@ class JobSnapshot {
   final String label;
   final JobStatus status;
   final JobProgress? progress;
+  final List<JobQuestion> questions;
   final String? error;
   final String? errorDetail;
   final String? summary;
@@ -83,6 +117,7 @@ class JobSnapshot {
         label: asString(json['label']),
         status: JobStatus.fromWire(json['status'] as String?),
         progress: json['progress'] == null ? null : JobProgress.fromJson(asJson(json['progress'])),
+        questions: asJsonList(json['questions']).map(JobQuestion.fromJson).toList(),
         error: json['error'] as String?,
         errorDetail: json['error_detail'] as String?,
         summary: json['summary'] as String?,
