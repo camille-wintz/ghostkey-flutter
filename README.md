@@ -48,7 +48,7 @@ flutter build apk --debug --dart-define=GHOSTKEY_SERVER_URL=https://ghostkey-ser
 adb install -r build/app/outputs/flutter-apk/app-debug.apk
 ```
 
-Debug builds use the application id `com.ghostkey.mobile.dev`, so a debug and a
+Debug builds use the application id `app.ghostkey.dev`, so a debug and a
 release build coexist on the same phone.
 
 ## Gates

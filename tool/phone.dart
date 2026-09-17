@@ -16,7 +16,7 @@ const servers = {
 };
 
 const apk = 'build/app/outputs/flutter-apk/app-debug.apk';
-const activity = 'com.ghostkey.mobile.dev/com.ghostkey.ghostkey.MainActivity';
+const activity = 'app.ghostkey.dev/com.ghostkey.ghostkey.MainActivity';
 
 Future<void> main(List<String> args) async {
   final target = args.isEmpty ? 'staging' : args.first;
