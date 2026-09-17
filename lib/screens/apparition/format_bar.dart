@@ -13,10 +13,12 @@ const double formatBarHeight = 48;
 /// Which emphasis the caret sits in, for the two buttons' lit state.
 typedef FormatActive = ({bool bold, bool italic});
 
-/// B · I · mic · camera — and the word count at the far end, so it is in
-/// reach while the title block has stepped down out of the way. Pinned above
-/// the keyboard by the page; the active state and the count arrive as
-/// listenables so a keystroke redraws two glyphs and nothing else.
+/// B · I · mic — and the word count at the far end, so it is in reach while
+/// the title block has stepped down out of the way. No camera: a page to scan
+/// is a thing the writer goes looking for, and the + menu is where they look.
+/// The page keeps this bar up whether or not the keyboard is. The active state
+/// and the count arrive as listenables so a keystroke redraws two glyphs and
+/// nothing else.
 class FormatBar extends StatelessWidget {
   const FormatBar({
     super.key,
@@ -25,7 +27,6 @@ class FormatBar extends StatelessWidget {
     required this.onBold,
     required this.onItalic,
     required this.onMic,
-    required this.onCamera,
     this.bottomInset = 0,
   });
 
@@ -34,9 +35,9 @@ class FormatBar extends StatelessWidget {
   final VoidCallback onBold;
   final VoidCallback onItalic;
 
-  /// Null when no launcher is wired: the button draws dimmed.
+  /// Null when no launcher is wired, or while a session already owns the
+  /// editor: the button draws dimmed.
   final VoidCallback? onMic;
-  final VoidCallback? onCamera;
 
   /// Safe-area padding below the tools, so the bar clears the system
   /// navigation bar when it rests at the bottom of an edge-to-edge screen.
@@ -89,12 +90,6 @@ class FormatBar extends StatelessWidget {
               onPressed: onMic,
               label: 'Dictate',
               child: Icon(LucideIcons.mic, size: 17, color: Ds.mid),
-            ),
-            const SizedBox(width: 4),
-            _Tool(
-              onPressed: onCamera,
-              label: 'Scan a page',
-              child: Icon(LucideIcons.camera, size: 17, color: Ds.mid),
             ),
             const Spacer(),
             ValueListenableBuilder<int>(

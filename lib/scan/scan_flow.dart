@@ -21,7 +21,7 @@ import 'scan_route.dart';
 // supplies it) — see scan_context.dart.
 
 Future<void> startScan(BuildContext context, EditorController editor) async {
-  if (editor.readOnly) return;
+  if (editor.capturing) return;
 
   final textAtOpen = editor.text;
   final selectionAtOpen = editor.selection;
@@ -38,7 +38,7 @@ Future<void> startScan(BuildContext context, EditorController editor) async {
       ),
     ),
   );
-  if (result == null || result.trim().isEmpty || editor.readOnly) return;
+  if (result == null || result.trim().isEmpty || editor.capturing) return;
 
   final selection = editor.text == textAtOpen ? selectionAtOpen : editor.selection;
   final plan = planOcrInsert(

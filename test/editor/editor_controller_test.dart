@@ -74,15 +74,15 @@ void main() {
       editor.dispose();
     });
 
-    test('readOnly notifies; text does not', () {
+    test('capturing notifies; text does not', () {
       final editor = EditorController(typography: TypographyMode.curly);
       var notified = 0;
       editor.addListener(() => notified++);
       editor.insertAt(0, 'typed');
       expect(notified, 0);
-      editor.readOnly = true;
+      editor.capturing = true;
       expect(notified, 1);
-      expect(editor.readOnly, isTrue);
+      expect(editor.capturing, isTrue);
       editor.dispose();
     });
 

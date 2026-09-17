@@ -24,9 +24,12 @@ class TextEdit {
 /// Programmatic inserts land raw; a caller wanting the project's typography
 /// applies `applyTypography` itself before calling [insertAt].
 ///
-/// This notifier fires for [readOnly] changes only — never per keystroke —
+/// This notifier fires for [capturing] changes only — never per keystroke —
 /// so a widget listening to it can hold the field without rebuilding it on
 /// every character. Text listeners belong on [textController] or [edits].
+///
+/// Whether the field takes keystrokes is NOT here: that is the page's, and
+/// the page alone decides when its keyboard is up.
 class EditorController extends ChangeNotifier {
   EditorController({required this.typography, String text = ''})
       : _textController = TextEditingController.fromValue(
@@ -49,7 +52,7 @@ class EditorController extends ChangeNotifier {
   final TextEditingController _textController;
   final StreamController<TextEdit> _edits = StreamController.broadcast(sync: true);
   String _lastText;
-  bool _readOnly = false;
+  bool _capturing = false;
   bool _disposed = false;
 
   TextEditingController get textController => _textController;
@@ -61,11 +64,15 @@ class EditorController extends ChangeNotifier {
   /// The caret, clamped to the text.
   int get caret => _textController.selection.extentOffset.clamp(0, text.length);
 
-  /// Dictation sets this while its dock is open; the field honours it.
-  bool get readOnly => _readOnly;
-  set readOnly(bool value) {
-    if (_readOnly == value) return;
-    _readOnly = value;
+  /// A capture session owns the editor: dictation's dock is open. It does not
+  /// lock the text — the writer keeps their caret and their keyboard through a
+  /// session, and the anchor maps whatever they do — it says only that one
+  /// session is already running, so a second capture does not start on top of
+  /// it and the tools that would start one draw dimmed.
+  bool get capturing => _capturing;
+  set capturing(bool value) {
+    if (_capturing == value) return;
+    _capturing = value;
     notifyListeners();
   }
 

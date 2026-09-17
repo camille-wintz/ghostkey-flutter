@@ -16,14 +16,19 @@ import 'transcribe.dart';
 // The entry point the editor's mic button calls (a `CaptureLauncher`).
 //
 // Opens the dock as an overlay pinned above the keyboard inset, takes the
-// insertion point from the caret, locks the editor for the session, runs the
-// recorder, and lands every transcript at that point — mapped through
-// whatever else changes the text — with the join and typography rules of
-// the RN app (anchor.dart). Resolves when the dock closes; chunks still in
-// flight keep landing after that, at the point, and the session is disposed
-// once the last one has.
+// insertion point from the caret, runs the recorder, and lands every
+// transcript at that point — mapped through whatever else changes the text —
+// with the join and typography rules of the RN app (anchor.dart). Resolves
+// when the dock closes; chunks still in flight keep landing after that, at
+// the point, and the session is disposed once the last one has.
+//
+// The editor is NOT locked for the session. The writer keeps their caret, can
+// move it, and can take the keyboard up and type while the words land: the
+// anchor maps their edits and the paragraph pass lets their words win. The
+// session flag only keeps a SECOND capture from starting on this editor.
 
 Future<void> startDictation(BuildContext context, EditorController editor) async {
+  if (editor.capturing) return;
   final projectId = ProjectScope.of(context);
   final overlay = Overlay.of(context, rootOverlay: true);
 
@@ -32,7 +37,7 @@ Future<void> startDictation(BuildContext context, EditorController editor) async
     editor,
     (paragraph, {required finished}) => cleanDictatedParagraph(paragraph, finished: finished, projectId: projectId),
   );
-  editor.readOnly = true;
+  editor.capturing = true;
 
   late final DictationSession session;
   late final OverlayEntry entry;
@@ -42,7 +47,7 @@ Future<void> startDictation(BuildContext context, EditorController editor) async
     if (closed.isCompleted) return;
     closed.complete();
     entry.remove();
-    editor.readOnly = false;
+    editor.capturing = false;
     await session.stop();
   }
 

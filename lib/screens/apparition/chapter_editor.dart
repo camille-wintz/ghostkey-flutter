@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../access/capability.dart';
@@ -27,13 +28,24 @@ import 'room_alert.dart';
 import 'scrolled_from_top.dart';
 import 'title_block.dart';
 
-/// The air between the + and the bar under it, while the keyboard is up.
+/// The air between the + and the bar under it.
 const double _fabGap = 12;
 
 /// Everything the tools occupy above the keyboard's top edge: the format
 /// bar, then the + above it. The page keeps the caret clear of the WHOLE
 /// band — a caret parked behind the + is a line the writer cannot see.
 const double _toolsHeight = formatBarHeight + _fabGap + fabSize;
+
+/// The air under the last line when the page is at rest, and the room the
+/// dictation dock needs on top of it — the dock draws over the page's foot,
+/// so the manuscript has to be able to scroll out from under it.
+const double _pageFoot = 120;
+
+/// The air the page leaves between the last line and whatever is covering the
+/// foot when it follows the writing down. A line and a half: enough to read
+/// the line as standing clear, not so much that it costs a screen of
+/// manuscript on a page the keyboard has already cut down.
+const double _tailAir = 48;
 
 /// One document, open: the page, its head, its tools, and the two owners
 /// that outlive nothing but this widget — the text and its autosave.
@@ -44,6 +56,18 @@ const double _toolsHeight = formatBarHeight + _fabGap + fabSize;
 ///
 /// Per-keystroke state never reaches `build`: the count, the tick and the
 /// lit format buttons ride on listenables the chrome subscribes to itself.
+///
+/// The caret is the page's, and it is always drawn: the field holds focus for
+/// as long as the chapter is open, and the keyboard going down is the field
+/// going read-only — which closes the input connection without touching focus.
+/// So a dismissed keyboard leaves the writer their place instead of nothing,
+/// and a tap is what it always was: the caret lands where they tapped and the
+/// keyboard comes back with it. Dictation runs over exactly that — the dock
+/// does not lock the page, and the keyboard is welcome to be up with it.
+///
+/// The tools stay up with the caret rather than with the keyboard: a bar that
+/// arrives and leaves has to do it against the keyboard's own slide, and it
+/// never looks like one movement. Up always, it simply rides the inset.
 class ChapterEditor extends ConsumerStatefulWidget {
   const ChapterEditor({
     super.key,
@@ -73,7 +97,7 @@ class ChapterEditor extends ConsumerStatefulWidget {
   ConsumerState<ChapterEditor> createState() => _ChapterEditorState();
 }
 
-class _ChapterEditorState extends ConsumerState<ChapterEditor> {
+class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindingObserver {
   late final EditorController _editor = EditorController(typography: widget.typography);
   late final NamesSweep _names = NamesSweep(projectId: widget.projectId, documentId: widget.documentId);
   late final ProviderContainer _container;
@@ -87,8 +111,24 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
   ProviderSubscription<AsyncValue<DocumentDto>>? _docSub;
   bool _loaded = false;
   Object? _loadError;
-  bool _focused = false;
+
+  /// The keyboard is up and the field takes keystrokes. Its opposite is not
+  /// "no caret" — the caret is drawn either way.
+  bool _writing = false;
+
+  /// What the last metrics change said, so a keyboard the app did not put
+  /// down itself is noticed once.
+  bool _keyboardUp = false;
+
+  /// The page is following the foot of the chapter. Set by where the writer's
+  /// own scroll came to rest, and by starting a dictation from the end; read
+  /// when something grows the page under them.
+  bool _stickToEnd = false;
   bool _menuOpen = false;
+
+  /// The + put the keyboard down to open, so closing it with nothing chosen
+  /// owes it back — the writer was mid-sentence and only looked.
+  bool _menuTookKeyboard = false;
   String _seen = '';
   TextSelection _seenSelection = const TextSelection.collapsed(offset: -1);
 
@@ -100,9 +140,10 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
     // Taken now, not on first use: the chapter-switch flush lands after this
     // State is gone, when the context can no longer answer.
     _container = ProviderScope.containerOf(context, listen: false);
+    WidgetsBinding.instance.addObserver(this);
     _editor.textController.addListener(_onValue);
-    _scroll.addListener(() => _scrolled.onOffset(_scroll.offset));
-    _focus.addListener(_onFocus);
+    _scroll.addListener(_onScroll);
+    dictationDockHeight.addListener(_onDock);
     _docSub = ref.listenManual(documentProvider(_key), (prev, next) {
       next.when(data: _load, error: (e, _) => setState(() => _loadError = e), loading: () {});
     }, fireImmediately: true);
@@ -130,6 +171,11 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
     )..loaded(doc);
     if (_canSweep) unawaited(_names.scan());
     setState(() {});
+    // The page opens with a caret rather than nothing: the field exists as of
+    // this build, so focus is asked for once it is in the tree. Read-only, so
+    // no keyboard comes with it — and no scroll either, since Flutter only
+    // chases the caret for a field that can be typed into.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _keepCaret());
   }
 
   // Absent rather than padlocked when the plan has no sweep: an upsell parked
@@ -150,6 +196,7 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
     if (!identical(text, _seen) && text != _seen) {
       _seen = text;
       _words.value = countWords(text);
+      _followEnd(value.selection, text);
     }
     if (value.selection != _seenSelection) {
       _seenSelection = value.selection;
@@ -164,9 +211,124 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
     if (next != _format.value) _format.value = next;
   }
 
-  void _onFocus() {
-    final focused = _focus.hasFocus;
-    if (focused != _focused) setState(() => _focused = focused);
+  /// Only a scroll the writer made themselves says where they want to be —
+  /// the page's own follow ends at the foot every time, and would keep
+  /// answering yes for them.
+  void _onScroll() {
+    _scrolled.onOffset(_scroll.offset);
+    if (_scroll.position.userScrollDirection != ScrollDirection.idle) _stickToEnd = _restingAtEnd;
+  }
+
+  /// The dock opened, or grew by a notice: it takes the band the last line was
+  /// resting in, and the page's foot grew to match. A page that was following
+  /// the end follows it again, so the words keep landing in sight of the
+  /// writer rather than behind the dock.
+  void _onDock() {
+    if (_stickToEnd) _followFoot();
+  }
+
+  /// Words reaching the end of the chapter keep the end in view: the page grew
+  /// by a line, so it follows that line down, the way a chat does. Only from
+  /// the end — a writer working in the middle of the chapter keeps the view
+  /// they chose.
+  ///
+  /// Typing always follows, because the writer is watching the words they are
+  /// making. Words that land on their own — a dictated chunk, the paragraph
+  /// pass — follow only a page that was already resting at the end, so
+  /// scrolling up to read mid-session is not undone by the next chunk.
+  void _followEnd(TextSelection selection, String text) {
+    if (!_atTextEnd(selection, text)) return;
+    if (!_writing && !_stickToEnd) return;
+    _followFoot();
+  }
+
+  /// The caret is past the last word of the chapter. Trailing blank lines
+  /// still count: a chapter that keeps one — most imported ones do — would
+  /// otherwise never be written at "the end" at all.
+  bool _atTextEnd(TextSelection selection, String text) {
+    if (!selection.isCollapsed || selection.baseOffset < 0) return false;
+    for (var i = text.length; i > selection.baseOffset; i--) {
+      final c = text.codeUnitAt(i - 1);
+      if (c != 0x20 && c != 0x0A && c != 0x0D && c != 0x09) return false;
+    }
+    return true;
+  }
+
+  /// Ride the page down to its foot, after the frame: the line that just
+  /// arrived is laid out by then, and the foot it pushed down is what the page
+  /// is being asked to reach.
+  void _followFoot() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+      final end = _scroll.position.maxScrollExtent;
+      final foot = _pageFoot + dictationDockHeight.value;
+      final target = (end - (foot - _tailRoom(MediaQuery.paddingOf(context).bottom))).clamp(0.0, end);
+      final gap = target - _scroll.offset;
+      // Already there, or past it: the writer scrolled further down than the
+      // page would have, and that is theirs to keep.
+      if (gap <= 0.5) return;
+      // A line or two is the page keeping pace with the writing, and it goes
+      // at once — an animation the next word restarts never arrives. A longer
+      // way is a chunk landing or the dock opening, and rides.
+      if (gap <= 96) {
+        _scroll.jumpTo(target);
+      } else {
+        unawaited(_scroll.animateTo(target, duration: DsMotion.duration, curve: Curves.easeOut));
+      }
+    });
+  }
+
+  /// The page is sitting at the foot of the chapter, give or take a line.
+  bool get _restingAtEnd =>
+      _scroll.hasClients && _scroll.offset >= _scroll.position.maxScrollExtent - 32;
+
+  /// How much of the page's foot the writer must keep: the band at the bottom
+  /// is spoken for — by the + at rest, by the dock while a session runs — and
+  /// the last line wants to sit just clear of it. Scrolling the whole foot
+  /// into view instead is what puts one line at the top of the screen with
+  /// everything else empty under it.
+  ///
+  /// The dock covers less of the PAGE than it is tall: the page ends at the
+  /// format bar, and both of them carry the safe area under it.
+  double _tailRoom(double bottomPad) {
+    final dock = dictationDockHeight.value;
+    final covered = dock > 0 ? dock - formatBarHeight - bottomPad : fabSize + _fabGap;
+    return covered + _tailAir;
+  }
+
+  /// The keyboard moved. The one case that matters is it going down without
+  /// the page asking — Android's back button, the IME's own hide key: Flutter
+  /// is not told, so the field would sit there editable under no keyboard.
+  @override
+  void didChangeMetrics() {
+    if (!mounted) return;
+    final up = View.of(context).viewInsets.bottom > 0;
+    if (up == _keyboardUp) return;
+    _keyboardUp = up;
+    if (!up && _writing) setState(() => _writing = false);
+  }
+
+  /// Put the keyboard down and keep the place: read-only closes the input
+  /// connection, which is what dismisses the keyboard, and leaves focus — and
+  /// so the caret — alone.
+  void _rest() {
+    if (_writing) setState(() => _writing = false);
+    _keepCaret();
+  }
+
+  /// Take the keyboard up. A tap on the page asks for this, after the field
+  /// has put the caret where the tap landed — so the writer aims with the same
+  /// gesture they always did, and the keyboard follows it.
+  void _write() {
+    if (!_writing) setState(() => _writing = true);
+    _focus.requestFocus();
+  }
+
+  /// The caret is the page's, not a route's: a sheet or a viewfinder that took
+  /// focus gives it back when it goes. Read-only, so this never raises the
+  /// keyboard on its own.
+  void _keepCaret() {
+    if (mounted && !_focus.hasFocus) _focus.requestFocus();
   }
 
   void _applyFormat(InlineMarker marker) {
@@ -179,19 +341,40 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
     );
   }
 
-  // The keyboard goes down as a capture surface comes up — the session opens
-  // on the waveform or the viewfinder, not on a keyboard nobody asked for.
-  Future<void> _capture(CaptureLauncher launcher) async {
+  /// Opens a capture surface. The keyboard goes down for it — a session opens
+  /// on the waveform or the viewfinder, not on a keyboard nobody asked for.
+  ///
+  /// [overPage] is dictation: its dock runs over this page rather than taking
+  /// the screen, so a writer who had the keyboard up when they reached for it
+  /// keeps it, and types beside the words landing. The + menu put the keyboard
+  /// down to open, so it answers for the reach that went through it.
+  Future<void> _capture(CaptureLauncher launcher, {bool overPage = false}) async {
+    final keepKeyboard = overPage && (_writing || _menuTookKeyboard);
+    // Dictating from the end of the chapter is asking to watch it grow, even
+    // from a page parked at the top: the words land out of sight otherwise.
+    if (overPage && _editor.caret == _editor.text.length) _stickToEnd = true;
+    _menuTookKeyboard = false;
     setState(() => _menuOpen = false);
-    _focus.unfocus();
+    if (!keepKeyboard) _rest();
     // The scan review names the chapter it inserts into; the flow reads it
     // from this registry rather than from the editor.
     ScanContext.chapterTitle = widget.filename.replaceAll(RegExp(r'\.md$', caseSensitive: false), '');
-    await launcher(context, _editor);
+    // Not awaited yet: a dictation resolves when its dock closes, and the dock
+    // is in the tree as of this call — so the keyboard rises to meet it rather
+    // than a whole session later.
+    final running = launcher(context, _editor);
+    if (keepKeyboard) _write();
+    await running;
+    // Dictation resolves when its dock closes, which is a whole session later:
+    // if the writer took the keyboard up in the middle of it, they are still
+    // typing, and only a lost caret needs putting back.
+    _keepCaret();
   }
 
   Future<void> _openNames() async {
+    _menuTookKeyboard = false;
     setState(() => _menuOpen = false);
+    _rest();
     await NotesNamesSheet.show(
       context,
       projectId: widget.projectId,
@@ -201,6 +384,7 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
       onAccept: (c) => _file(c, hidden: false),
       onDecline: (c) => _file(c, hidden: true),
     );
+    _keepCaret();
   }
 
   Future<void> _file(NameCandidate candidate, {required bool hidden}) async {
@@ -216,12 +400,13 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _docSub?.close();
     // The autosave flushes on dispose and the flush outlives it; the
     // controller it reads from has to go AFTER that read.
     _autosave?.dispose();
     _names.dispose();
-    _focus.removeListener(_onFocus);
+    dictationDockHeight.removeListener(_onDock);
     _focus.dispose();
     _scroll.dispose();
     _scrolled.dispose();
@@ -270,20 +455,23 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
                       editor: _editor,
                       focus: _focus,
                       scroll: _scroll,
-                      bottomPadding: (_focused ? 0 : bottomPad) + 120 + dock,
+                      writing: _writing,
+                      onWrite: _write,
+                      bottomPadding: _pageFoot + dock,
                     ),
                   ),
                   if (!_menuOpen)
                     Positioned(
                       right: 20,
-                      bottom: _focused ? _fabGap : bottomPad + 22,
+                      bottom: _fabGap,
                       child: ValueListenableBuilder<List<NameCandidate>>(
                         valueListenable: _names.candidates,
                         builder: (context, candidates, _) => Fab(
                           semanticLabel: 'Add to this chapter',
                           attention: canSweep && candidates.isNotEmpty,
                           onPressed: () {
-                            _focus.unfocus();
+                            _menuTookKeyboard = _writing;
+                            _rest();
                             setState(() => _menuOpen = true);
                           },
                         ),
@@ -292,28 +480,41 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
                 ],
               ),
             ),
-            if (_focused)
-              FormatBar(
+            // Drawn through a dictation too, though the dock covers it: the
+            // dock is the same panel at the same edge, and a bar that left for
+            // the session would move the page's foot twice for nothing. The
+            // mic dims all the same — a tap that found its way past the dock
+            // must not open a second session.
+            ListenableBuilder(
+              listenable: _editor,
+              builder: (context, _) => FormatBar(
                 active: _format,
                 words: _words,
                 bottomInset: bottomPad,
                 onBold: () => _applyFormat(InlineMarker.bold),
                 onItalic: () => _applyFormat(InlineMarker.italic),
-                onMic: dictate == null ? null : () => _capture(dictate),
-                onCamera: scan == null ? null : () => _capture(scan),
+                onMic: dictate == null || _editor.capturing ? null : () => _capture(dictate, overPage: true),
               ),
+            ),
           ],
         ),
         if (_menuOpen)
           ValueListenableBuilder<List<NameCandidate>>(
             valueListenable: _names.candidates,
             builder: (context, candidates, _) => AddMenu(
-              fabBottom: bottomPad + 22,
+              // Where the + rests: over the bar, which carries the safe area.
+              fabBottom: formatBarHeight + bottomPad + _fabGap,
               newNames: canSweep ? [for (final c in candidates) c.name] : const [],
               onNames: _openNames,
-              onPhoto: scan == null ? null : () => _capture(scan),
-              onRecord: dictate == null ? null : () => _capture(dictate),
-              onClose: () => setState(() => _menuOpen = false),
+              onPhoto: scan == null || _editor.capturing ? null : () => _capture(scan),
+              onRecord: dictate == null || _editor.capturing ? null : () => _capture(dictate, overPage: true),
+              onClose: () {
+                setState(() => _menuOpen = false);
+                if (_menuTookKeyboard) {
+                  _menuTookKeyboard = false;
+                  _write();
+                }
+              },
             ),
           ),
       ],
@@ -324,11 +525,28 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
 /// The manuscript page: one field in the manuscript's face, at the system's
 /// own prose step. Scrolls as a whole so the caret is kept clear of the tools
 /// above the keyboard; the field itself never scrolls.
+///
+/// Read-only is how the page holds the keyboard down, so the field asks for
+/// the caret to be drawn either way (Flutter's default would take it away with
+/// the keyboard). Read-only still moves the caret to a tap and still selects —
+/// it only refuses the IME — so the page hands the tap on to [onWrite], and
+/// the keyboard arrives at the place the tap just chose.
 class _Page extends StatelessWidget {
-  const _Page({required this.editor, required this.focus, required this.scroll, required this.bottomPadding});
+  const _Page({
+    required this.editor,
+    required this.focus,
+    required this.scroll,
+    required this.writing,
+    required this.onWrite,
+    required this.bottomPadding,
+  });
   final EditorController editor;
   final FocusNode focus;
   final ScrollController scroll;
+  final bool writing;
+
+  /// The page was tapped: the caret is already there, the keyboard is wanted.
+  final VoidCallback onWrite;
   final double bottomPadding;
 
   @override
@@ -339,43 +557,43 @@ class _Page extends StatelessWidget {
       slivers: [
         SliverPadding(
           padding: const EdgeInsets.only(top: 8),
-          // The controller notifies for readOnly only — never per keystroke.
           sliver: SliverToBoxAdapter(
-            child: ListenableBuilder(
-              listenable: editor,
-              builder: (context, _) => TextField(
-                controller: editor.textController,
-                focusNode: focus,
-                readOnly: editor.readOnly,
-                inputFormatters: [editor.inputFormatter],
-                maxLines: null,
-                keyboardType: TextInputType.multiline,
-                textCapitalization: TextCapitalization.sentences,
-                textInputAction: TextInputAction.newline,
-                autocorrect: true,
-                enableSuggestions: true,
-                cursorColor: Ds.accent,
-                // The whole band above the keyboard, so a caret never parks
-                // behind the +.
-                scrollPadding: const EdgeInsets.only(top: 8, bottom: _toolsHeight + 12),
-                style: TextStyle(
+            child: TextField(
+              controller: editor.textController,
+              focusNode: focus,
+              readOnly: !writing,
+              showCursor: true,
+              // Runs after the field has placed the caret, so the keyboard
+              // comes up at the tap rather than at the old position.
+              onTap: onWrite,
+              inputFormatters: [editor.inputFormatter],
+              maxLines: null,
+              keyboardType: TextInputType.multiline,
+              textCapitalization: TextCapitalization.sentences,
+              textInputAction: TextInputAction.newline,
+              autocorrect: true,
+              enableSuggestions: true,
+              cursorColor: Ds.accent,
+              // The whole band above the keyboard, so a caret never parks
+              // behind the +.
+              scrollPadding: const EdgeInsets.only(top: 8, bottom: _toolsHeight + 12),
+              style: TextStyle(
+                fontFamily: DsFonts.manuscript,
+                fontSize: DsText.prose.size,
+                height: DsText.prose.height,
+                color: Ds.ink,
+                leadingDistribution: TextLeadingDistribution.even,
+              ),
+              decoration: InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                hintText: 'Start writing…',
+                hintStyle: TextStyle(
                   fontFamily: DsFonts.manuscript,
                   fontSize: DsText.prose.size,
                   height: DsText.prose.height,
-                  color: Ds.ink,
-                  leadingDistribution: TextLeadingDistribution.even,
-                ),
-                decoration: InputDecoration(
-                  isDense: true,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-                  hintText: 'Start writing…',
-                  hintStyle: TextStyle(
-                    fontFamily: DsFonts.manuscript,
-                    fontSize: DsText.prose.size,
-                    height: DsText.prose.height,
-                    color: Ds.faint,
-                  ),
+                  color: Ds.faint,
                 ),
               ),
             ),
@@ -392,7 +610,7 @@ class _Page extends StatelessWidget {
             onTap: () {
               final end = editor.text.length;
               editor.textController.selection = TextSelection.collapsed(offset: end);
-              focus.requestFocus();
+              onWrite();
             },
             child: SizedBox(height: bottomPadding),
           ),
