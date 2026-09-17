@@ -2,12 +2,16 @@ import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'dto/auth.dart';
+
 // The two secrets this app keeps on the phone: the refresh token, and the
-// credentials that let a session be rebuilt when the token chain is broken.
-// Nothing about project content is ever stored here.
+// credentials that let a session be rebuilt when the token chain is broken —
+// plus who they belong to, so a launch with no connection can open on that
+// account's offline copies. Nothing about project content is ever stored here.
 
 const _refreshTokenKey = 'ghostkey_refresh_token';
 const _credentialsKey = 'ghostkey_auth_credentials';
+const _userKey = 'ghostkey_session_user';
 
 const _storage = FlutterSecureStorage();
 
@@ -23,6 +27,19 @@ Future<void> setRefreshToken(String token) =>
     _storage.write(key: _refreshTokenKey, value: token);
 
 Future<void> clearRefreshToken() => _storage.delete(key: _refreshTokenKey);
+
+Future<AuthUser?> getSessionUser() async {
+  try {
+    final stored = await _storage.read(key: _userKey);
+    return stored == null ? null : AuthUser.fromJson((jsonDecode(stored) as Map).cast<String, dynamic>());
+  } catch (_) {
+    return null;
+  }
+}
+
+Future<void> setSessionUser(AuthUser user) => _storage.write(key: _userKey, value: jsonEncode(user.toJson()));
+
+Future<void> clearSessionUser() => _storage.delete(key: _userKey);
 
 Future<StoredCredentials?> getStoredCredentials() async {
   final stored = await _storage.read(key: _credentialsKey);

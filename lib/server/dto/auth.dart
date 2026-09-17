@@ -19,6 +19,8 @@ class AuthUser {
         email: asString(json['email']),
         emailVerified: asBool(json['email_verified']),
       );
+
+  Json toJson() => {'id': id, 'email': email, 'email_verified': emailVerified};
 }
 
 class AuthSession {

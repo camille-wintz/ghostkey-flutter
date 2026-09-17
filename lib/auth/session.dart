@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../offline/mirror.dart';
 import '../server/auth/api.dart';
 import '../server/dto/auth.dart';
 import '../server/errors.dart';
@@ -43,12 +44,14 @@ class Session extends Notifier<AuthState> {
       getAccessToken: () => state.accessToken,
       onRefresh: _refresh,
       onAuthLost: () => clearSession(),
+      getUserId: () => state.user?.id,
     ));
     return AuthState.hydrating;
   }
 
   Future<void> setSession(AuthSession next, {StoredCredentials? credentials}) async {
     await setRefreshToken(next.refreshToken);
+    await setSessionUser(next.user);
     if (credentials != null) await setStoredCredentials(credentials);
     state = AuthState(
       status: AuthStatus.signedIn,
@@ -58,9 +61,14 @@ class Session extends Notifier<AuthState> {
     );
   }
 
+  /// Every sign-out, asked for or not. The offline copies go with it: they
+  /// are all re-fetchable, and unsaved words are in the draft journal, not
+  /// in the mirror.
   Future<void> clearSession() async {
     await clearRefreshToken();
     await clearStoredCredentials();
+    await clearSessionUser();
+    await mirror.wipe();
     state = AuthState.signedOut;
   }
 
@@ -75,6 +83,7 @@ class Session extends Notifier<AuthState> {
           return;
         } on ServerError catch (e) {
           if (e.code == 'invalid_refresh_token') await clearRefreshToken();
+          if (e.code == 'network_error' && await _openOffline(stored)) return;
         }
       }
       if (await _restoreWithStoredCredentials()) return;
@@ -82,6 +91,18 @@ class Session extends Notifier<AuthState> {
     } catch (_) {
       state = AuthState.signedOut;
     }
+  }
+
+  /// No connection at launch: stay signed in as the last account, with no
+  /// access token, so the shelf and the books open on their offline copies.
+  /// The first request that reaches the server is refused 401 and refreshes
+  /// with [refreshToken] like any expired token would.
+  Future<bool> _openOffline(String refreshToken) async {
+    final user = await getSessionUser();
+    if (user == null) return false;
+    if (kDebugMode) debugPrint('[auth] Offline at launch — opening as ${user.email}');
+    state = AuthState(status: AuthStatus.signedIn, user: user, refreshToken: refreshToken);
+    return true;
   }
 
   Future<bool> _restoreWithStoredCredentials() async {

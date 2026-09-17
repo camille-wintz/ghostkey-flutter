@@ -1,21 +1,31 @@
 import 'dart:typed_data';
 
+import '../../offline/mirror.dart';
 import '../client.dart';
 import '../dto/jobs.dart';
 import '../dto/json.dart';
 import '../dto/projects.dart';
 
+// The shelf, a project's detail and a document are the reads the offline
+// mirror keeps: served from the phone when the server can't be reached.
+
 Future<List<ProjectMeta>> listProjects(String? folderId) async {
   final path = folderId == null
       ? '/api/projects'
       : '/api/projects?folder_id=${Uri.encodeQueryComponent(folderId)}';
-  final res = await apiFetch(path);
-  return asJsonList(res.jsonObject()['projects']).map(ProjectMeta.fromJson).toList();
+  final json = await mirror.readThrough(
+    'projects:${folderId ?? 'root'}',
+    () async => (await apiFetch(path, timeout: mirroredReadTimeout)).jsonObject(),
+  );
+  return asJsonList(json['projects']).map(ProjectMeta.fromJson).toList();
 }
 
 Future<ProjectFull> getProject(String id) async {
-  final res = await apiFetch('/api/projects/$id');
-  return ProjectFull.fromJson(res.jsonObject());
+  final json = await mirror.readThrough(
+    'project:$id',
+    () async => (await apiFetch('/api/projects/$id', timeout: mirroredReadTimeout)).jsonObject(),
+  );
+  return ProjectFull.fromJson(json);
 }
 
 /// `starterChapter` asks the server to create the manuscript's first empty
@@ -96,21 +106,41 @@ Future<DocumentDto> createDocument(
     'filename': filename,
     'content': content,
   });
-  return DocumentDto.fromJson(asJson(res.jsonObject()['document']));
+  return _rememberDocument(projectId, asJson(res.jsonObject()['document']));
 }
 
 Future<DocumentDto> getDocument(String projectId, String documentId) async {
-  final res = await apiFetch('/api/projects/$projectId/documents/$documentId');
-  return DocumentDto.fromJson(asJson(res.jsonObject()['document']));
+  final json = await mirror.readThrough(
+    _documentKey(projectId, documentId),
+    () async => asJson(
+      (await apiFetch('/api/projects/$projectId/documents/$documentId', timeout: mirroredReadTimeout))
+          .jsonObject()['document'],
+    ),
+    version: (json) => asInt(json['version']),
+  );
+  return DocumentDto.fromJson(json);
 }
 
-Future<DocumentDto> putDocument(String projectId, String documentId, String content) async {
+String _documentKey(String projectId, String documentId) => 'document:$projectId:$documentId';
+
+/// A write's answer is the newest copy of the document: the offline copy
+/// takes it, or a chapter saved and then opened offline would open on the
+/// words from before the save.
+Future<DocumentDto> _rememberDocument(String projectId, Json json) async {
+  final doc = DocumentDto.fromJson(json);
+  await mirror.remember(_documentKey(projectId, doc.id), json, version: doc.version);
+  return doc;
+}
+
+/// `baseVersion` makes the write land only while the document is still at
+/// that version; a miss is 409 `version_conflict`. Omitted, last-write-wins.
+Future<DocumentDto> putDocument(String projectId, String documentId, String content, {int? baseVersion}) async {
   final res = await apiFetch(
     '/api/projects/$projectId/documents/$documentId',
     method: 'PUT',
-    body: {'content': content},
+    body: {'content': content, 'base_version': ?baseVersion},
   );
-  return DocumentDto.fromJson(asJson(res.jsonObject()['document']));
+  return _rememberDocument(projectId, asJson(res.jsonObject()['document']));
 }
 
 Future<DocumentDto> renameDocument(String projectId, String documentId, String filename) async {
@@ -119,7 +149,7 @@ Future<DocumentDto> renameDocument(String projectId, String documentId, String f
     method: 'PATCH',
     body: {'filename': filename},
   );
-  return DocumentDto.fromJson(asJson(res.jsonObject()['document']));
+  return _rememberDocument(projectId, asJson(res.jsonObject()['document']));
 }
 
 Future<void> deleteDocument(String projectId, String documentId) async {
