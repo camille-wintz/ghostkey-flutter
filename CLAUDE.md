@@ -129,6 +129,11 @@ carries the same staging / prod / LAN configurations — change one, change both
 `flutter analyze` and `flutter test` are the gates; a debug APK on the phone
 is the proof.
 
+The Play Store bundle: `dart tool/release.dart [patch|minor|major|x.y.z]` runs
+the gates, bumps `pubspec.yaml` (the build number on every run, since Play
+refuses a versionCode it has seen), and builds the signed `.aab` against prod.
+A failed run puts the version back.
+
 ## Git
 
 **One branch. No topic branches, no pull requests.** Work is committed to
