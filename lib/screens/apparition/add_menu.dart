@@ -5,6 +5,13 @@ import '../../ds/tokens.dart';
 import '../../ui/press.dart';
 import 'fab.dart';
 
+/// "Pathfinder and The Watcher's Memoirs" — the names themselves, so the
+/// author can tell at a glance whether this is worth opening.
+String nameList(List<String> names) {
+  if (names.length <= 2) return names.join(' and ');
+  return '${names.sublist(0, names.length - 1).join(', ')} and ${names.last}';
+}
+
 /// The '+' fans into Notes & names / Photo / Record over a dimmed page.
 ///
 /// Fills the page's stack. The ✕ lands on the spot the + rests at
@@ -23,10 +30,11 @@ class AddMenu extends StatefulWidget {
 
   final double fabBottom;
 
-  /// How many names this chapter introduced that the bible has not filed.
-  /// Zero draws no badge — the row is still worth reaching, it just has
-  /// nothing to announce.
-  final int newNames;
+  /// The names this chapter introduced that the bible has not filed. They
+  /// replace the row's hint, in amber — it wants attention, not because
+  /// anything went wrong. Empty draws the plain row: still worth reaching, it
+  /// just has nothing to announce.
+  final List<String> newNames;
   final VoidCallback onNames;
 
   /// Null when no launcher is wired: the row draws dimmed.
@@ -58,13 +66,17 @@ class _AddMenuState extends State<AddMenu> with SingleTickerProviderStateMixin {
           child: GestureDetector(
             onTap: widget.onClose,
             behavior: HitTestBehavior.opaque,
-            child: Semantics(label: 'Close', button: true, child: const ColoredBox(color: Color(0x8C000000))),
+            child: Semantics(
+              label: 'Close',
+              button: true,
+              child: const ColoredBox(color: Color(0x8C000000)),
+            ),
           ),
         ),
         Positioned(
           right: 20,
           bottom: widget.fabBottom + 70,
-          width: 260,
+          width: 300,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
@@ -74,8 +86,8 @@ class _AddMenuState extends State<AddMenu> with SingleTickerProviderStateMixin {
                 start: 0,
                 icon: LucideIcons.bookMarked,
                 label: 'Notes & names',
-                hint: "this chapter's people and places",
-                badge: widget.newNames,
+                hint: widget.newNames.isEmpty ? "this chapter's people and places" : nameList(widget.newNames),
+                badge: widget.newNames.length,
                 onPressed: widget.onNames,
               ),
               _Action(
@@ -128,7 +140,10 @@ class _Action extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final curved = CurvedAnimation(parent: animation, curve: Interval(start, 1, curve: Curves.easeOutBack));
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Interval(start, 1, curve: Curves.easeOutBack),
+    );
     return FadeTransition(
       opacity: CurvedAnimation(parent: animation, curve: Interval(start, (start + 0.4).clamp(0, 1))),
       child: SlideTransition(
@@ -143,46 +158,58 @@ class _Action extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(DsGeom.radius),
-                      border: Border.all(color: Ds.edge),
-                      color: Ds.panel,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(label, style: DsStyle.ui(DsText.body, color: Ds.hi)),
-                            if (badge > 0) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                height: 18,
-                                padding: const EdgeInsets.symmetric(horizontal: 7),
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(DsGeom.radiusRound),
-                                  color: Ds.attentionMix(18),
-                                ),
-                                child: Text(
-                                  '$badge NEW',
-                                  style: TextStyle(
-                                    fontFamily: DsFonts.ui,
-                                    fontSize: 10,
-                                    letterSpacing: DsTracking.pill,
-                                    color: Ds.attention300,
+                  // Flexible so a long run of new names wraps inside the
+                  // menu's width instead of overflowing it.
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(DsGeom.radius),
+                        border: Border.all(color: badge > 0 ? Ds.attentionMix(40) : Ds.edge),
+                        // Opaque: the wash sits over the dimmed page, and a
+                        // translucent one would let the prose through.
+                        color: badge > 0 ? Color.alphaBlend(Ds.attentionMix(10), Ds.panel) : Ds.panel,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(label, style: DsStyle.ui(DsText.body, color: Ds.hi)),
+                              if (badge > 0) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  height: 18,
+                                  padding: const EdgeInsets.symmetric(horizontal: 7),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(DsGeom.radiusRound),
+                                    color: Ds.attentionMix(18),
+                                  ),
+                                  child: Text(
+                                    '$badge NEW',
+                                    style: TextStyle(
+                                      fontFamily: DsFonts.ui,
+                                      fontSize: 10,
+                                      letterSpacing: DsTracking.pill,
+                                      color: Ds.attention300,
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ],
-                          ],
-                        ),
-                        Text(hint, style: DsStyle.ui(DsText.eyebrow, color: Ds.low)),
-                      ],
+                          ),
+                          Text(
+                            hint,
+                            textAlign: TextAlign.end,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: DsStyle.ui(DsText.eyebrow, color: badge > 0 ? Ds.attention300 : Ds.low),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -192,10 +219,12 @@ class _Action extends StatelessWidget {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(DsGeom.radius),
-                      border: Border.all(color: pressed ? Ds.accentMix(55) : Ds.edgeHi),
+                      border: Border.all(
+                        color: pressed ? Ds.accentMix(55) : (badge > 0 ? Ds.attentionMix(40) : Ds.edgeHi),
+                      ),
                       color: Ds.raise,
                     ),
-                    child: Icon(icon, size: 20, color: Ds.soft),
+                    child: Icon(icon, size: 20, color: badge > 0 ? Ds.attention400 : Ds.soft),
                   ),
                 ],
               ),

@@ -20,7 +20,6 @@ import '../../ui/state_screen.dart';
 import 'add_menu.dart';
 import 'fab.dart';
 import 'format_bar.dart';
-import 'names_banner.dart';
 import 'names_sweep.dart';
 import 'notes_names_sheet.dart';
 import 'providers.dart';
@@ -90,9 +89,6 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
   Object? _loadError;
   bool _focused = false;
   bool _menuOpen = false;
-  // "Later" is a dismissal for this sitting, not a decision: declining is a
-  // hidden entity, and "not now" is not worth a row on anyone's server.
-  bool _bannerDismissed = false;
   String _seen = '';
   TextSelection _seenSelection = const TextSelection.collapsed(offset: -1);
 
@@ -108,11 +104,7 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
     _scroll.addListener(() => _scrolled.onOffset(_scroll.offset));
     _focus.addListener(_onFocus);
     _docSub = ref.listenManual(documentProvider(_key), (prev, next) {
-      next.when(
-        data: _load,
-        error: (e, _) => setState(() => _loadError = e),
-        loading: () {},
-      );
+      next.when(data: _load, error: (e, _) => setState(() => _loadError = e), loading: () {});
     }, fireImmediately: true);
   }
 
@@ -168,10 +160,7 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
   void _syncFormat(String text, TextSelection selection) {
     if (!selection.isValid) return;
     final range = (start: selection.start, end: selection.end);
-    final next = (
-      bold: isWrapped(text, range, InlineMarker.bold),
-      italic: isWrapped(text, range, InlineMarker.italic),
-    );
+    final next = (bold: isWrapped(text, range, InlineMarker.bold), italic: isWrapped(text, range, InlineMarker.italic));
     if (next != _format.value) _format.value = next;
   }
 
@@ -246,7 +235,9 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
   Widget build(BuildContext context) {
     if (!_loaded) {
       final error = _loadError;
-      return error != null ? StateScreen(message: messageFor(error)) : const StateScreen(spinner: true, message: 'Loading chapter…');
+      return error != null
+          ? StateScreen(message: messageFor(error))
+          : const StateScreen(spinner: true, message: 'Loading chapter…');
     }
 
     final bottomPad = MediaQuery.paddingOf(context).bottom;
@@ -268,17 +259,6 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
               onBack: widget.onBack,
               onOpenChapters: widget.onOpenChapters,
             ),
-            if (canSweep)
-              ValueListenableBuilder<List<NameCandidate>>(
-                valueListenable: _names.candidates,
-                builder: (context, candidates, _) => candidates.isEmpty || _bannerDismissed
-                    ? const SizedBox.shrink()
-                    : NamesBanner(
-                        names: candidates.map((c) => c.name).toList(),
-                        onReview: _openNames,
-                        onLater: () => setState(() => _bannerDismissed = true),
-                      ),
-              ),
             Expanded(
               child: Stack(
                 children: [
@@ -297,12 +277,16 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
                     Positioned(
                       right: 20,
                       bottom: _focused ? _fabGap : bottomPad + 22,
-                      child: Fab(
-                        semanticLabel: 'Add to this chapter',
-                        onPressed: () {
-                          _focus.unfocus();
-                          setState(() => _menuOpen = true);
-                        },
+                      child: ValueListenableBuilder<List<NameCandidate>>(
+                        valueListenable: _names.candidates,
+                        builder: (context, candidates, _) => Fab(
+                          semanticLabel: 'Add to this chapter',
+                          attention: canSweep && candidates.isNotEmpty,
+                          onPressed: () {
+                            _focus.unfocus();
+                            setState(() => _menuOpen = true);
+                          },
+                        ),
                       ),
                     ),
                 ],
@@ -325,7 +309,7 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> {
             valueListenable: _names.candidates,
             builder: (context, candidates, _) => AddMenu(
               fabBottom: bottomPad + 22,
-              newNames: canSweep ? candidates.length : 0,
+              newNames: canSweep ? [for (final c in candidates) c.name] : const [],
               onNames: _openNames,
               onPhoto: scan == null ? null : () => _capture(scan),
               onRecord: dictate == null ? null : () => _capture(dictate),
