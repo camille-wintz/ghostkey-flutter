@@ -55,6 +55,7 @@ Future<ProjectMeta> patchProject(
   String? description,
   String? author,
   String? coverFilename,
+  TypographyMode? typography,
   List<DocumentSummary>? notes,
 }) async {
   final res = await apiFetch('/api/projects/$id', method: 'PATCH', body: {
@@ -63,6 +64,7 @@ Future<ProjectMeta> patchProject(
     'description': ?description,
     'author': ?author,
     'cover_filename': ?coverFilename,
+    'typography': ?typography?.name,
     'notes': ?notes?.map((n) => n.toJson()).toList(),
   });
   return ProjectMeta.fromJson(asJson(res.jsonObject()['project']));
@@ -165,6 +167,24 @@ Future<AssetMeta> uploadAsset(String projectId, String filename, String contentT
   );
   return AssetMeta.fromJson(asJson(res.jsonObject()['asset']));
 }
+
+/// Sets the cover the way the desktop does: the image goes up as a project
+/// asset, then `cover_filename` names it, which is also what makes the server
+/// build the thumbnail and the blurred backdrop. Assets are immutable, so each
+/// cover gets a fresh name rather than colliding with the one it replaces.
+Future<ProjectMeta> setProjectCover(String projectId, Uint8List bytes, {required String extension}) async {
+  final ext = extension.toLowerCase();
+  final contentType = switch (ext) {
+    'png' => 'image/png',
+    'webp' => 'image/webp',
+    'gif' => 'image/gif',
+    _ => 'image/jpeg',
+  };
+  final asset = await uploadAsset(projectId, 'cover-${DateTime.now().millisecondsSinceEpoch}.$ext', contentType, bytes);
+  return patchProject(projectId, coverFilename: asset.filename);
+}
+
+Future<ProjectMeta> removeProjectCover(String projectId) => patchProject(projectId, coverFilename: '');
 
 /// The one content type the import route accepts.
 const docxMime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';

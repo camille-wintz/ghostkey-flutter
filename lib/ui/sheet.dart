@@ -46,8 +46,14 @@ class _SheetShell extends StatelessWidget {
           border: Border(top: BorderSide(color: Ds.edgeHi)),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(DsGeom.radius)),
         ),
+        // The keyboard when it is up, the system's button bar when it is not:
+        // edge-to-edge, the panel runs under the bar and its last row must not.
+        // Flutter zeroes the padding while the insets cover it, so the sum
+        // never counts the bar twice.
         child: Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(context).bottom + MediaQuery.paddingOf(context).bottom,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

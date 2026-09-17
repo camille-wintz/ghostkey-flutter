@@ -10,6 +10,7 @@ import '../../server/providers.dart';
 import '../../store/active_project.dart';
 import '../../ui/notice_modal.dart';
 import 'project_root.dart';
+import 'project_settings_sheet.dart';
 import 'project_stage.dart';
 import 'room_row.dart';
 
@@ -36,12 +37,13 @@ class ProjectHomeScreen extends ConsumerWidget {
       project: project,
       coverUrl: cover,
       onHome: () => ref.read(activeProjectProvider.notifier).close(),
+      onSettings: project != null ? () => showProjectSettings(context, ref, project) : null,
       below: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (final room in rooms)
             Padding(
-              padding: const EdgeInsets.only(bottom: 4),
+              padding: const EdgeInsets.only(bottom: 10),
               child: _RoomEntry(room: room, access: access),
             ),
         ],

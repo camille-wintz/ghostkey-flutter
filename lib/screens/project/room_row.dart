@@ -9,9 +9,10 @@ import '../../server/dto/billing.dart';
 import '../../ui/press.dart';
 
 /// One room on the project home: its mark, its name, and what it is for.
-/// Deliberately not a card — the mark is the object, and the row is just the
-/// reach around it. Fires for locked rows too; the screen decides what a
-/// locked tap shows.
+/// Drawn as a card with an arrow, as the desktop's AppCard is: bare words
+/// beside a mark read as a legend, not a door, and authors didn't know to tap.
+/// The lock takes the arrow's place. Fires for locked rows too; the screen
+/// decides what a locked tap shows.
 class RoomRow extends StatelessWidget {
   const RoomRow({super.key, required this.room, required this.granted, required this.onOpen, this.requiredPlan});
   final Room room;
@@ -31,9 +32,10 @@ class RoomRow extends StatelessWidget {
         opacity: granted ? 1 : 0.55,
         child: Container(
           constraints: const BoxConstraints(minHeight: 64),
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+          padding: const EdgeInsets.fromLTRB(10, 10, 14, 10),
           decoration: BoxDecoration(
-            color: pressed ? Ds.veil : const Color(0x00000000),
+            color: pressed ? Ds.veilHi : Ds.veil,
+            border: Border.all(color: pressed ? Ds.edgeHi : Ds.edge),
             borderRadius: BorderRadius.circular(DsGeom.radius),
           ),
           child: Row(
@@ -60,7 +62,10 @@ class RoomRow extends StatelessWidget {
                   ],
                 ),
               ),
-              if (!granted) Icon(LucideIcons.lock, size: 15, color: Ds.faint),
+              const SizedBox(width: 10),
+              granted
+                  ? Icon(LucideIcons.arrowRight, size: 16, color: pressed ? Ds.hi : Ds.low)
+                  : Icon(LucideIcons.lock, size: 15, color: Ds.faint),
             ],
           ),
         ),

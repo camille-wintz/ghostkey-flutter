@@ -26,6 +26,7 @@ class ProjectStage extends StatelessWidget {
     required this.onHome,
     required this.below,
     this.coverUrl,
+    this.onSettings,
   });
 
   final ProjectMeta? project;
@@ -35,6 +36,10 @@ class ProjectStage extends StatelessWidget {
   /// The full-size cover, once the project's assets have said which one it
   /// is. The shelf's thumbnail stands in until then, and under it after.
   final String? coverUrl;
+
+  /// Opens the project's settings. Absent while the project is still loading,
+  /// when there is nothing yet to edit.
+  final VoidCallback? onSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -59,30 +64,53 @@ class ProjectStage extends StatelessWidget {
               children: [
                 SizedBox(
                   height: 52,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Press(
-                        onPressed: onHome,
-                        semanticLabel: 'Back to Home',
-                        builder: (context, pressed) => Container(
-                          height: 44,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          decoration: BoxDecoration(
-                            color: pressed ? Ds.veil : const Color(0x00000000),
-                            borderRadius: BorderRadius.circular(DsGeom.radius),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(LucideIcons.chevronLeft, size: 17, color: Ds.mid),
-                              const SizedBox(width: 4),
-                              UiText('Home', color: Ds.mid),
-                            ],
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Row(
+                      children: [
+                        Press(
+                          onPressed: onHome,
+                          semanticLabel: 'Back to Home',
+                          builder: (context, pressed) => Container(
+                            height: 44,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: pressed ? Ds.veil : const Color(0x00000000),
+                              borderRadius: BorderRadius.circular(DsGeom.radius),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(LucideIcons.chevronLeft, size: 17, color: Ds.mid),
+                                const SizedBox(width: 4),
+                                UiText('Home', color: Ds.mid),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
+                        const Spacer(),
+                        if (onSettings != null)
+                          Press(
+                            onPressed: onSettings,
+                            semanticLabel: 'Project settings',
+                            builder: (context, pressed) => Container(
+                              height: 44,
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: pressed ? Ds.veil : const Color(0x00000000),
+                                borderRadius: BorderRadius.circular(DsGeom.radius),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(LucideIcons.settings, size: 15, color: Ds.mid),
+                                  const SizedBox(width: 6),
+                                  UiText('Project settings', color: Ds.mid),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -120,7 +148,12 @@ class ProjectStage extends StatelessWidget {
                               const SizedBox(width: 9),
                               Text(
                                 'CURRENT PROJECT',
-                                style: DsStyle.ui(DsText.eyebrow, color: Ds.mid, weight: FontWeight.w600, tracking: 11 * 0.32),
+                                style: DsStyle.ui(
+                                  DsText.eyebrow,
+                                  color: Ds.mid,
+                                  weight: FontWeight.w600,
+                                  tracking: 11 * 0.32,
+                                ),
                               ),
                             ],
                           ),
@@ -130,7 +163,10 @@ class ProjectStage extends StatelessWidget {
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: DsStyle.prose(const DsStep(30, 33), weight: FontWeight.w600).copyWith(letterSpacing: -0.15),
+                            style: DsStyle.prose(
+                              const DsStep(30, 33),
+                              weight: FontWeight.w600,
+                            ).copyWith(letterSpacing: -0.15),
                           ),
                           const SizedBox(height: 10),
                           Text(
@@ -167,12 +203,12 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: Ds.veil,
-          border: Border.all(color: Ds.edge),
-          borderRadius: BorderRadius.circular(DsGeom.radius),
-        ),
-        child: UiText(text, step: DsText.ui, color: Ds.soft),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    decoration: BoxDecoration(
+      color: Ds.veil,
+      border: Border.all(color: Ds.edge),
+      borderRadius: BorderRadius.circular(DsGeom.radius),
+    ),
+    child: UiText(text, step: DsText.ui, color: Ds.soft),
+  );
 }
