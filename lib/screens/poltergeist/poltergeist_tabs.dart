@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
-/// The room's four pages. Order is the tab bar's order.
-enum PoltergeistTab { dashboard, words, tasks, plan }
+/// The room's five pages. Order is the tab bar's order.
+enum PoltergeistTab { dashboard, words, tasks, plan, cats }
 
 /// Lets a section deep in one tab open another ("All tasks →"), without
 /// threading a callback through every panel.

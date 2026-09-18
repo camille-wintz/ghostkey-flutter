@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../server/dto/poltergeist.dart';
+import '../server/dto/rewards.dart';
 import '../server/poltergeist/api.dart';
+import '../server/rewards/api.dart';
 import 'ledger.dart';
 import 'plan_board.dart';
 import 'tasks_notifier.dart';
@@ -14,6 +16,15 @@ import 'tasks_notifier.dart';
 final wordStatsProvider = FutureProvider.autoDispose.family<List<WordStatsDay>, String>(
   (ref, projectId) => getProjectWordStats(projectId, days: ledgerDays),
 );
+
+/// The ticked days over the ledger's window and the week's standing. Same
+/// window and offset as the word stats, so the two line up day for day.
+final rewardsProvider = FutureProvider.autoDispose.family<Rewards, String>(
+  (ref, projectId) => getProjectRewards(projectId, days: ledgerDays),
+);
+
+/// Every cat the author has, newest first. Per account, not per book.
+final catsProvider = FutureProvider.autoDispose<List<Cat>>((ref) => listMyCats());
 
 final tasksProvider = AsyncNotifierProvider.autoDispose.family<TasksNotifier, TasksState, String>(TasksNotifier.new);
 

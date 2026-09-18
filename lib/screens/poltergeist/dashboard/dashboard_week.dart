@@ -5,6 +5,7 @@ import '../../../core/words.dart';
 import '../../../ds/tokens.dart';
 import '../../../poltergeist/ledger.dart';
 import '../../../poltergeist/providers.dart';
+import '../../../poltergeist/rewards.dart';
 import '../poltergeist_tabs.dart';
 import '../project_scope_id.dart';
 import '../section_link.dart';
@@ -20,6 +21,7 @@ class DashboardWeek extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final projectId = projectIdOf(context);
     final days = ref.watch(wordStatsProvider(projectId)).value;
+    final rewards = ref.watch(rewardsProvider(projectId)).value;
     final week = lastWeek(days ?? const []);
     final total = week.fold(0, (sum, d) => sum + d.written);
     final perDay = (total / 7).round();
@@ -33,7 +35,7 @@ class DashboardWeek extends ConsumerWidget {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                WordColumns(days: week, weekdayLabels: true, showValues: true),
+                WordColumns(days: week, weekdayLabels: true, showValues: true, metDays: rewards?.metDays.toSet()),
                 const SizedBox(height: 12),
                 Text.rich(
                   TextSpan(
@@ -46,6 +48,10 @@ class DashboardWeek extends ConsumerWidget {
                     ],
                   ),
                 ),
+                if (rewards != null) ...[
+                  const SizedBox(height: 4),
+                  Text(weekLine(rewards), style: DsStyle.ui(DsText.eyebrow, color: Ds.low)),
+                ],
               ],
             ),
     );

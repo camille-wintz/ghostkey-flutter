@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/words.dart';
 import '../../../ds/tokens.dart';
@@ -9,8 +10,11 @@ import '../../../server/dto/poltergeist.dart';
 /// beside it: the column reads as a shape and states the exact count at the
 /// same time. Amber, like the week's columns — same reading, same hue.
 class LedgerRow extends StatelessWidget {
-  const LedgerRow({super.key, required this.day, required this.peak, required this.isToday});
+  const LedgerRow({super.key, required this.day, required this.peak, required this.isToday, this.met = false});
   final WordStatsDay day;
+
+  /// The day's writing reached the daily target — an amber tick by the date.
+  final bool met;
 
   /// The trailing week's busiest day; older days above it clip at full width.
   final int peak;
@@ -41,9 +45,20 @@ class LedgerRow extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: Text(
-                    dayLabel(day.day),
-                    style: DsStyle.ui(DsText.ui, color: isToday ? Ds.attention300 : Ds.low),
+                  child: Row(
+                    children: [
+                      Text(
+                        dayLabel(day.day),
+                        style: DsStyle.ui(DsText.ui, color: isToday ? Ds.attention300 : Ds.low),
+                      ),
+                      if (met) ...[
+                        const SizedBox(width: 6),
+                        Semantics(
+                          label: 'Daily target reached',
+                          child: Icon(LucideIcons.check, size: 12, color: Ds.attention400),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 Text(

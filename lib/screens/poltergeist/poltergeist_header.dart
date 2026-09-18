@@ -41,12 +41,23 @@ class PoltergeistHeader extends ConsumerWidget {
           subtitle: RoomSubtitle(_tasksLine(ref, projectId)),
           onBack: back,
         ),
+      PoltergeistTab.cats => RoomTitleBar(
+          title: 'Cats',
+          subtitle: RoomSubtitle(_catsLine(ref)),
+          onBack: back,
+        ),
       PoltergeistTab.plan => RoomTitleBar(
           title: ref.watch(projectProvider(projectId)).value?.project.displayTitle ?? 'Project',
           subtitle: _PlanSubtitle(projectId: projectId),
           onBack: back,
         ),
     };
+  }
+
+  String _catsLine(WidgetRef ref) {
+    final cats = ref.watch(catsProvider).value;
+    if (cats == null) return '—';
+    return cats.isEmpty ? 'None yet' : '${cats.length} ${cats.length == 1 ? 'cat' : 'cats'}';
   }
 
   String _wordsLine(WidgetRef ref, String projectId) {

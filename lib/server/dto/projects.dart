@@ -111,6 +111,7 @@ class ProjectMeta {
     required this.coverBackdrop,
     required this.savedPrompts,
     required this.typography,
+    required this.dailyTarget,
     required this.activeDraftId,
     required this.activeDraftVersion,
     required this.createdAt,
@@ -134,6 +135,10 @@ class ProjectMeta {
   final CoverThumbnail? coverBackdrop;
   final List<SavedPrompt> savedPrompts;
   final TypographyMode typography;
+
+  /// Words per day the author is aiming for in this book; null for none.
+  /// The writing rewards tick a day against it.
+  final int? dailyTarget;
 
   /// The draft currently being written in — the only writable manuscript.
   final String activeDraftId;
@@ -162,6 +167,7 @@ class ProjectMeta {
             : CoverThumbnail.fromJson(asJson(json['cover_backdrop'])),
         savedPrompts: asJsonList(json['saved_prompts']).map(SavedPrompt.fromJson).toList(),
         typography: TypographyMode.fromWire(json['typography'] as String?),
+        dailyTarget: json['daily_target'] as int?,
         activeDraftId: asString(json['active_draft_id']),
         activeDraftVersion: asInt(json['active_draft_version']),
         createdAt: asString(json['created_at']),
@@ -183,6 +189,7 @@ class ProjectMeta {
         coverBackdrop: coverBackdrop,
         savedPrompts: savedPrompts,
         typography: typography,
+        dailyTarget: dailyTarget,
         activeDraftId: activeDraftId,
         activeDraftVersion: activeDraftVersion ?? this.activeDraftVersion,
         createdAt: createdAt,

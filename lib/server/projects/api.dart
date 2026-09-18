@@ -48,6 +48,13 @@ Future<ProjectMeta> createProject({
 /// Chapter ordering is NOT patched here — it belongs to a draft
 /// (see [patchDraftChapters]). `notes` is the ordered note list; the server
 /// derives its internal note_order from array position.
+/// A field to send even when its value is null — for a PATCH that clears
+/// something, where "absent" and "null" mean different things on the wire.
+final class Optional<T> {
+  const Optional(this.value);
+  final T? value;
+}
+
 Future<ProjectMeta> patchProject(
   String id, {
   String? name,
@@ -57,6 +64,7 @@ Future<ProjectMeta> patchProject(
   String? coverFilename,
   TypographyMode? typography,
   List<DocumentSummary>? notes,
+  Optional<int>? dailyTarget,
 }) async {
   final res = await apiFetch('/api/projects/$id', method: 'PATCH', body: {
     'name': ?name,
@@ -66,6 +74,7 @@ Future<ProjectMeta> patchProject(
     'cover_filename': ?coverFilename,
     'typography': ?typography?.name,
     'notes': ?notes?.map((n) => n.toJson()).toList(),
+    if (dailyTarget != null) 'daily_target': dailyTarget.value,
   });
   return ProjectMeta.fromJson(asJson(res.jsonObject()['project']));
 }

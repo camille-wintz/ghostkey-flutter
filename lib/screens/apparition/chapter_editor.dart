@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../access/capability.dart';
 import '../../autosave/autosave.dart';
+import '../../rewards/claim.dart';
 import '../../core/words.dart';
 import '../../dictation/dock_height.dart';
 import '../../ds/tokens.dart';
@@ -108,6 +109,9 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
   final FocusNode _focus = FocusNode();
 
   Autosave? _autosave;
+  // Asks the server what a landed save earned; the server decides, this
+  // shows. Made with the autosave and disposed with it.
+  RewardClaimer? _rewards;
   ProviderSubscription<AsyncValue<DocumentDto>>? _docSub;
   bool _loaded = false;
   Object? _loadError;
@@ -169,6 +173,15 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
       onSaved: _onSaved,
       onRestore: (content) => _editor.setText(content),
     )..loaded(doc);
+    _rewards = RewardClaimer(
+      projectId: widget.projectId,
+      onAwarded: (awarded) {
+        if (!mounted) return;
+        for (final reward in awarded) {
+          showRewardNotice(context, reward);
+        }
+      },
+    );
     if (_canSweep) unawaited(_names.scan());
     setState(() {});
     // The page opens with a caret rather than nothing: the field exists as of
@@ -188,6 +201,9 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
     _container.invalidate(projectProvider(widget.projectId));
     _container.invalidate(projectWordCountProvider(widget.projectId));
     if (mounted && _canSweep) _names.scheduleRescan();
+    // Only while the page is up: a flush after dispose has nowhere to show a
+    // reward, and the next open claims it.
+    if (mounted) _rewards?.saved();
   }
 
   void _onValue() {
@@ -405,6 +421,8 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
     // The autosave flushes on dispose and the flush outlives it; the
     // controller it reads from has to go AFTER that read.
     _autosave?.dispose();
+    _rewards?.dispose();
+    _rewards = null;
     _names.dispose();
     dictationDockHeight.removeListener(_onDock);
     _focus.dispose();

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/words.dart';
 import '../../../ds/tokens.dart';
@@ -21,7 +22,7 @@ const double _barMax = 68;
 /// few things allowed to carry colour — amber because words owed and words
 /// written are the same attention surface.
 class WordColumns extends StatelessWidget {
-  const WordColumns({super.key, required this.days, required this.weekdayLabels, this.showValues = false});
+  const WordColumns({super.key, required this.days, required this.weekdayLabels, this.showValues = false, this.metDays});
 
   /// Oldest first, as the series arrives.
   final List<WordStatsDay> days;
@@ -31,6 +32,10 @@ class WordColumns extends StatelessWidget {
 
   /// Print each day's count above its column.
   final bool showValues;
+
+  /// Days whose writing reached the daily target; each gets a tick under
+  /// its label.
+  final Set<String>? metDays;
 
   @override
   Widget build(BuildContext context) {
@@ -81,6 +86,26 @@ class WordColumns extends StatelessWidget {
             ],
           ],
         ),
+        if (metDays != null && metDays!.isNotEmpty) ...[
+          const SizedBox(height: 2),
+          ExcludeSemantics(
+            child: Row(
+              children: [
+                for (var i = 0; i < days.length; i++) ...[
+                  if (i > 0) SizedBox(width: gap),
+                  Expanded(
+                    child: SizedBox(
+                      height: 10,
+                      child: metDays!.contains(days[i].day)
+                          ? Icon(LucideIcons.check, size: 10, color: Ds.attention400)
+                          : null,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }

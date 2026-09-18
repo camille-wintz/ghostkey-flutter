@@ -45,6 +45,7 @@ class _TabItem extends StatelessWidget {
         PoltergeistTab.words => LucideIcons.penLine,
         PoltergeistTab.tasks => LucideIcons.listChecks,
         PoltergeistTab.plan => LucideIcons.bookOpen,
+        PoltergeistTab.cats => LucideIcons.cat,
       };
 
   String get _label => switch (tab) {
@@ -52,6 +53,7 @@ class _TabItem extends StatelessWidget {
         PoltergeistTab.words => 'Words',
         PoltergeistTab.tasks => 'Tasks',
         PoltergeistTab.plan => 'Plan',
+        PoltergeistTab.cats => 'Cats',
       };
 
   @override

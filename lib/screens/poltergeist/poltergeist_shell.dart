@@ -12,6 +12,7 @@ import 'poltergeist_tab_bar.dart';
 import 'poltergeist_tabs.dart';
 import 'tasks/tasks_tab.dart';
 import 'words/words_tab.dart';
+import 'cats/cats_tab.dart';
 
 /// Coming back to the phone after this long re-reads the manuscript, so the
 /// board is held against it again — the desktop's reconcile-on-focus.
@@ -48,6 +49,7 @@ class _PoltergeistShellState extends ConsumerState<PoltergeistShell> {
     final projectId = ProjectScope.of(context);
     ref.invalidate(projectProvider(projectId));
     ref.invalidate(wordStatsProvider(projectId));
+    ref.invalidate(rewardsProvider(projectId));
     ref.invalidate(tasksProvider(projectId));
   }
 
@@ -86,6 +88,7 @@ class _PoltergeistShellState extends ConsumerState<PoltergeistShell> {
                   PoltergeistTab.words => const WordsTab(),
                   PoltergeistTab.tasks => const TasksTab(),
                   PoltergeistTab.plan => const PlanTab(),
+                  PoltergeistTab.cats => const CatsTab(),
                 },
               ),
               PoltergeistTabBar(current: _tab, openTasks: openTasks, onOpen: _open),

@@ -14,7 +14,7 @@ Cloud-only: sign-in required, every project lives on `../ghostkey-server`.
 load-bearing, feature count is not.**
 
 The rooms this app carries: **Apparition** (the editor), **Veil** (the world
-bible), **Poltergeist** (dashboard, words, tasks, plan board), **PhantomMemory**
+bible), **Poltergeist** (dashboard, words, tasks, plan board, cats), **PhantomMemory**
 (chat), **Wisp** (editing: line edits per chapter, continuity, the theme /
 pacing / genre analyses, the reverse outline — its chapter review is
 PhantomMemory's), plus dictation and scan landing in the editor. Mara, Séance
@@ -88,6 +88,11 @@ lib/
   core/                     pure modules (see above)
   access/                   capability (optimistic until the snapshot lands) · plans · welcome_notices
   editor/ autosave/         editor_controller · inline_markdown | the autosave owner · draft journal
+  rewards/                  the writing rewards as the phone sees them: RewardClaimer (the
+                            chapter editor calls it after a save lands; the SERVER decides
+                            every reward — ghostkey-server lib/rewards) · the SnackBar notice ·
+                            CatPicture (the server's SVG). Ticks and the cat shelf read from
+                            poltergeist/providers.dart; the week's wording is poltergeist/rewards.dart.
   dictation/ scan/          recorder channel · session · policy + room meter · silence pass ·
                             seam ledger · anchors | camera · OCR · insert
   chat/ veil/ poltergeist/ wisp/   the logic half of those rooms (see below)
