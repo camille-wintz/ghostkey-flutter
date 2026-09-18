@@ -59,7 +59,7 @@ const List<Room> rooms = [
   Room(
     key: RoomKey.poltergeist,
     title: 'Poltergeist',
-    subtitle: 'Schedule and plan',
+    subtitle: 'Statistics and tasks',
     mark: RoomMark.poltergeist,
     tile: TileGradient(Color(0xFFC08D33), Color(0xFF75521A)),
   ),
