@@ -16,11 +16,10 @@ const Duration _throttle = Duration(seconds: 3);
 /// door for any surface that writes prose the server banks. Call [saved]
 /// after a write lands; it throttles itself and always makes a trailing
 /// call, so the last words of a session are counted. The server decides
-/// every reward; this only shows what it says.
+/// every reward, and they are the author's: a claim from any book counts
+/// every book's words. This only shows what it says.
 class RewardClaimer {
-  RewardClaimer({required this.projectId, required this.onAwarded});
-
-  final String projectId;
+  RewardClaimer({required this.onAwarded});
 
   /// Everything one claim awarded, in order, to be shown.
   final void Function(List<Reward> awarded) onAwarded;
@@ -44,7 +43,7 @@ class RewardClaimer {
   Future<void> _claim() async {
     _lastAt = DateTime.now();
     try {
-      final claim = await claimProjectRewards(projectId);
+      final claim = await claimMyRewards();
       if (claim.awarded.isNotEmpty) onAwarded(claim.awarded);
     } catch (e) {
       // Decorative: a reward that fails to show is claimed again on the next

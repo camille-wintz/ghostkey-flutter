@@ -10,8 +10,9 @@ import '../../../server/errors.dart';
 import '../../../ui/state_screen.dart';
 
 /// The author's cats, newest first — one card each, the design's collectible
-/// frame. The shelf is the author's, not the book's: a cat earned in another
-/// book sits here too. The empty state says how the first one is earned.
+/// frame. The shelf is the author's, not the book's: every book's writing
+/// counts towards a cat, and every book shows the same shelf. The empty state
+/// says how the first one is earned.
 class CatsTab extends ConsumerWidget {
   const CatsTab({super.key});
 
@@ -34,7 +35,7 @@ class CatsTab extends ConsumerWidget {
     if (list.isEmpty) {
       return const StateScreen(
         message: 'No cats yet.',
-        detail: 'Set a daily target on the words page, reach it on five days of a week, and one turns up here.',
+        detail: 'Set a daily target on the words page and reach it on five days of a week — writing in any of your books counts. One turns up here.',
       );
     }
 

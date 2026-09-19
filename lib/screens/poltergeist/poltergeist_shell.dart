@@ -49,7 +49,7 @@ class _PoltergeistShellState extends ConsumerState<PoltergeistShell> {
     final projectId = ProjectScope.of(context);
     ref.invalidate(projectProvider(projectId));
     ref.invalidate(wordStatsProvider(projectId));
-    ref.invalidate(rewardsProvider(projectId));
+    ref.invalidate(rewardsProvider);
     ref.invalidate(tasksProvider(projectId));
   }
 

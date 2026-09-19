@@ -174,7 +174,6 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
       onRestore: (content) => _editor.setText(content),
     )..loaded(doc);
     _rewards = RewardClaimer(
-      projectId: widget.projectId,
       onAwarded: (awarded) {
         if (!mounted) return;
         for (final reward in awarded) {

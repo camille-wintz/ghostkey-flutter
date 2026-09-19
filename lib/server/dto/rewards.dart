@@ -14,7 +14,6 @@ class Cat {
     required this.name,
     required this.svg,
     required this.earnedAt,
-    required this.projectId,
     required this.weekStart,
   });
 
@@ -23,9 +22,6 @@ class Cat {
   final String name;
   final String svg;
   final String earnedAt;
-
-  /// The book it was earned in, or null once that book is deleted.
-  final String? projectId;
 
   /// Monday of the local week it was earned in, `YYYY-MM-DD`.
   final String weekStart;
@@ -36,7 +32,6 @@ class Cat {
         name: asString(json['name']),
         svg: asString(json['svg']),
         earnedAt: asString(json['earned_at']),
-        projectId: json['project_id'] as String?,
         weekStart: asString(json['week_start']),
       );
 }
@@ -96,6 +91,7 @@ class CatReward extends Reward {
 }
 
 /// What a claim found: where today stands, and anything it just awarded.
+/// [writtenToday] and [target] are the account's — every book's words.
 class RewardClaim {
   const RewardClaim({
     required this.writtenToday,
@@ -121,10 +117,21 @@ class RewardClaim {
 }
 
 /// The ledger's view: which days in the window are ticked, and the week.
+/// The author's, not a book's: a day's writing is every book's words added
+/// up, against one daily target on the account.
 class Rewards {
-  const Rewards({required this.target, required this.metDays, required this.week, required this.catsEarned});
+  const Rewards({
+    required this.target,
+    required this.writtenToday,
+    required this.metDays,
+    required this.week,
+    required this.catsEarned,
+  });
 
   final int? target;
+
+  /// Words written today in every book.
+  final int writtenToday;
 
   /// The ticked days in the window, `YYYY-MM-DD`, oldest first.
   final List<String> metDays;
@@ -135,6 +142,7 @@ class Rewards {
 
   static Rewards fromJson(Json json) => Rewards(
         target: json['target'] as int?,
+        writtenToday: asInt(json['written_today']),
         metDays: asStringList(json['met_days']),
         week: RewardWeek.fromJson(asJson(json['week'])),
         catsEarned: asInt(json['cats_earned']),

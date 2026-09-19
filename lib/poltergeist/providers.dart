@@ -17,11 +17,11 @@ final wordStatsProvider = FutureProvider.autoDispose.family<List<WordStatsDay>, 
   (ref, projectId) => getProjectWordStats(projectId, days: ledgerDays),
 );
 
-/// The ticked days over the ledger's window and the week's standing. Same
-/// window and offset as the word stats, so the two line up day for day.
-final rewardsProvider = FutureProvider.autoDispose.family<Rewards, String>(
-  (ref, projectId) => getProjectRewards(projectId, days: ledgerDays),
-);
+/// The author's ticked days over the ledger's window, today's words across
+/// every book, and the week's standing. Per account, not per book, so every
+/// book shows the same ticks. Same window and offset as the word stats, so
+/// the two line up day for day.
+final rewardsProvider = FutureProvider.autoDispose<Rewards>((ref) => getMyRewards(days: ledgerDays));
 
 /// Every cat the author has, newest first. Per account, not per book.
 final catsProvider = FutureProvider.autoDispose<List<Cat>>((ref) => listMyCats());

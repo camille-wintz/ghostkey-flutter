@@ -29,7 +29,7 @@ class WordsTab extends ConsumerWidget {
     final projectId = projectIdOf(context);
     final stats = ref.watch(wordStatsProvider(projectId));
     final days = stats.value;
-    final rewards = ref.watch(rewardsProvider(projectId)).value;
+    final rewards = ref.watch(rewardsProvider).value;
     final metDays = rewards?.metDays.toSet() ?? const <String>{};
 
     if (days == null) {
@@ -60,7 +60,7 @@ class WordsTab extends ConsumerWidget {
       itemCount: 1 + items.length,
       itemBuilder: (context, i) {
         if (i == 0) {
-          return _Hero(today: today, streak: streak, days: days, rewards: rewards, metDays: metDays, projectId: projectId);
+          return _Hero(today: today, streak: streak, days: days, rewards: rewards, metDays: metDays);
         }
         return switch (items[i - 1]) {
           _WeekItem(:final week) => LedgerWeekHeader(week: week),
@@ -96,14 +96,12 @@ class _Hero extends StatelessWidget {
     required this.days,
     required this.rewards,
     required this.metDays,
-    required this.projectId,
   });
   final WordStatsDay? today;
   final int streak;
   final List<WordStatsDay> days;
   final Rewards? rewards;
   final Set<String> metDays;
-  final String projectId;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -147,7 +145,7 @@ class _Hero extends StatelessWidget {
             ),
           ),
           if (rewards != null) ...[
-            _TargetRow(projectId: projectId, target: rewards!.target),
+            _TargetRow(target: rewards!.target, writtenToday: rewards!.writtenToday),
             const SizedBox(height: 20),
           ],
           WordColumns(days: days, weekdayLabels: false, metDays: metDays),
@@ -156,13 +154,15 @@ class _Hero extends StatelessWidget {
       );
 }
 
-/// The words-per-day the book aims for, set in place under the figure.
-/// Saves on submit; an emptied field clears the target. The server answers
-/// back through the rewards read, so the field follows it.
+/// The words a day the author aims for, set in place under the figure. One
+/// target for the account: every book's words count towards it, so the line
+/// under the label says how today stands across all of them. Saves on submit;
+/// an emptied field clears the target. The server answers back through the
+/// rewards read, so the field follows it.
 class _TargetRow extends ConsumerStatefulWidget {
-  const _TargetRow({required this.projectId, required this.target});
-  final String projectId;
+  const _TargetRow({required this.target, required this.writtenToday});
   final int? target;
+  final int writtenToday;
 
   @override
   ConsumerState<_TargetRow> createState() => _TargetRowState();
@@ -196,8 +196,8 @@ class _TargetRowState extends ConsumerState<_TargetRow> {
     if (next == widget.target) return;
     setState(() => _saving = true);
     try {
-      await setDailyTarget(widget.projectId, next);
-      ref.invalidate(rewardsProvider(widget.projectId));
+      await setMyDailyTarget(next);
+      ref.invalidate(rewardsProvider);
     } catch (e) {
       debugPrint('[rewards] daily target save failed: $e');
       _controller.text = _text(widget.target);
@@ -206,10 +206,23 @@ class _TargetRowState extends ConsumerState<_TargetRow> {
     }
   }
 
+  String get _acrossBooks => widget.target == null
+      ? 'Across all your books'
+      : '${formatWords(widget.writtenToday)} of ${formatWords(widget.target!)} today, across all your books';
+
   @override
   Widget build(BuildContext context) => Row(
         children: [
-          Expanded(child: Text('DAILY TARGET', style: DsStyle.eyebrow())),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('DAILY TARGET', style: DsStyle.eyebrow()),
+                const SizedBox(height: 4),
+                Text(_acrossBooks, style: DsStyle.ui(DsText.eyebrow, color: Ds.low)),
+              ],
+            ),
+          ),
           SizedBox(
             width: 96,
             child: GkField(

@@ -21,7 +21,7 @@ class DashboardWeek extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final projectId = projectIdOf(context);
     final days = ref.watch(wordStatsProvider(projectId)).value;
-    final rewards = ref.watch(rewardsProvider(projectId)).value;
+    final rewards = ref.watch(rewardsProvider).value;
     final week = lastWeek(days ?? const []);
     final total = week.fold(0, (sum, d) => sum + d.written);
     final perDay = (total / 7).round();
