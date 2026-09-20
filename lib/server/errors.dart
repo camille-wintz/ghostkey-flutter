@@ -63,6 +63,11 @@ const Map<String, String> _messages = {
   'invalid_credentials': 'Wrong email or password.',
   'invalid_refresh_token': 'Your session expired. Please sign in again.',
   'email_taken': 'An account with this email already exists.',
+  // Signup only: a reset link sent to an inbox anyone can open hands over the
+  // account.
+  'throwaway_email':
+      "That's a throwaway inbox, and a password reset would go straight to it. "
+      "Please use an address you'll keep.",
   'invalid_google_token': "Google sign-in didn't go through. Please try again.",
   'google_failed': "Google sign-in didn't go through. Please try again.",
   'google_email_unverified':
