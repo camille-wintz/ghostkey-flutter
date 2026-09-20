@@ -12,6 +12,11 @@ import '../../../server/dto/poltergeist.dart';
 const double _boxHeight = 96;
 const double _barMax = 68;
 
+/// The ruled baseline is drawn INSIDE the box, so a full-height column has
+/// one pixel less than the box to stand in. Without it a peak day overflows
+/// by exactly 1.0 and wears the debug stripes.
+const double _baseline = 1;
+
 /// The words-per-day columns: the ledger's amber fill stood upright. Each
 /// column rests on the ruled baseline; today burns brighter, and a day with
 /// no words keeps a 2px ember so the week reads as seven days, not gaps.
@@ -40,7 +45,9 @@ class WordColumns extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final peak = weekPeak(days);
-    final gap = days.length > 7 ? 2.0 : 3.0;
+    // Seven columns can afford a gutter and a label a month of thirty
+    // cannot; `showValues` is the week and nothing else asks for it.
+    final gap = showValues ? 4.0 : (days.length > 7 ? 2.0 : 3.0);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -78,7 +85,11 @@ class WordColumns extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.clip,
                   style: DsStyle.ui(
-                    days.length > 7 ? const DsStep(9, 12) : DsText.eyebrow,
+                    showValues
+                        ? const DsStep(12, 16)
+                        : days.length > 7
+                            ? const DsStep(9, 12)
+                            : DsText.eyebrow,
                     color: i == days.length - 1 ? Ds.attention : Ds.faint,
                   ),
                 ),
@@ -122,10 +133,11 @@ class _Column extends StatelessWidget {
   Widget build(BuildContext context) {
     final worked = day.written > 0;
     final share = day.written / peak;
+    const floor = _boxHeight - _baseline;
     final height = showValue
         ? (share * _barMax).round().clamp(2, _barMax.toInt()).toDouble()
         : worked
-            ? (share * _boxHeight).clamp(_boxHeight * 0.03, _boxHeight)
+            ? (share * floor).clamp(_boxHeight * 0.03, floor)
             : 2.0;
     final fill = isToday
         ? Ds.attention
@@ -144,7 +156,11 @@ class _Column extends StatelessWidget {
                 formatWords(day.written),
                 maxLines: 1,
                 overflow: TextOverflow.clip,
-                style: DsStyle.ui(const DsStep(9, 12), color: Ds.faint, tracking: 0.5),
+                style: DsStyle.ui(
+                  const DsStep(10, 13),
+                  color: isToday ? Ds.attention400 : Ds.low,
+                  tracking: 0.4,
+                ),
               ),
             ),
           ),

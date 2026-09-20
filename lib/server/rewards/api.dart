@@ -36,3 +36,10 @@ Future<List<Cat>> listMyCats() async {
   final res = await apiFetch('/api/me/cats');
   return asJsonList(res.jsonObject()['cats']).map(Cat.fromJson).toList();
 }
+
+/// Every cat there is to earn, in catalogue order, as shapes only. The same
+/// list for every author — what is still to come, with nothing given away.
+Future<List<CatSilhouette>> listCatCatalogue() async {
+  final res = await apiFetch('/api/cats');
+  return asJsonList(res.jsonObject()['cats']).map(CatSilhouette.fromJson).toList();
+}

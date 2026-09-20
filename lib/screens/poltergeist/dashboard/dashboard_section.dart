@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 
 import '../../../ds/tokens.dart';
 
-/// One blotter panel: an eyebrow on a ruled line, content beneath. The
-/// dashboard is a desk blotter, not a card grid — panels share the ledger's
-/// hairline rules rather than boxes.
+/// One blotter panel: an eyebrow, its link on the same baseline, content
+/// beneath. The dashboard is a desk blotter, not a card grid — no boxes, and
+/// no rule under the titles either: a page that is nothing but sections
+/// reads as a stack of filing drawers once every heading is underlined.
+///
+/// The eyebrow is a step quieter than the house's (faint, not low) for the
+/// same reason — on this page the readings come first and the filing second.
 class DashboardSection extends StatelessWidget {
   const DashboardSection({super.key, required this.eyebrow, this.action, required this.child});
   final String eyebrow;
 
-  /// A small trailing affordance on the rule — usually a page link.
+  /// A small trailing affordance beside the eyebrow — usually a page link.
   final Widget? action;
   final Widget child;
 
@@ -17,23 +21,22 @@ class DashboardSection extends StatelessWidget {
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            constraints: const BoxConstraints(minHeight: 30),
-            decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Ds.edge))),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(eyebrow.toUpperCase(), style: DsStyle.eyebrow(weight: FontWeight.w600)),
-                  ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // The same vertical padding a SectionLink carries for its tap
+              // target, so the eyebrow and its link sit on one line instead
+              // of the label hanging 8px below the affordance beside it.
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(eyebrow.toUpperCase(), style: DsStyle.eyebrow(color: Ds.faint)),
                 ),
-                ?action,
-              ],
-            ),
+              ),
+              ?action,
+            ],
           ),
-          Padding(padding: const EdgeInsets.only(top: 14), child: child),
+          Padding(padding: const EdgeInsets.only(top: 4), child: child),
         ],
       );
 }

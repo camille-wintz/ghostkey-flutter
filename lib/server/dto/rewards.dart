@@ -37,6 +37,22 @@ class Cat {
       );
 }
 
+/// One catalogue cat as a shape only — no name, no coat. [silhouette] is a
+/// self-contained SVG with every mark in flat black, meant to be filled with
+/// a surface colour so a shelf can show what is still to come without giving
+/// it away. Pair it with an earned [Cat] by [catId].
+class CatSilhouette {
+  const CatSilhouette({required this.catId, required this.silhouette});
+
+  final String catId;
+  final String silhouette;
+
+  static CatSilhouette fromJson(Json json) => CatSilhouette(
+        catId: asString(json['cat_id']),
+        silhouette: asString(json['silhouette']),
+      );
+}
+
 /// Where the current local week stands against its cat.
 class RewardWeek {
   const RewardWeek({required this.start, required this.ticked, required this.required, required this.catEarned});

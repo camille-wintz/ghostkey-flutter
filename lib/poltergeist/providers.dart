@@ -29,6 +29,12 @@ final rewardsProvider = FutureProvider.autoDispose<Rewards>((ref) => getMyReward
 /// Every cat the author has, newest first. Per account, not per book.
 final catsProvider = FutureProvider.autoDispose<List<Cat>>((ref) => listMyCats());
 
+/// Every cat there is to earn, as shapes only — what a shelf with nothing on
+/// it yet can show. The same list for every author, so it never changes under
+/// a session.
+final catCatalogueProvider =
+    FutureProvider.autoDispose<List<CatSilhouette>>((ref) => listCatCatalogue());
+
 final tasksProvider = AsyncNotifierProvider.autoDispose.family<TasksNotifier, TasksState, String>(TasksNotifier.new);
 
 final planBoardProvider =
