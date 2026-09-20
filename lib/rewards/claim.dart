@@ -1,12 +1,9 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
-import '../ds/tokens.dart';
-import '../poltergeist/rewards.dart';
 import '../server/dto/rewards.dart';
 import '../server/rewards/api.dart';
-import 'cat_picture.dart';
 
 /// The autosave lands every few seconds while the author types; the server
 /// is idempotent, so a claim every few seconds sees the same milestones.
@@ -21,8 +18,9 @@ const Duration _throttle = Duration(seconds: 3);
 class RewardClaimer {
   RewardClaimer({required this.onAwarded});
 
-  /// Everything one claim awarded, in order, to be shown.
-  final void Function(List<Reward> awarded) onAwarded;
+  /// A claim that awarded something — the awards in order, and where today
+  /// stands, which is what the card puts them against.
+  final void Function(RewardClaim claim) onAwarded;
 
   DateTime? _lastAt;
   Timer? _pending;
@@ -44,7 +42,7 @@ class RewardClaimer {
     _lastAt = DateTime.now();
     try {
       final claim = await claimMyRewards();
-      if (claim.awarded.isNotEmpty) onAwarded(claim.awarded);
+      if (claim.awarded.isNotEmpty) onAwarded(claim);
     } catch (e) {
       // Decorative: a reward that fails to show is claimed again on the next
       // save, and the save itself is not in question.
@@ -56,43 +54,4 @@ class RewardClaimer {
     _pending?.cancel();
     _pending = null;
   }
-}
-
-/// One reward as a passing notice at the foot of the screen — the phone's
-/// toast. Queued, so two awarded in one claim show one after the other.
-void showRewardNotice(BuildContext context, Reward reward) {
-  final messenger = ScaffoldMessenger.maybeOf(context);
-  if (messenger == null) return;
-  final (text, detail) = rewardWords(reward);
-  messenger.showSnackBar(
-    SnackBar(
-      backgroundColor: Ds.panel,
-      behavior: SnackBarBehavior.floating,
-      duration: const Duration(seconds: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Ds.edge)),
-      content: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (reward is CatReward)
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: SizedBox(width: 40, height: 40, child: CatPicture(reward.cat)),
-            ),
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(text, style: DsStyle.ui(DsText.ui, color: Ds.hi)),
-                if (detail != null) ...[
-                  const SizedBox(height: 3),
-                  Text(detail, style: DsStyle.ui(DsText.eyebrow, color: Ds.faint)),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
 }

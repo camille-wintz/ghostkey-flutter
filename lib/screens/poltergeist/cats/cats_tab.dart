@@ -35,7 +35,7 @@ class CatsTab extends ConsumerWidget {
     if (list.isEmpty) {
       return const StateScreen(
         message: 'No cats yet.',
-        detail: 'Set a daily target on the words page and reach it on five days of a week — writing in any of your books counts. One turns up here.',
+        detail: 'Set a daily target on the words page and reach it once — writing in any of your books counts. The first cat turns up here, and another for every week you reach it on five days.',
       );
     }
 

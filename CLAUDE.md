@@ -90,8 +90,10 @@ lib/
   editor/ autosave/         editor_controller · inline_markdown | the autosave owner · draft journal
   rewards/                  the writing rewards as the phone sees them: RewardClaimer (the
                             chapter editor calls it after a save lands; the SERVER decides
-                            every reward — ghostkey-server lib/rewards) · the SnackBar notice ·
-                            CatPicture (the server's SVG). The whole LEDGER — the daily series,
+                            every reward — ghostkey-server lib/rewards) · the strike (strike.dart
+                            words it, strikes.dart queues one card at a time, strike_card.dart
+                            draws it above the editor's +; the desktop's RewardStrike is the
+                            same card) · CatPicture (the server's SVG). The whole LEDGER — the daily series,
                             the ticks, the cat shelf — reads from poltergeist/providers.dart's
                             rewardsProvider, account-wide; wordStatsProvider is left for the one
                             figure that is the book's, its manuscript size. The week's wording is

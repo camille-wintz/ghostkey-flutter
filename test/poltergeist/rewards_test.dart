@@ -2,19 +2,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ghostkey/poltergeist/rewards.dart';
 import 'package:ghostkey/server/dto/rewards.dart';
 
-Rewards rewards({int? target, int ticked = 0, bool catEarned = false}) => Rewards(
+Rewards rewards({int? target, int ticked = 0, bool catEarned = false, int catsEarned = 0}) => Rewards(
       target: target,
       writtenToday: 0,
       days: const [],
       metDays: const [],
       week: RewardWeek(start: '2026-09-14', ticked: ticked, required: 5, catEarned: catEarned),
-      catsEarned: 0,
+      catsEarned: catsEarned,
     );
 
 void main() {
   group('weekLine', () {
     test('invites when there is no target', () {
-      expect(weekLine(rewards()), 'Set a daily target to start collecting cats');
+      expect(weekLine(rewards()), 'Set a daily target — reach it once for your first cat');
+      // Once the first cat is on the shelf, the week is the whole offer.
+      expect(weekLine(rewards(catsEarned: 1)), 'Set a daily target to start collecting cats');
     });
     test('counts the week towards the cat', () {
       expect(weekLine(rewards(target: 300)), '0 of 5 days this week · 5 for a cat');
@@ -40,13 +42,17 @@ void main() {
       expect((claim.awarded[0] as WordsReward).words, 500);
       expect((claim.awarded[1] as DayReward).daysToCat, 4);
     });
-    test('are put into words', () {
-      expect(rewardWords(const WordsReward(100)).$1, '100 words today — congratulations.');
-      expect(rewardWords(const WordsReward(500)).$1, "500 words today. You're doing amazing.");
-      final (text, detail) = rewardWords(const DayReward(daysToCat: 1));
-      expect(text, 'Daily target reached — congratulations.');
-      expect(detail, "Keep writing for one more day this week and you'll get a cat.");
-      expect(rewardWords(const DayReward(daysToCat: 3)).$2, "Keep writing for 3 more days this week and you'll get a cat.");
+    test('a cat with an unknown reason reads as the ordinary one', () {
+      final parsed = Cat.fromJson({
+        'id': 'c2',
+        'cat_id': 'custard',
+        'name': 'Custard',
+        'svg': '<svg></svg>',
+        'reason': 'equinox',
+        'earned_at': '2026-09-20T10:00:00Z',
+        'week_start': '2026-09-14',
+      });
+      expect(parsed.reason, CatReason.week);
     });
   });
 }

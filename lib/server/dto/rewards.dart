@@ -5,6 +5,12 @@ import 'poltergeist.dart';
 // `RewardWeek` and `Cat` in openapi.yaml. The server decides every reward;
 // these only carry what it decided.
 
+/// What earned a cat: `first_goal` is the welcome cat, given once ever for
+/// the first day the author's writing reached their daily target; `week` is
+/// one for a week with enough ticked days. A reason this build does not know
+/// reads as `week`, the ordinary one.
+enum CatReason { firstGoal, week }
+
 /// A cat the author has earned. [svg] is the whole picture, self-contained,
 /// for `SvgPicture.string`; [catId] names the catalogue entry it was drawn
 /// from.
@@ -14,6 +20,7 @@ class Cat {
     required this.catId,
     required this.name,
     required this.svg,
+    required this.reason,
     required this.earnedAt,
     required this.weekStart,
   });
@@ -22,6 +29,7 @@ class Cat {
   final String catId;
   final String name;
   final String svg;
+  final CatReason reason;
   final String earnedAt;
 
   /// Monday of the local week it was earned in, `YYYY-MM-DD`.
@@ -32,6 +40,7 @@ class Cat {
         catId: asString(json['cat_id']),
         name: asString(json['name']),
         svg: asString(json['svg']),
+        reason: json['reason'] == 'first_goal' ? CatReason.firstGoal : CatReason.week,
         earnedAt: asString(json['earned_at']),
         weekStart: asString(json['week_start']),
       );
@@ -53,7 +62,8 @@ class CatSilhouette {
       );
 }
 
-/// Where the current local week stands against its cat.
+/// Where the current local week stands against its cat. The welcome cat has
+/// no part in this: it is earned once, ever, and never spends a week's.
 class RewardWeek {
   const RewardWeek({required this.start, required this.ticked, required this.required, required this.catEarned});
 
@@ -101,7 +111,8 @@ class DayReward extends Reward {
   final int daysToCat;
 }
 
-/// The cat itself.
+/// A cat — the welcome one or the week's, per `cat.reason`. It stands in for
+/// the tick that earned it, so a claim never carries both.
 class CatReward extends Reward {
   const CatReward(this.cat);
   final Cat cat;

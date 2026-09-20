@@ -7,6 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../access/capability.dart';
 import '../../autosave/autosave.dart';
 import '../../rewards/claim.dart';
+import '../../rewards/strike.dart';
+import '../../rewards/strike_card.dart';
+import '../../rewards/strikes.dart';
 import '../../core/words.dart';
 import '../../dictation/dock_height.dart';
 import '../../ds/tokens.dart';
@@ -112,6 +115,8 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
   // Asks the server what a landed save earned; the server decides, this
   // shows. Made with the autosave and disposed with it.
   RewardClaimer? _rewards;
+  // What it earned, struck one card at a time over the foot of the page.
+  final RewardStrikes _strikes = RewardStrikes();
   ProviderSubscription<AsyncValue<DocumentDto>>? _docSub;
   bool _loaded = false;
   Object? _loadError;
@@ -174,10 +179,10 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
       onRestore: (content) => _editor.setText(content),
     )..loaded(doc);
     _rewards = RewardClaimer(
-      onAwarded: (awarded) {
+      onAwarded: (claim) {
         if (!mounted) return;
-        for (final reward in awarded) {
-          showRewardNotice(context, reward);
+        for (final reward in claim.awarded) {
+          _strikes.show(strikeFor(reward, claim));
         }
       },
     );
@@ -422,6 +427,7 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
     _autosave?.dispose();
     _rewards?.dispose();
     _rewards = null;
+    _strikes.dispose();
     _names.dispose();
     dictationDockHeight.removeListener(_onDock);
     _focus.dispose();
@@ -494,6 +500,27 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
                         ),
                       ),
                     ),
+                  // A reward, struck above the + so it covers neither the
+                  // button nor the bar; the page's foot is under it anyway.
+                  Positioned(
+                    left: 16,
+                    right: 16,
+                    bottom: _fabGap + fabSize + _fabGap,
+                    child: ListenableBuilder(
+                      listenable: _strikes,
+                      builder: (context, _) {
+                        final shown = _strikes.current;
+                        if (shown == null) return const SizedBox.shrink();
+                        return RewardStrikeCard(
+                          key: ValueKey(shown.id),
+                          strike: shown.strike,
+                          leaving: shown.leaving,
+                          onDismiss: _strikes.dismiss,
+                          onGone: () => _strikes.gone(shown.id),
+                        );
+                      },
+                    ),
+                  ),
                 ],
               ),
             ),
