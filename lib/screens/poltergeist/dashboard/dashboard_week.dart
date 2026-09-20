@@ -7,7 +7,6 @@ import '../../../poltergeist/ledger.dart';
 import '../../../poltergeist/providers.dart';
 import '../../../poltergeist/rewards.dart';
 import '../poltergeist_tabs.dart';
-import '../project_scope_id.dart';
 import '../section_link.dart';
 import '../words/word_columns.dart';
 import 'dashboard_section.dart';
@@ -19,9 +18,8 @@ class DashboardWeek extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final projectId = projectIdOf(context);
-    final days = ref.watch(wordStatsProvider(projectId)).value;
     final rewards = ref.watch(rewardsProvider).value;
+    final days = rewards?.days;
     final week = lastWeek(days ?? const []);
     final total = week.fold(0, (sum, d) => sum + d.written);
     final perDay = (total / 7).round();

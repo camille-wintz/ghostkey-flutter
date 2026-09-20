@@ -91,8 +91,11 @@ lib/
   rewards/                  the writing rewards as the phone sees them: RewardClaimer (the
                             chapter editor calls it after a save lands; the SERVER decides
                             every reward — ghostkey-server lib/rewards) · the SnackBar notice ·
-                            CatPicture (the server's SVG). Ticks and the cat shelf read from
-                            poltergeist/providers.dart; the week's wording is poltergeist/rewards.dart.
+                            CatPicture (the server's SVG). The whole LEDGER — the daily series,
+                            the ticks, the cat shelf — reads from poltergeist/providers.dart's
+                            rewardsProvider, account-wide; wordStatsProvider is left for the one
+                            figure that is the book's, its manuscript size. The week's wording is
+                            poltergeist/rewards.dart.
   dictation/ scan/          recorder channel · session · policy + room meter · silence pass ·
                             seam ledger · anchors | camera · OCR · insert
   chat/ veil/ poltergeist/ wisp/   the logic half of those rooms (see below)

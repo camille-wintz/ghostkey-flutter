@@ -17,7 +17,9 @@ class DashboardSummary extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final projectId = projectIdOf(context);
-    final days = ref.watch(wordStatsProvider(projectId)).value;
+    // Every book's days, like the ledger and the ticks: writing on a day is
+    // writing, whichever book it went into.
+    final days = ref.watch(rewardsProvider).value?.days;
     if (days == null) return const SizedBox.shrink();
     final openCount = ref.watch(openTaskCountProvider(projectId));
     final plan = ref.watch(planBoardProvider(projectId)).value?.plan;

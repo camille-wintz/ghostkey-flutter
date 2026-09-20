@@ -12,15 +12,18 @@ import 'tasks_notifier.dart';
 // auto-dispose: the room's shell watches each one for as long as the room is
 // open, so tabs share one fetch and re-entering the room reads fresh.
 
-/// The daily words series, oldest first, for the ledger window.
+/// THIS BOOK's daily series, oldest first — read for its manuscript size,
+/// on the header and the dashboard's chapter band. The ledger itself reads
+/// the account-wide twin below.
 final wordStatsProvider = FutureProvider.autoDispose.family<List<WordStatsDay>, String>(
   (ref, projectId) => getProjectWordStats(projectId, days: ledgerDays),
 );
 
-/// The author's ticked days over the ledger's window, today's words across
-/// every book, and the week's standing. Per account, not per book, so every
-/// book shows the same ticks. Same window and offset as the word stats, so
-/// the two line up day for day.
+/// The whole ledger: the window's daily writing across every live book, the
+/// ticked days among them and the week's standing. Per account, not per
+/// book — a day's writing is every book's words added up, and so is the
+/// target it is measured against. Same window and offset as the word stats,
+/// so the two line up day for day.
 final rewardsProvider = FutureProvider.autoDispose<Rewards>((ref) => getMyRewards(days: ledgerDays));
 
 /// Every cat the author has, newest first. Per account, not per book.

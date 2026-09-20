@@ -5,6 +5,7 @@ import 'package:ghostkey/server/dto/rewards.dart';
 Rewards rewards({int? target, int ticked = 0, bool catEarned = false}) => Rewards(
       target: target,
       writtenToday: 0,
+      days: const [],
       metDays: const [],
       week: RewardWeek(start: '2026-09-14', ticked: ticked, required: 5, catEarned: catEarned),
       catsEarned: 0,

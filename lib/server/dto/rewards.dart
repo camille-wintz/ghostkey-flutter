@@ -1,4 +1,5 @@
 import 'json.dart';
+import 'poltergeist.dart';
 
 // The writing rewards' wire shapes — `Rewards`, `RewardClaim`, `Reward`,
 // `RewardWeek` and `Cat` in openapi.yaml. The server decides every reward;
@@ -116,13 +117,15 @@ class RewardClaim {
       );
 }
 
-/// The ledger's view: which days in the window are ticked, and the week.
+/// The ledger's view, and the ledger is the whole desk: the daily series
+/// across every live book, which of those days are ticked, and the week.
 /// The author's, not a book's: a day's writing is every book's words added
 /// up, against one daily target on the account.
 class Rewards {
   const Rewards({
     required this.target,
     required this.writtenToday,
+    required this.days,
     required this.metDays,
     required this.week,
     required this.catsEarned,
@@ -130,8 +133,11 @@ class Rewards {
 
   final int? target;
 
-  /// Words written today in every book.
+  /// Words written today in every book — the same figure as [days].last.
   final int writtenToday;
+
+  /// The window's local days across every live book, oldest first.
+  final List<WordStatsDay> days;
 
   /// The ticked days in the window, `YYYY-MM-DD`, oldest first.
   final List<String> metDays;
@@ -143,6 +149,7 @@ class Rewards {
   static Rewards fromJson(Json json) => Rewards(
         target: json['target'] as int?,
         writtenToday: asInt(json['written_today']),
+        days: asJsonList(json['days']).map(WordStatsDay.fromJson).toList(),
         metDays: asStringList(json['met_days']),
         week: RewardWeek.fromJson(asJson(json['week'])),
         catsEarned: asInt(json['cats_earned']),

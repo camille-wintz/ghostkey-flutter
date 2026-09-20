@@ -12,7 +12,6 @@ import '../../../ui/field.dart';
 import '../../../server/dto/poltergeist.dart';
 import '../../../server/errors.dart';
 import '../../../ui/state_screen.dart';
-import '../project_scope_id.dart';
 import 'ledger_row.dart';
 import 'ledger_week_header.dart';
 import 'word_columns.dart';
@@ -21,24 +20,27 @@ import 'word_columns.dart';
 /// 30-day columns, then one ruled row per day, week by week. Counts words
 /// put down — added and rewritten land here, cuts don't — so revising still
 /// reads as work, but a day of pure cutting reads as quiet.
+///
+/// The whole page is the AUTHOR's, not this book's: the columns, the rows,
+/// the streak and the ticks all read every book added up, the same figure
+/// the daily target is measured against.
 class WordsTab extends ConsumerWidget {
   const WordsTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final projectId = projectIdOf(context);
-    final stats = ref.watch(wordStatsProvider(projectId));
-    final days = stats.value;
-    final rewards = ref.watch(rewardsProvider).value;
+    final ledger = ref.watch(rewardsProvider);
+    final rewards = ledger.value;
+    final days = rewards?.days;
     final metDays = rewards?.metDays.toSet() ?? const <String>{};
 
     if (days == null) {
-      if (stats.hasError) {
+      if (ledger.hasError) {
         return StateScreen(
           message: "The ledger didn't load.",
-          detail: messageFor(stats.error),
+          detail: messageFor(ledger.error),
           actionLabel: 'Try again',
-          onAction: () => ref.invalidate(wordStatsProvider(projectId)),
+          onAction: () => ref.invalidate(rewardsProvider),
         );
       }
       return const StateScreen(spinner: true, message: 'Reading the ledger…');
