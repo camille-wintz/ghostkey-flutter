@@ -16,6 +16,8 @@ Widget host(Widget child) => MaterialApp(
       ),
     );
 
+void _nothing() {}
+
 void main() {
   testWidgets('a mark lands with its words, its chain and its footnote', (tester) async {
     var gone = 0;
@@ -24,6 +26,7 @@ void main() {
         eyebrow: 'Today',
         headline: '100 words',
         sub: 'The page is moving.',
+        short: 'The page is moving.',
         footnote: 'Next at 500',
         ring: 0.2,
         ticked: 3,
@@ -60,6 +63,7 @@ void main() {
             eyebrow: 'A full week',
             headline: 'Peony',
             sub: 'Five days at the desk this week, and a cat for the shelf.',
+            short: 'A full week of writing, and a cat for it.',
             footnote: 'Added to Poltergeist',
             ring: 1,
             ticked: 5,
@@ -79,12 +83,39 @@ void main() {
     expect(gone, 1);
   });
 
+  testWidgets('the compact card keeps the number, the short line and the chain', (tester) async {
+    await tester.pumpWidget(host(const RewardStrikeCard(
+      compact: true,
+      strike: Strike(
+        eyebrow: 'Today',
+        headline: '500 words',
+        sub: '500 words written already. You\'re doing amazing! 200 more to your daily goal.',
+        short: '200 more to your daily goal.',
+        footnote: 'Kept in Poltergeist',
+        ring: 1,
+        ticked: 3,
+      ),
+      leaving: false,
+      onDismiss: _nothing,
+      onGone: _nothing,
+    )));
+    await tester.pump(const Duration(seconds: 5));
+    expect(find.text('500 words'), findsOneWidget);
+    expect(find.text('200 more to your daily goal.'), findsOneWidget);
+    expect(chain('3 of 7 days this week'), findsOneWidget);
+    // The full card's furniture stays off it.
+    expect(find.text('TODAY'), findsNothing);
+    expect(find.text('KEPT IN POLTERGEIST'), findsNothing);
+    expect(find.textContaining('doing amazing'), findsNothing);
+  });
+
   testWidgets('without a target there is no chain', (tester) async {
     await tester.pumpWidget(host(RewardStrikeCard(
       strike: const Strike(
         eyebrow: 'Today',
         headline: '100 words',
         sub: 'The page is moving.',
+        short: 'The page is moving.',
         footnote: 'Next at 500',
         ring: 0.2,
         ticked: null,

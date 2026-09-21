@@ -15,6 +15,11 @@ import 'strike.dart';
 // motes drift up off its foot. It holds a few seconds and goes on a short
 // fade. From the "Writing streak reward" canvas; the desktop's
 // `RewardStrike.tsx` is the same card in CSS.
+//
+// [RewardStrikeCard.compact] is the same strike at a phone's scale: half the
+// height, the copy in one line, no motes, and it comes down from the top of
+// the page instead of up from its foot — a word mark should be noticed over
+// the shoulder, not stood in front of. A cat still gets the full card.
 
 /// The design's ease for everything that arrives: a long ease-out tail.
 const Cubic _arrive = Cubic(0.16, 1, 0.3, 1);
@@ -25,6 +30,10 @@ const Duration _exit = Duration(milliseconds: 260);
 
 /// The headline's step, from the canvas: between title and display.
 const DsStep _headline = DsStep(32, 34);
+
+/// The compact headline: the canvas's title step, which is as small as a
+/// number can go and still read as the point of the card.
+const DsStep _headlineCompact = DsStep(22, 26);
 
 /// Where the motes rise from and when — six, spread along the foot of the
 /// card so no stretch goes bare. `left` is a fraction of the width.
@@ -54,9 +63,13 @@ class RewardStrikeCard extends StatefulWidget {
     required this.leaving,
     required this.onDismiss,
     required this.onGone,
+    this.compact = false,
   });
 
   final Strike strike;
+
+  /// The small card, hung from the top of the page rather than its foot.
+  final bool compact;
 
   /// Playing its way out; [onGone] follows.
   final bool leaving;
@@ -121,14 +134,21 @@ class _RewardStrikeCardState extends State<RewardStrikeCard> with TickerProvider
       animation: Listenable.merge([_in, _out]),
       builder: (context, _) {
         final out = Curves.easeIn.transform(_out.value);
+        // Each leaves the way it came: up through the top, down past the foot.
         return Opacity(
           opacity: 1 - out,
           child: Transform.translate(
-            offset: Offset(0, 8 * out),
+            offset: Offset(0, (widget.compact ? -8 : 8) * out),
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                Positioned(left: -34, right: -34, top: -30, bottom: -30, child: _bloom()),
+                Positioned(
+                  left: widget.compact ? -22 : -34,
+                  right: widget.compact ? -22 : -34,
+                  top: widget.compact ? -20 : -30,
+                  bottom: widget.compact ? -20 : -30,
+                  child: _bloom(),
+                ),
                 _card(context, strike),
               ],
             ),
@@ -180,7 +200,7 @@ class _RewardStrikeCardState extends State<RewardStrikeCard> with TickerProvider
     return Opacity(
       opacity: t,
       child: Transform.translate(
-        offset: Offset(0, 18 * (1 - t)),
+        offset: Offset(0, (widget.compact ? -14 : 18) * (1 - t)),
         child: Transform.scale(
           scale: 0.965 + 0.035 * t,
           child: GestureDetector(
@@ -217,8 +237,8 @@ class _RewardStrikeCardState extends State<RewardStrikeCard> with TickerProvider
                       ),
                     ),
                     Positioned.fill(child: IgnorePointer(child: _sheen())),
-                    Positioned.fill(child: IgnorePointer(child: _moteField())),
-                    _body(strike),
+                    if (!widget.compact) Positioned.fill(child: IgnorePointer(child: _moteField())),
+                    widget.compact ? _bodyCompact(strike) : _body(strike),
                   ],
                 ),
               ),
@@ -298,6 +318,74 @@ class _RewardStrikeCardState extends State<RewardStrikeCard> with TickerProvider
     );
   }
 
+  /// The compact card: the mark, the number, and one line under it with the
+  /// week's chain at its end. What the full card has and this one drops —
+  /// the eyebrow, the rule, the footnote, the motes — is what a card read in
+  /// passing does not need: the headline already says what was struck, and
+  /// the ring already shows how far the next mark is.
+  Widget _bodyCompact(Strike strike) {
+    final ticked = strike.ticked;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _medallion(strike),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _rise(
+              start: 180,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // The chain rides at the end of the headline, where the
+                  // number leaves room; the line under it then has the whole
+                  // card to say its sentence in, which on a narrow phone it
+                  // needs.
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          strike.headline,
+                          style: DsStyle.prose(_headlineCompact, color: Ds.hi),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (ticked != null) ...[
+                        const SizedBox(width: 10),
+                        Semantics(
+                          label: '$ticked of $chainDays days this week',
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              for (var i = 0; i < chainDays; i++) ...[
+                                if (i > 0) const SizedBox(width: 5),
+                                _dot(on: i < ticked, size: 7),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    strike.short,
+                    style: DsStyle.ui(DsText.ui, color: Ds.mid),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _body(Strike strike) {
     final ticked = strike.ticked;
     return Padding(
@@ -372,9 +460,9 @@ class _RewardStrikeCardState extends State<RewardStrikeCard> with TickerProvider
     );
   }
 
-  Widget _dot({required bool on}) => Container(
-        width: 9,
-        height: 9,
+  Widget _dot({required bool on, double size = 9}) => Container(
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: on ? Ds.accent : null,
@@ -410,13 +498,19 @@ class _RewardStrikeCardState extends State<RewardStrikeCard> with TickerProvider
       angle = 2 - 2 * k;
     }
     final cat = strike.cat;
+    // Every measure in the medallion is the canvas's, times this.
+    final k = widget.compact ? 44 / 76 : 1.0;
     return SizedBox(
-      width: 76,
-      height: 76,
+      width: 76 * k,
+      height: 76 * k,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Positioned.fill(child: CustomPaint(painter: _RingPainter(progress: ring, track: Ds.edgeHi, ink: Ds.accent))),
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _RingPainter(progress: ring, radius: 32 * k, track: Ds.edgeHi, ink: Ds.accent),
+            ),
+          ),
           Opacity(
             opacity: opacity.clamp(0.0, 1.0),
             child: Transform.rotate(
@@ -425,9 +519,9 @@ class _RewardStrikeCardState extends State<RewardStrikeCard> with TickerProvider
                 scale: scale,
                 child: cat != null
                     ? Container(
-                        width: 56,
-                        height: 56,
-                        padding: const EdgeInsets.all(4),
+                        width: 56 * k,
+                        height: 56 * k,
+                        padding: EdgeInsets.all(4 * k),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: Ds.veil,
@@ -435,11 +529,19 @@ class _RewardStrikeCardState extends State<RewardStrikeCard> with TickerProvider
                         ),
                         child: ClipOval(child: CatPicture(cat)),
                       )
-                    : RoomTile(
-                        tile: rooms.firstWhere((r) => r.key == RoomKey.poltergeist).tile,
-                        mark: RoomMark.poltergeist,
-                        size: 52,
-                        iconSize: 25,
+                    // A disc that fills the ring rather than a plate
+                    // inscribed in it. Held a hairline short of the stroke:
+                    // flush, the unlit part of the ring lay on the gradient
+                    // and stopped reading as the distance still to go. The
+                    // clip is inside the strike, so it is a disc at every
+                    // scale of the pop.
+                    : ClipOval(
+                        child: RoomTile(
+                          tile: rooms.firstWhere((r) => r.key == RoomKey.poltergeist).tile,
+                          mark: RoomMark.poltergeist,
+                          size: 58 * k,
+                          iconSize: 28 * k,
+                        ),
                       ),
               ),
             ),
@@ -452,15 +554,16 @@ class _RewardStrikeCardState extends State<RewardStrikeCard> with TickerProvider
 
 /// The 2px track and the accent arc that closes over it, from twelve o'clock.
 class _RingPainter extends CustomPainter {
-  const _RingPainter({required this.progress, required this.track, required this.ink});
+  const _RingPainter({required this.progress, required this.radius, required this.track, required this.ink});
   final double progress;
+  final double radius;
   final Color track;
   final Color ink;
 
   @override
   void paint(Canvas canvas, Size size) {
     final centre = size.center(Offset.zero);
-    const r = 32.0;
+    final r = radius;
     canvas.drawCircle(
       centre,
       r,
@@ -484,5 +587,6 @@ class _RingPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_RingPainter old) => old.progress != progress || old.track != track || old.ink != ink;
+  bool shouldRepaint(_RingPainter old) =>
+      old.progress != progress || old.radius != radius || old.track != track || old.ink != ink;
 }

@@ -500,12 +500,14 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
                         ),
                       ),
                     ),
-                  // A reward, struck above the + so it covers neither the
-                  // button nor the bar; the page's foot is under it anyway.
+                  // A reward, hung from the head of the page under the title
+                  // block: a word mark arrives while the author is writing,
+                  // and the caret is never up here. A cat gets the full card
+                  // — it is the thing being given, and it is worth the room.
                   Positioned(
                     left: 16,
                     right: 16,
-                    bottom: _fabGap + fabSize + _fabGap,
+                    top: 12,
                     child: ListenableBuilder(
                       listenable: _strikes,
                       builder: (context, _) {
@@ -514,6 +516,7 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
                         return RewardStrikeCard(
                           key: ValueKey(shown.id),
                           strike: shown.strike,
+                          compact: shown.strike.cat == null,
                           leaving: shown.leaving,
                           onDismiss: _strikes.dismiss,
                           onGone: () => _strikes.gone(shown.id),

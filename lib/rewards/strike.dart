@@ -19,6 +19,7 @@ class Strike {
     required this.eyebrow,
     required this.headline,
     required this.sub,
+    required this.short,
     required this.footnote,
     required this.ring,
     required this.ticked,
@@ -29,6 +30,10 @@ class Strike {
   final String eyebrow;
   final String headline;
   final String sub;
+
+  /// [sub] in one line, for the compact card: the thing worth knowing with
+  /// the sentence around it cut away. The headline already says the number.
+  final String short;
 
   /// Under the chain, in small caps.
   final String footnote;
@@ -76,6 +81,9 @@ Strike strikeFor(Reward reward, RewardClaim claim) {
         eyebrow: 'Today',
         headline: '${_grouped(words)} words',
         sub: sub,
+        short: toGoal > 0
+            ? '${_grouped(toGoal)} more to your daily goal.'
+            : (words >= 500 ? "You're doing amazing!" : "You're on your way."),
         footnote: next != null
             ? 'Next at ${_grouped(next)}'
             : 'Kept in Poltergeist',
@@ -94,6 +102,9 @@ Strike strikeFor(Reward reward, RewardClaim claim) {
             // already on the shelf, since a tick that earns one is sent as
             // the cat itself, never as a day.
             : "Congratulations! You've completed your daily goal. This week's cat is already yours.",
+        short: daysToCat > 0
+            ? "Daily goal done. ${_asWord(daysToCat)} more ${daysToCat == 1 ? 'day' : 'days'} to a cat."
+            : "Daily goal done. This week's cat is already yours.",
         footnote: 'Kept in Poltergeist',
         ring: 1,
         ticked: ticked,
@@ -109,6 +120,9 @@ Strike strikeFor(Reward reward, RewardClaim claim) {
         sub: first
             ? "You've reached your daily goal for the first time! Here is a cat as a well-earned reward."
             : "You've completed your weekly goal! Here is a cat for your trouble.",
+        short: first
+            ? 'Your first daily goal, and a cat for it.'
+            : 'A full week of writing, and a cat for it.',
         footnote: 'Added to Poltergeist',
         ring: 1,
         ticked: ticked,
