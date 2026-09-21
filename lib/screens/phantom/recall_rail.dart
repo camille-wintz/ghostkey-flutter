@@ -37,6 +37,7 @@ String shortLabel(ChatToolStep step) {
       ),
     'read_library_item' => 'a library item',
     'add_to_library' => 'an addition to the library',
+    'read_note' => step.detail?.replaceAll('"', '') ?? 'the notes',
     'read_attachment' => step.detail?.split(' · ').firstOrNull?.replaceAll('"', '') ?? 'an attachment',
     'search_library' => _or(summary.replaceFirst(_lookingThrough, '').trim(), 'the library'),
     'search' => _or(summary.replaceFirst(_searchingFor, '').trim(), 'the manuscript'),
