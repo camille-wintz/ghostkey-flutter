@@ -162,6 +162,7 @@ class FeatureQuota {
     required this.unlimited,
     required this.allowance,
     required this.used,
+    required this.extras,
     required this.remaining,
   });
 
@@ -172,6 +173,14 @@ class FeatureQuota {
   final bool unlimited;
   final int? allowance;
   final int used;
+
+  /// Runs bought and not yet spent. They sit outside the window — a top-up pack
+  /// does not expire with it — so a meter reading "5 / 5" can still have runs
+  /// behind it. Shown beside the bar rather than folded into it.
+  ///
+  /// Mobile does not sell packs (Play bills digital goods its own way); this is
+  /// here so the balance an author bought elsewhere is visible on the phone.
+  final int extras;
   final int? remaining;
 
   static FeatureQuota fromJson(Json json) => FeatureQuota(
@@ -182,6 +191,7 @@ class FeatureQuota {
         unlimited: asBool(json['unlimited']),
         allowance: json['allowance'] as int?,
         used: asInt(json['used']),
+        extras: asInt(json['extras']),
         remaining: json['remaining'] as int?,
       );
 }

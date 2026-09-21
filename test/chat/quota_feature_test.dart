@@ -9,6 +9,7 @@ FeatureQuota quota(
   bool unlimited = false,
   QuotaCadence cadence = QuotaCadence.weekly,
   String label = 'Chat messages',
+  int extras = 0,
 }) =>
     FeatureQuota(
       feature: feature,
@@ -17,7 +18,8 @@ FeatureQuota quota(
       periodEnd: '2026-09-14T00:00:00Z',
       unlimited: unlimited,
       allowance: allowance,
-      used: allowance == null || remaining == null ? 0 : allowance - remaining,
+      used: allowance == null || remaining == null ? 0 : allowance - remaining - extras,
+      extras: extras,
       remaining: remaining,
     );
 

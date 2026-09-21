@@ -361,7 +361,12 @@ class _QuotaMeter extends StatelessWidget {
           children: [
             Expanded(child: UiText(feature.label, step: DsText.ui, color: Ds.soft, maxLines: 1)),
             Text(
-              '${feature.used} / $allowance',
+              // Bought runs are not in the bar and must not be: they belong to
+              // the account rather than to this window, so a full bar with a
+              // pack behind it reads as "the included ones are gone".
+              feature.extras > 0
+                  ? '${feature.used} / $allowance · ${feature.extras} bought'
+                  : '${feature.used} / $allowance',
               style: DsStyle.ui(DsText.ui, color: Ds.mid).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
           ],
