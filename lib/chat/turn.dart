@@ -31,8 +31,8 @@ import 'session_title.dart';
 class PendingTurn {
   final ValueNotifier<List<ChatToolStep>> steps = ValueNotifier(const []);
 
-  /// Answer prose so far. Cleared by a step frame: text before a tool call
-  /// was narration, not the answer.
+  /// Answer prose so far. Cleared only by a discard frame — a step leaves it
+  /// alone, since narration before a tool call is part of the answer.
   final ValueNotifier<String> text = ValueNotifier('');
 }
 
@@ -190,11 +190,9 @@ class ChatTurnNotifier extends Notifier<ChatTurnState> with WidgetsBindingObserv
         model: model,
         manuscript: manuscript,
         sessionId: sessionId,
-        onStep: (step) {
-          pending.steps.value = upsertStep(pending.steps.value, step);
-          pending.text.value = '';
-        },
+        onStep: (step) => pending.steps.value = upsertStep(pending.steps.value, step),
         onText: (chunk) => pending.text.value = pending.text.value + chunk,
+        onDiscard: () => pending.text.value = '',
         onView: (view) {
           if (token == _token && _alive) state = state.copyWith(view: view);
         },

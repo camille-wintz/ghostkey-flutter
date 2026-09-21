@@ -325,6 +325,7 @@ sealed class ChatTurnFrame {
     if (json['result'] is Map) return ResultFrame(ChatTurnResult.fromJson(asJson(json['result'])));
     if (json['view'] is Map) return ViewFrame(ChatView.fromJson(json['view']));
     if (json['error'] is String) return ErrorFrame(asString(json['error']), json['detail'] as String?);
+    if (json['discard'] == true) return const DiscardFrame();
     return TextFrame(asString(json['text']));
   }
 }
@@ -343,6 +344,11 @@ class ViewFrame extends ChatTurnFrame {
 class TextFrame extends ChatTurnFrame {
   const TextFrame(this.text);
   final String text;
+}
+
+/// The prose streamed so far is not the answer — clear it.
+class DiscardFrame extends ChatTurnFrame {
+  const DiscardFrame();
 }
 
 class ResultFrame extends ChatTurnFrame {

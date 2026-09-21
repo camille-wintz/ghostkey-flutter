@@ -90,6 +90,7 @@ Future<TurnHandle> streamTurn(
   String? sessionId,
   required void Function(ChatToolStep step) onStep,
   required void Function(String chunk) onText,
+  required void Function() onDiscard,
   required void Function(ChatView view) onView,
 }) async {
   final res = await apiStream(
@@ -130,6 +131,8 @@ Future<TurnHandle> streamTurn(
           break;
         case TextFrame(:final text):
           onText(text);
+        case DiscardFrame():
+          onDiscard();
         case ResultFrame(result: final r):
           result = r;
         case ErrorFrame(:final error, :final detail):
