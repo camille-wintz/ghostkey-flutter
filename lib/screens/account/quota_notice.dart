@@ -21,7 +21,8 @@ Future<void> showQuotaNotice(
   required FeatureQuota? snapshot,
   required QuotaExceeded? refused,
 }) {
-  final label = (refused?.label ?? snapshot?.label ?? 'this feature').toLowerCase();
+  final label = (refused?.label ?? snapshot?.label ?? 'this feature')
+      .toLowerCase();
   final unit = refused?.unit ?? snapshot?.unit ?? QuotaUnit.runs;
   final allowance = refused?.allowance ?? snapshot?.allowance;
   final used = refused?.used ?? snapshot?.used;
@@ -45,10 +46,14 @@ Future<void> showQuotaNotice(
           label: refused?.label ?? snapshot?.label ?? 'Allowance',
           used: formatQuantity(used, unit),
           allowance: formatQuantity(allowance, unit),
-          extras: (snapshot?.extras ?? 0) > 0 ? formatQuantity(snapshot!.extras, unit) : null,
+          extras: (snapshot?.extras ?? 0) > 0
+              ? formatQuantity(snapshot!.extras, unit)
+              : null,
           resets: resets.isEmpty ? null : 'Resets on $resets',
         ),
-      const NoticeText('Your plan follows your account rather than this phone.'),
+      const NoticeText(
+        'Your plan follows your account rather than this phone.',
+      ),
       const _ManageLink(),
     ],
   );
@@ -85,10 +90,17 @@ class _QuotaFacts extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text(label, style: DsStyle.ui(DsText.ui, color: Ds.hi))),
+              Expanded(
+                child: Text(label, style: DsStyle.ui(DsText.ui, color: Ds.hi)),
+              ),
               Text(
-                extras == null ? '$used / $allowance' : '$used / $allowance · $extras bought',
-                style: DsStyle.ui(DsText.ui, color: Ds.mid).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                extras == null
+                    ? '$used / $allowance'
+                    : '$used / $allowance · $extras bought',
+                style: DsStyle.ui(
+                  DsText.ui,
+                  color: Ds.mid,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
             ],
           ),
@@ -136,4 +148,5 @@ class _ManageLink extends StatelessWidget {
   }
 }
 
-String _capitalize(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+String _capitalize(String s) =>
+    s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);

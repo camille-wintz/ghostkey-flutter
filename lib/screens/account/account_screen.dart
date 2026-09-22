@@ -41,7 +41,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         title: const Text('Sign out?'),
         content: Text(email),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             child: Text('Sign out', style: TextStyle(color: Ds.destructive)),
@@ -61,7 +64,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final confirmed = await confirmDeleteAccount(
       context,
       email: ref.read(sessionProvider).user?.email ?? '',
-      hasLiveSubscription: subscription != null && subscription.status != 'canceled',
+      hasLiveSubscription:
+          subscription != null && subscription.status != 'canceled',
     );
     if (!confirmed || !mounted) return;
     setState(() => _deleting = true);
@@ -97,7 +101,6 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
   Future<void> _manage() => openWebAccount(context);
 
-
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(sessionProvider.select((s) => s.user));
@@ -105,7 +108,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final quota = ref.watch(quotaProvider).value;
     final catalog = ref.watch(planCatalogProvider).value;
     final plan = snapshot?.plan;
-    final initial = (user?.email ?? '?').trim().isEmpty ? '?' : (user?.email ?? '?').trim()[0].toUpperCase();
+    final initial = (user?.email ?? '?').trim().isEmpty
+        ? '?'
+        : (user?.email ?? '?').trim()[0].toUpperCase();
 
     return Scaffold(
       backgroundColor: Ds.void_,
@@ -115,7 +120,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             Container(
               height: 52,
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Ds.edge))),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: Ds.edge)),
+              ),
               child: Row(
                 children: [
                   Press(
@@ -129,7 +136,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                         color: pressed ? Ds.veil : const Color(0x00000000),
                         borderRadius: BorderRadius.circular(DsGeom.radius),
                       ),
-                      child: Icon(LucideIcons.chevronLeft, size: 18, color: Ds.mid),
+                      child: Icon(
+                        LucideIcons.chevronLeft,
+                        size: 18,
+                        color: Ds.mid,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -152,7 +163,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                           border: Border.all(color: Ds.accentMix(55)),
                           shape: BoxShape.circle,
                         ),
-                        child: Text(initial, style: DsStyle.prose(const DsStep(17, 22), color: Ds.accent)),
+                        child: Text(
+                          initial,
+                          style: DsStyle.prose(
+                            const DsStep(17, 22),
+                            color: Ds.accent,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -161,7 +178,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                           children: [
                             Eyebrow('Account', color: Ds.accent),
                             const SizedBox(height: 2),
-                            UiText(user?.email ?? '—', color: Ds.hi, maxLines: 1),
+                            UiText(
+                              user?.email ?? '—',
+                              color: Ds.hi,
+                              maxLines: 1,
+                            ),
                           ],
                         ),
                       ),
@@ -179,17 +200,30 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                           height: 44,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: Ds.destructive.withValues(alpha: pressed ? 0.2 : 0.12),
-                            border: Border.all(color: Ds.destructive.withValues(alpha: pressed ? 1 : 0.55)),
+                            color: Ds.destructive.withValues(
+                              alpha: pressed ? 0.2 : 0.12,
+                            ),
+                            border: Border.all(
+                              color: Ds.destructive.withValues(
+                                alpha: pressed ? 1 : 0.55,
+                              ),
+                            ),
                             borderRadius: BorderRadius.circular(DsGeom.radius),
                           ),
                           child: _deleting
                               ? SizedBox(
                                   width: 14,
                                   height: 14,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Ds.destructive),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Ds.destructive,
+                                  ),
                                 )
-                              : Icon(LucideIcons.trash2, size: 16, color: Ds.destructive),
+                              : Icon(
+                                  LucideIcons.trash2,
+                                  size: 16,
+                                  color: Ds.destructive,
+                                ),
                         ),
                       ),
                     ],
@@ -223,11 +257,18 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            UiText(plan != null ? planName(plan) : '—', color: Ds.hi, weight: FontWeight.w600),
+                            UiText(
+                              plan != null ? planName(plan) : '—',
+                              color: Ds.hi,
+                              weight: FontWeight.w600,
+                            ),
                           ],
                         ),
-                        for (final feature in (quota?.features ?? const <FeatureQuota>[])
-                            .where((f) => !f.unlimited && f.allowance != null)) ...[
+                        for (final feature
+                            in (quota?.features ?? const <FeatureQuota>[])
+                                .where(
+                                  (f) => !f.unlimited && f.allowance != null,
+                                )) ...[
                           const SizedBox(height: 14),
                           _QuotaMeter(feature: feature),
                         ],
@@ -235,7 +276,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  GkButton(label: 'Manage plan', wide: true, variant: ButtonVariant.outline, onPressed: _manage),
+                  GkButton(
+                    label: 'Manage plan',
+                    wide: true,
+                    variant: ButtonVariant.outline,
+                    onPressed: _manage,
+                  ),
                   const SizedBox(height: 8),
                   UiText(
                     'Opens ghost-key.app in your browser. Your plan follows your account rather than this phone.',
@@ -245,7 +291,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                   const SizedBox(height: 20),
                   const Eyebrow('Plans'),
                   const SizedBox(height: 8),
-                  for (final rung in (catalog?.plans ?? const <PlanPrice>[]).where((r) => r.plan != Plan.free))
+                  for (final rung
+                      in (catalog?.plans ?? const <PlanPrice>[]).where(
+                        (r) => r.plan != Plan.free,
+                      ))
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: _Rung(rung: rung, current: rung.plan == plan),
@@ -253,7 +302,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.only(top: 8),
-                    decoration: BoxDecoration(border: Border(top: BorderSide(color: Ds.edge))),
+                    decoration: BoxDecoration(
+                      border: Border(top: BorderSide(color: Ds.edge)),
+                    ),
                     child: Press(
                       onPressed: _signOut,
                       enabled: !_signingOut,
@@ -334,7 +385,9 @@ class _QuotaMeter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final allowance = feature.allowance ?? 0;
-    final fraction = allowance > 0 ? (feature.used / allowance).clamp(0.0, 1.0) : 0.0;
+    final fraction = allowance > 0
+        ? (feature.used / allowance).clamp(0.0, 1.0)
+        : 0.0;
     final used = formatQuantity(feature.used, feature.unit);
     final included = formatQuantity(allowance, feature.unit);
     final resets = feature.cadence == QuotaCadence.weekly
@@ -345,7 +398,14 @@ class _QuotaMeter extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(child: UiText(feature.label, step: DsText.ui, color: Ds.soft, maxLines: 1)),
+            Expanded(
+              child: UiText(
+                feature.label,
+                step: DsText.ui,
+                color: Ds.soft,
+                maxLines: 1,
+              ),
+            ),
             Text(
               // Bought runs are not in the bar and must not be: they belong to
               // the account rather than to this window, so a full bar with a
@@ -353,7 +413,10 @@ class _QuotaMeter extends StatelessWidget {
               feature.extras > 0
                   ? '$used / $included · ${formatQuantity(feature.extras, feature.unit)} bought'
                   : '$used / $included',
-              style: DsStyle.ui(DsText.ui, color: Ds.mid).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+              style: DsStyle.ui(
+                DsText.ui,
+                color: Ds.mid,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
           ],
         ),
@@ -368,7 +431,10 @@ class _QuotaMeter extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 7),
-        Text(resets, style: DsStyle.ui(DsText.eyebrow, color: Ds.low, tracking: 0.6)),
+        Text(
+          resets,
+          style: DsStyle.ui(DsText.eyebrow, color: Ds.low, tracking: 0.6),
+        ),
       ],
     );
   }
@@ -397,15 +463,20 @@ class _PlanSentence extends StatelessWidget {
     } else if (grant != null && grant.isComp) {
       line = grant.expiresAt == null
           ? subscription != null
-              ? '${planName(grant.plan)} on the house — yours with no end date. Your ${planName(subscription.plan)} subscription continues.'
-              : '${planName(grant.plan)} on the house — yours with no end date.'
+                ? '${planName(grant.plan)} on the house — yours with no end date. Your ${planName(subscription.plan)} subscription continues.'
+                : '${planName(grant.plan)} on the house — yours with no end date.'
           : '${planName(grant.plan)} on the house, until ${formatBillingDate(grant.expiresAt!)}.';
     } else if (subscription != null && subscription.cancelAtPeriodEnd) {
       line = 'Ends on ${formatBillingDate(subscription.currentPeriodEnd)}.';
     } else if (subscription != null) {
       line = 'Renews on ${formatBillingDate(subscription.currentPeriodEnd)}.';
-    } else if (grant == null && previous != null && previous.isWelcome && previous.hasExpired && previous.expiresAt != null) {
-      line = 'Your free week of ${planName(previous.plan)} ended on ${formatBillingDate(previous.expiresAt!)}.';
+    } else if (grant == null &&
+        previous != null &&
+        previous.isWelcome &&
+        previous.hasExpired &&
+        previous.expiresAt != null) {
+      line =
+          'Your free week of ${planName(previous.plan)} ended on ${formatBillingDate(previous.expiresAt!)}.';
     }
 
     if (line == null) return const SizedBox.shrink();
