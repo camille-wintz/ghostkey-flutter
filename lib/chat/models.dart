@@ -1,84 +1,38 @@
-// The chat picker's models. Hand-mirrors the desktop's
-// ghost-key/src/shared/models/models.ts (which itself mirrors the server's
-// registry) — this app has no shared package to import from. Nothing gates
-// the drift; update both in the same change. `minimax-m3` is in the wire enum
-// but in neither picker, on purpose.
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The band a model needs beyond the chat itself, as the access snapshot
-/// names it.
-enum ModelCapability {
-  advanced('models.advanced'),
-  premium('models.premium');
+import '../server/dto/models.dart';
+import '../server/providers.dart';
 
-  const ModelCapability(this.id);
-  final String id;
-}
-
-class ModelDef {
-  const ModelDef({required this.id, required this.name, this.capability, this.quota});
-
-  final String id;
-  final String name;
-
-  /// Absent for the included band. Draws the padlock — the server decides
-  /// what is refused.
-  final ModelCapability? capability;
-
-  /// The counter this model draws down on its own, when it has one. Names
-  /// the right counter in the quota notice; the server decides what is
-  /// charged.
-  final String? quota;
-}
-
-/// Auto first, then the included set, then the premium band, so the one
-/// padlock a Basic author sees sits at the bottom. The head of the list is the
-/// default, and every model behind it has to be one every paying plan
-/// includes.
-///
-/// Auto since 2026-09-13, and it is the one row that is not a registry model:
-/// the server hands the turn to Opus for work (plotting, edits, writing into
-/// the project) or Sol for feedback, off one Flash Lite call over the newest
-/// message (ghostkey-server/src/lib/chat/turnRoute.ts). Both sit on
-/// `models.advanced`, granted at Basic since 2026-09-10. Before that the seat
-/// was Sol — Opus worked best but was cold on a new author's opening turn, and
-/// the split is what stops that being a choice. Picking a model by name skips
-/// the router.
-///
-/// Keep this order in step with the server's `DEFAULT_CHAT_MODEL`
-/// (ghostkey-server/src/lib/chat/turn.ts) and the desktop catalog
-/// (ghost-key/src/shared/models/models.ts) — nothing gates the drift.
-const List<ModelDef> models = [
-  ModelDef(id: 'auto', name: 'Auto'),
-  ModelDef(id: 'gpt-5-6-sol', name: 'GPT-5.6 Sol', capability: ModelCapability.advanced),
-  ModelDef(id: 'opus-4-8', name: 'Claude Opus 4.8', capability: ModelCapability.advanced),
-  ModelDef(id: 'gpt-5-6-terra', name: 'GPT-5.6 Terra'),
-  ModelDef(id: 'gemini-3-1-pro', name: 'Gemini 3.1 Pro'),
-  ModelDef(id: 'glm-5-2', name: 'GLM 5.2'),
-  ModelDef(id: 'sonnet-5', name: 'Claude Sonnet 5'),
-  ModelDef(id: 'kimi-k3', name: 'Kimi K3'),
-  ModelDef(id: 'qwen3-8-max', name: 'Qwen3.8 Max'),
-  ModelDef(id: 'fable-5', name: 'Claude Fable 5', capability: ModelCapability.premium, quota: 'fable_chat'),
-  // **GPT-6 Astra belongs here and is deliberately withheld** (2026-09-07),
-  // matching the desktop catalog — see the long note in
-  // ghost-key/src/shared/models/models.ts. It is wired everywhere else (server
-  // registry, premium band, sharing Fable's `fable_chat` pool), but OpenAI is
-  // rolling it out by spend tier and this account is below it, so every call
-  // 403s. To ship it when the tier lands, restore every catalog together:
-  //   ModelDef(id: 'gpt-6-astra', name: 'GPT-6 Astra', capability: ModelCapability.premium, quota: 'fable_chat'),
-];
-
-const String defaultModel = 'auto';
+// The chat picker's models come from the server's catalog (GET /api/models)
+// since 2026-09-22; the list, its order, its names and its default are the
+// server's. The phone draws the `chat` surface only — its line edit sends no
+// model.
+//
+// The picked model means what the author picked: null until they pick one,
+// and a turn then sends no `model`, so the server's default answers. The
+// surface's `default` row stands in for it on screen.
 
 /// The weekly counter every chat message draws from.
 const String chatQuotaFeature = 'phantom_chat';
 
-ModelDef? modelDef(String id) {
-  for (final m in models) {
-    if (m.id == id) return m;
-  }
-  return null;
-}
+/// The catalog surface this app's chat picker draws.
+const String chatSurfaceId = 'chat';
 
-/// Display name for an id; the raw id when the list has drifted behind the
-/// server's, since that is more use than "Unknown model".
-String modelName(String id) => modelDef(id)?.name ?? id;
+/// The chat surface, or null while the catalog loads, when it failed
+/// (offline), or when the server serves no chat surface — every one of which
+/// is a picker with nothing to pick.
+final chatModelsProvider = Provider<ModelSurface?>(
+  (ref) => ref.watch(modelCatalogProvider).value?.surface(chatSurfaceId),
+);
+
+/// The row a send is gated and labelled as: the picked one, else the
+/// surface's default. Null when there is no surface, or the picked id is not
+/// in it (a retired id the server still resolves).
+CatalogModel? chatModelRow(ModelSurface? surface, String? picked) =>
+    picked == null ? surface?.defaultModel : surface?.model(picked);
+
+/// The name to say for the chat's model: the row's name; the raw id when the
+/// catalog does not list it, since that is more use than "Unknown model"; null
+/// when nothing is picked and the catalog has not landed.
+String? chatModelLabel(ModelSurface? surface, String? picked) =>
+    chatModelRow(surface, picked)?.name ?? picked;

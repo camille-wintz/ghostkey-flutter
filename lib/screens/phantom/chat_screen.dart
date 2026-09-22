@@ -46,8 +46,10 @@ class ChatScreen extends ConsumerStatefulWidget {
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   String get _projectId => widget.projectId;
 
-  /// Session-wide, not persisted; applied per send.
-  String _model = defaultModel;
+  /// What the author picked — session-wide, not persisted, applied per send.
+  /// Null until they pick: the turn then names no model and the server's
+  /// default answers.
+  String? _model;
 
   /// Whether the assistant may edit chapters — sent on every turn as the
   /// conversation's "Write in the manuscript" / "Read only" switch. Write by
@@ -62,7 +64,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       for (final m in ref.read(chatTurnProvider(_projectId)).messages)
         for (final a in m.attachments) a.id,
     ],
-    quotaFor: (model) => chatQuotaFor(ref.read(quotaProvider).value, model),
+    quotaFor: (model) => chatQuotaFor(ref.read(quotaProvider).value, chatModelRow(ref.read(chatModelsProvider), model)),
     sendTurn: (text, attachments, model) => ref
         .read(chatTurnProvider(_projectId).notifier)
         .send(text, attachments, model, manuscript: _manuscriptWrites ? 'write' : 'read_only'),
@@ -175,6 +177,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final chat = ref.watch(chatTurnProvider(_projectId));
+    // Watched here too so the catalog is fetching before the settings open.
+    final modelLabel = chatModelLabel(ref.watch(chatModelsProvider), _model);
     final turn = ref.read(chatTurnProvider(_projectId).notifier);
     final chapters = ref.watch(projectProvider(_projectId)).value?.chapters;
     final planning = chapters != null && chaptersInTree(chapters).isEmpty;
@@ -202,9 +206,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               trailing: RoomBarAction(
                 icon: LucideIcons.settings,
                 onPressed: _openSettings,
-                semanticLabel: _manuscriptWrites
-                    ? 'Chat settings: ${modelName(_model)}, writing in the manuscript'
-                    : 'Chat settings: ${modelName(_model)}, read only',
+                semanticLabel: 'Chat settings: ${[
+                  ?modelLabel,
+                  _manuscriptWrites ? 'writing in the manuscript' : 'read only',
+                ].join(', ')}',
               ),
             ),
             Expanded(

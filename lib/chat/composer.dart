@@ -36,8 +36,10 @@ class ComposerController extends ChangeNotifier {
   /// Handles the conversation has already spent, so a new one is unique
   /// across the whole session and the model never sees two "a2"s.
   final List<String> Function() spentIds;
-  final ChatQuotaFeature Function(String model) quotaFor;
-  final Future<SendOutcome> Function(String text, List<ChatAttachment> attachments, String model) sendTurn;
+  /// `model` is the author's pick — null when they have not picked, and
+  /// then the turn names none and the server's default answers.
+  final ChatQuotaFeature Function(String? model) quotaFor;
+  final Future<SendOutcome> Function(String text, List<ChatAttachment> attachments, String? model) sendTurn;
   final bool Function() isSending;
 
   final TextEditingController text = TextEditingController();
@@ -117,7 +119,7 @@ class ComposerController extends ChangeNotifier {
   /// when the message went, or when there was nothing to send; a refusal
   /// when a counter or the plan said no — the message is back in the
   /// composer by then.
-  Future<ComposerRefusal?> send({String? override, required String model}) async {
+  Future<ComposerRefusal?> send({String? override, String? model}) async {
     // A second tap while a turn runs must not empty the composer for a send
     // that never happens.
     if (isSending()) return null;

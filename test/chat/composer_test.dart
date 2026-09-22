@@ -28,7 +28,7 @@ class Harness {
   bool exhausted;
   SendOutcome outcome;
   final List<String> spent;
-  final List<(String, List<ChatAttachment>, String)> sent = [];
+  final List<(String, List<ChatAttachment>, String?)> sent = [];
 
   late final ComposerController composer = ComposerController(
     spentIds: () => spent,
@@ -158,6 +158,12 @@ void main() {
       expect(denied.what, 'Claude Fable 5');
       expect(denied.requiredPlan, Plan.pro);
       expect(h.composer.text.text, 'q');
+    });
+    test('an unpicked model goes as none, so the server default answers', () async {
+      final h = Harness();
+      h.composer.text.text = 'q';
+      expect(await h.composer.send(), isNull);
+      expect(h.sent.single.$3, isNull);
     });
     test('a failed or stopped turn is not a refusal', () async {
       final h = Harness(outcome: const SendFailed());

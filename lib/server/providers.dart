@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/session.dart';
 import 'billing/api.dart';
 import 'dto/billing.dart';
+import 'dto/models.dart';
 import 'dto/projects.dart';
 import 'folders/api.dart';
+import 'models/api.dart';
 import 'projects/api.dart';
 import 'series/api.dart';
 
@@ -61,6 +63,11 @@ final accessProvider = FutureProvider<AccessSnapshot>((ref) => getAccess());
 final quotaProvider = FutureProvider<QuotaSnapshot>((ref) => getQuota());
 
 final planCatalogProvider = FutureProvider<PlanCatalog>((ref) => getPlanCatalog());
+
+/// The model pickers (GET /api/models). The same for every account, so it
+/// survives sign-out like the plan catalog. No fallback list: until it lands
+/// the chat picker offers nothing and a turn sends no model.
+final modelCatalogProvider = FutureProvider<ModelCatalog>((ref) => getModelCatalog());
 
 /// Drop every server read. Called on sign-out, so the next account on this
 /// phone never sees the last one's shelf for a frame.

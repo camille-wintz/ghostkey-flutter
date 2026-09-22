@@ -6,6 +6,7 @@ import '../../chat/model_access.dart';
 import '../../chat/models.dart';
 import '../../chat/refusals.dart';
 import '../../ds/tokens.dart';
+import '../../server/dto/models.dart';
 import '../../server/providers.dart';
 import '../../ui/press.dart';
 import '../../ui/sheet.dart';
@@ -14,10 +15,11 @@ import 'plan_notice.dart';
 /// The conversation's settings, the desktop's "Chat settings" modal: which
 /// model answers, and whether it may write in the manuscript. Both apply from
 /// the next message on, so each choice lands the moment it is pressed and the
-/// sheet stays open to show it.
+/// sheet stays open to show it. [model] is the author's pick, null for none
+/// yet — the catalog's default row shows as selected then.
 Future<void> showChatSettingsSheet(
   BuildContext context, {
-  required String model,
+  required String? model,
   required bool manuscriptWrites,
   required ValueChanged<String> onModel,
   required ValueChanged<bool> onManuscriptWrites,
@@ -41,7 +43,7 @@ class _ChatSettings extends ConsumerStatefulWidget {
     required this.onManuscriptWrites,
   });
 
-  final String model;
+  final String? model;
   final bool manuscriptWrites;
   final ValueChanged<String> onModel;
   final ValueChanged<bool> onManuscriptWrites;
@@ -51,11 +53,19 @@ class _ChatSettings extends ConsumerStatefulWidget {
 }
 
 class _ChatSettingsState extends ConsumerState<_ChatSettings> {
-  late String _model = widget.model;
+  late String? _model = widget.model;
   late bool _writes = widget.manuscriptWrites;
 
-  void _pickModel(ModelDef def) {
-    final access = modelAccess(ref.read(accessProvider).value, def.id);
+  @override
+  void initState() {
+    super.initState();
+    // A catalog that failed (offline at first read) stays failed until
+    // asked again; opening the picker is the ask.
+    if (ref.read(modelCatalogProvider).hasError) ref.invalidate(modelCatalogProvider);
+  }
+
+  void _pickModel(CatalogModel def) {
+    final access = modelAccess(ref.read(accessProvider).value, def);
     if (!access.granted) {
       showPlanNotice(context, PlanDenied(what: def.name, requiredPlan: access.requiredPlan));
       return;
@@ -72,6 +82,9 @@ class _ChatSettingsState extends ConsumerState<_ChatSettings> {
   @override
   Widget build(BuildContext context) {
     final snapshot = ref.watch(accessProvider).value;
+    final surface = ref.watch(chatModelsProvider);
+    final failed = ref.watch(modelCatalogProvider).hasError;
+    final selected = _model ?? surface?.defaultId;
     return ListView(
       shrinkWrap: true,
       padding: const EdgeInsets.only(bottom: 12),
@@ -92,13 +105,18 @@ class _ChatSettingsState extends ConsumerState<_ChatSettings> {
           onPressed: () => _pickWrites(false),
         ),
         const _SectionLabel('Model'),
-        for (final def in models)
-          _SettingRow(
-            label: def.name,
-            selected: def.id == _model,
-            locked: !modelAccess(snapshot, def.id).granted,
-            onPressed: () => _pickModel(def),
-          ),
+        // No fallback list: nothing to pick until the catalog lands, and a
+        // send meanwhile names no model, so the server's default answers.
+        if (surface == null || surface.models.isEmpty)
+          _Note(failed ? 'The models could not load. The default model answers until they do.' : 'Loading the models…')
+        else
+          for (final def in surface.models)
+            _SettingRow(
+              label: def.name,
+              selected: def.id == selected,
+              locked: !modelAccess(snapshot, def).granted,
+              onPressed: () => _pickModel(def),
+            ),
       ],
     );
   }
@@ -112,6 +130,17 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.fromLTRB(18, 16, 18, 6),
         child: Text(text.toUpperCase(), style: DsStyle.eyebrow(color: Ds.accent300)),
+      );
+}
+
+class _Note extends StatelessWidget {
+  const _Note(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        child: Text(text, style: DsStyle.ui(DsText.ui, color: Ds.mid)),
       );
 }
 

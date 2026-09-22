@@ -165,7 +165,7 @@ class ChatTurnNotifier extends Notifier<ChatTurnState> with WidgetsBindingObserv
   Future<SendOutcome> send(
     String text,
     List<ChatAttachment> attachments,
-    String model, {
+    String? model, {
     required String manuscript,
   }) async {
     if (state.sending) return const SendFailed();
