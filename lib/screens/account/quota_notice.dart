@@ -51,9 +51,6 @@ Future<void> showQuotaNotice(
               : null,
           resets: resets.isEmpty ? null : 'Resets on $resets',
         ),
-      const NoticeText(
-        'Your plan follows your account rather than this phone.',
-      ),
       const _ManageLink(),
     ],
   );

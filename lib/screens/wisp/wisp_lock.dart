@@ -22,10 +22,6 @@ void explainWispLock(
         ? '$what is part of $plan'
         : '$what is part of a higher plan',
     action: 'Got it',
-    children: [
-      NoticeText(
-        '${plan ?? 'A higher plan'} opens it. Your plan follows your account rather than this phone, and Account always says which one you are on.',
-      ),
-    ],
+    children: [NoticeText('${plan ?? 'A higher plan'} opens it.')],
   );
 }

@@ -283,11 +283,6 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                     onPressed: _manage,
                   ),
                   const SizedBox(height: 8),
-                  UiText(
-                    'Opens ghost-key.app in your browser. Your plan follows your account rather than this phone.',
-                    step: DsText.eyebrow,
-                    color: Ds.low,
-                  ),
                   const SizedBox(height: 20),
                   const Eyebrow('Plans'),
                   const SizedBox(height: 8),
