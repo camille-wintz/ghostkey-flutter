@@ -42,7 +42,10 @@ and Glamour are desk rooms and never come here.
   when the contract moves.
 - **Design system**: [lib/ds/tokens.dart](lib/ds/tokens.dart) mirrors the
   suite's token files by name (`Ds.*` colours, `DsText` ramp, `DsGeom`,
-  `DsMotion`, `DsStyle.ui/prose/eyebrow`). Night only. Fonts are bundled
+  `DsMotion`, `DsStyle.ui/prose/eyebrow`). Night only — the account holds a
+  theme since 2026-09-22 (`/api/me/preferences`) and this app does not read
+  it yet; [docs/themes-plan.md](docs/themes-plan.md) is the plan, and the
+  file's colours have drifted from the desktop's (see there). Fonts are bundled
   TTFs (Manrope = the app's words, Newsreader = titles, Spectral = the
   manuscript page only). Icons are Lucide via `lucide_icons_flutter`; the
   room marks are inline SVG in `lib/rooms/icons.dart`. The app's own mark
