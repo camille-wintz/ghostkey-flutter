@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../access/quota_refusals.dart';
 import '../server/dto/jobs.dart';
 import '../server/errors.dart';
 import '../server/jobs/run_job.dart';
@@ -69,7 +70,8 @@ class WorldBibleRun extends Notifier<WorldBibleRunState> {
       ref.invalidate(bibleProvider(projectId));
       ref.invalidate(dossiersProvider(projectId));
     } catch (e) {
-      if (ref.mounted) state = WorldBibleRunState(error: messageFor(e));
+      if (!ref.mounted) return;
+      state = reportQuotaRefusal(e) ? const WorldBibleRunState() : WorldBibleRunState(error: messageFor(e));
     }
   }
 

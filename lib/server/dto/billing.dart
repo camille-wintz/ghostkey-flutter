@@ -146,10 +146,46 @@ class AccessSnapshot {
 
 enum QuotaCadence {
   billing,
-  weekly;
+  weekly,
 
-  static QuotaCadence fromWire(String? value) =>
-      value == 'weekly' ? QuotaCadence.weekly : QuotaCadence.billing;
+  /// Free's chat messages reset every day; the other plans count them weekly.
+  daily;
+
+  static QuotaCadence fromWire(String? value) => switch (value) {
+        'weekly' => QuotaCadence.weekly,
+        'daily' => QuotaCadence.daily,
+        _ => QuotaCadence.billing,
+      };
+
+  /// "this week" — the window the count runs over, for a sentence.
+  String get window => switch (this) {
+        QuotaCadence.daily => 'today',
+        QuotaCadence.weekly => 'this week',
+        QuotaCadence.billing => 'this period',
+      };
+}
+
+/// What a feature's numbers count. Every counter counts runs except
+/// dictation, which counts audio-seconds (an hour a week on Free, since
+/// 2026-09-22). Anything shown to an author goes through [formatQuantity].
+enum QuotaUnit {
+  runs,
+  seconds;
+
+  /// Absent (a server that predates the field) is runs.
+  static QuotaUnit fromWire(String? value) => value == 'seconds' ? QuotaUnit.seconds : QuotaUnit.runs;
+}
+
+/// One quota number in its unit: runs stay bare, seconds read as minutes,
+/// floored — "31 min", "1 h", "1 h 20 min". Mirrors the desktop's
+/// `formatQuantity`.
+String formatQuantity(int n, QuotaUnit unit) {
+  if (unit == QuotaUnit.runs) return '$n';
+  final minutes = n ~/ 60;
+  final hours = minutes ~/ 60;
+  final rest = minutes % 60;
+  if (hours == 0) return '$minutes min';
+  return rest == 0 ? '$hours h' : '$hours h $rest min';
 }
 
 /// One counted feature's standing. Numbers are null when `unlimited`.
@@ -164,11 +200,13 @@ class FeatureQuota {
     required this.used,
     required this.extras,
     required this.remaining,
+    this.unit = QuotaUnit.runs,
   });
 
   final String feature;
   final String label;
   final QuotaCadence cadence;
+  final QuotaUnit unit;
   final String periodEnd;
   final bool unlimited;
   final int? allowance;
@@ -193,6 +231,7 @@ class FeatureQuota {
         used: asInt(json['used']),
         extras: asInt(json['extras']),
         remaining: json['remaining'] as int?,
+        unit: QuotaUnit.fromWire(json['unit'] as String?),
       );
 }
 
@@ -228,11 +267,13 @@ class QuotaExceeded {
     required this.periodEnd,
     required this.upgradePlan,
     required this.upgradeAllowance,
+    this.unit = QuotaUnit.runs,
   });
 
   final String feature;
   final String label;
   final Plan plan;
+  final QuotaUnit unit;
   final int? allowance;
   final int used;
   final String periodEnd;
@@ -248,6 +289,7 @@ class QuotaExceeded {
         periodEnd: asString(json['period_end']),
         upgradePlan: json['upgrade_plan'] == null ? null : Plan.fromWire(json['upgrade_plan'] as String?),
         upgradeAllowance: json['upgrade_allowance'] as int?,
+        unit: QuotaUnit.fromWire(json['unit'] as String?),
       );
 }
 

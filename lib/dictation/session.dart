@@ -436,7 +436,10 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
   void _onChunkLost(Object e) {
     debugPrint('[dictation] chunk lost: $e');
     if (_disposed) return;
-    if (e is ServerError && e.code == 'plan_insufficient') {
+    // Both refusals refuse every chunk after this one too — the week's
+    // dictation spent is as final as a plan without it — so stop listening
+    // rather than keep losing the writer's words.
+    if (e is ServerError && (e.code == 'plan_insufficient' || e.code == 'quota_exceeded')) {
       onRefused?.call(e);
       return;
     }

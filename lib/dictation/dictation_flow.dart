@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../access/quota_refusals.dart';
 import '../ds/tokens.dart';
 import '../editor/editor_controller.dart';
 import '../screens/project/project_root.dart';
@@ -60,9 +61,10 @@ Future<void> startDictation(BuildContext context, EditorController editor) async
     },
     onSettled: () => paragraphs.finish(anchor.landingPoint),
     previousText: anchor.textBeforeDictation,
-    // A plan refusal refuses every chunk: close the dock and say so once.
+    // A plan or quota refusal refuses every chunk: close the dock and say so once.
     onRefused: (ServerError e) {
       unawaited(close());
+      if (reportQuotaRefusal(e)) return;
       if (context.mounted) {
         unawaited(showNoticeModal(
           context,

@@ -1,12 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'access/quota_refusals.dart';
 import 'auth/session.dart';
 import 'ds/tokens.dart';
+import 'screens/account/quota_notice.dart';
 import 'screens/auth/auth_screen.dart';
 import 'screens/project/project_root.dart';
 import 'screens/shelf/shelf_root.dart';
+import 'server/providers.dart';
 import 'store/active_project.dart';
 
 /// The app: one theme, and a root that is exactly one of three things.
@@ -18,15 +23,43 @@ class GhostkeyApp extends ConsumerStatefulWidget {
 }
 
 class _GhostkeyAppState extends ConsumerState<GhostkeyApp> {
+  final _navigator = GlobalKey<NavigatorState>();
+  late final StreamSubscription<QuotaRefusalReport> _quotaRefusals;
+  bool _quotaNoticeOpen = false;
+
   @override
   void initState() {
     super.initState();
     ref.read(sessionProvider.notifier).hydrate();
+    _quotaRefusals = quotaRefusals.listen(_showQuotaNotice);
+  }
+
+  @override
+  void dispose() {
+    _quotaRefusals.cancel();
+    super.dispose();
+  }
+
+  /// Every room's 402 lands here. One notice at a time: dictation refuses
+  /// chunk after chunk, and the writer needs telling once.
+  Future<void> _showQuotaNotice(QuotaRefusalReport report) async {
+    final context = _navigator.currentContext;
+    if (_quotaNoticeOpen || context == null) return;
+    _quotaNoticeOpen = true;
+    final feature = report.feature;
+    final snapshot = feature == null ? null : ref.read(quotaProvider).value?.feature(feature);
+    ref.invalidate(quotaProvider);
+    try {
+      await showQuotaNotice(context, snapshot: snapshot, refused: report.refused);
+    } finally {
+      _quotaNoticeOpen = false;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _navigator,
       title: 'Ghostkey',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),

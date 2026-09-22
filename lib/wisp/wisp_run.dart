@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../access/quota_refusals.dart';
 import '../server/dto/jobs.dart';
 import '../server/dto/wisp.dart';
 import '../server/errors.dart';
@@ -108,7 +109,8 @@ class WispRun extends Notifier<WispRunState> {
       }
       _refresh();
     } catch (e) {
-      if (ref.mounted) state = WispRunState(error: messageFor(e));
+      if (!ref.mounted) return;
+      state = reportQuotaRefusal(e) ? const WispRunState() : WispRunState(error: messageFor(e));
     }
   }
 

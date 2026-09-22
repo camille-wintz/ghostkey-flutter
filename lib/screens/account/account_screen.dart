@@ -1,28 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../access/plans.dart';
+import '../../access/web_account.dart';
 import '../../access/welcome_notices.dart';
 import '../../auth/session.dart';
 import '../../ds/tokens.dart';
 import '../../server/auth/api.dart';
 import '../../server/dto/billing.dart';
+import '../../server/errors.dart';
 import '../../server/providers.dart';
 import '../../store/active_project.dart';
 import '../../ui/button.dart';
+import '../../ui/notice_modal.dart';
 import '../../ui/press.dart';
 import '../../ui/text.dart';
-import '../../server/errors.dart';
-import '../../ui/notice_modal.dart';
 import 'delete_account_dialog.dart';
 import 'verify_email_notice.dart';
-
-/// Where an author changes what they pay: the website, not a checkout in the
-/// app. A purchase flow that is not Play Billing is what gets a build
-/// rejected, so the app reports the plan and never sells it.
-const String _webAccountUrl = 'https://ghost-key.app/';
 
 /// The account: who is signed in, what they are on, what is left of it, and
 /// the way out. Everything here is read.
@@ -100,19 +95,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     await ref.read(sessionProvider.notifier).clearSession();
   }
 
-  Future<void> _manage() async {
-    final ok = await launchUrl(Uri.parse(_webAccountUrl), mode: LaunchMode.externalApplication);
-    if (!ok && mounted) {
-      await showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Could not open the browser'),
-          content: Text('Go to $_webAccountUrl to change your plan.'),
-          actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK'))],
-        ),
-      );
-    }
-  }
+  Future<void> _manage() => openWebAccount(context);
+
 
   @override
   Widget build(BuildContext context) {
@@ -351,6 +335,8 @@ class _QuotaMeter extends StatelessWidget {
   Widget build(BuildContext context) {
     final allowance = feature.allowance ?? 0;
     final fraction = allowance > 0 ? (feature.used / allowance).clamp(0.0, 1.0) : 0.0;
+    final used = formatQuantity(feature.used, feature.unit);
+    final included = formatQuantity(allowance, feature.unit);
     final resets = feature.cadence == QuotaCadence.weekly
         ? 'Resets weekly — next on ${formatBillingDate(feature.periodEnd)}'
         : 'Resets on ${formatBillingDate(feature.periodEnd)}';
@@ -365,8 +351,8 @@ class _QuotaMeter extends StatelessWidget {
               // the account rather than to this window, so a full bar with a
               // pack behind it reads as "the included ones are gone".
               feature.extras > 0
-                  ? '${feature.used} / $allowance · ${feature.extras} bought'
-                  : '${feature.used} / $allowance',
+                  ? '$used / $included · ${formatQuantity(feature.extras, feature.unit)} bought'
+                  : '$used / $included',
               style: DsStyle.ui(DsText.ui, color: Ds.mid).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
           ],

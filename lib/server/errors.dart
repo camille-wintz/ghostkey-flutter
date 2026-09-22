@@ -1,3 +1,4 @@
+import '../core/dates.dart';
 import 'dto/billing.dart';
 
 /// Extra fields a 403 `plan_insufficient` carries, so the message can name the
@@ -103,6 +104,11 @@ String messageFor(Object? err) {
     if (err.code == 'plan_insufficient') return _planMessage(err.denial);
     // The canned line names chat; any other counter names itself from the 402.
     final quota = err.quota;
+    if (err.code == 'quota_exceeded' && quota != null && quota.unit == QuotaUnit.seconds) {
+      final amount = quota.allowance == null ? '' : '${formatQuantity(quota.allowance!, quota.unit)} of ';
+      return "You've used this week's $amount${quota.label.toLowerCase()}. "
+          'It comes back on ${formatBillingDate(quota.periodEnd)}.';
+    }
     if (err.code == 'quota_exceeded' && quota != null && quota.feature != 'phantom_chat') {
       return "${quota.label}: this period's allowance is used up.";
     }

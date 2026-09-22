@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../access/capability.dart';
+import '../../access/quota_refusals.dart';
 import '../../chat/quota_feature.dart';
 import '../../ds/tokens.dart';
 import '../../server/dto/projects.dart';
@@ -61,7 +62,10 @@ class _LineEditFormState extends ConsumerState<_LineEditForm> {
       ref.invalidate(quotaProvider);
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
-      if (mounted) setState(() => _failure = "The pass couldn't start: ${messageFor(e)}");
+      if (!mounted) return;
+      // The notice explains a spent allowance; the sheet has nothing left to offer.
+      if (reportQuotaRefusal(e)) return Navigator.of(context).pop();
+      setState(() => _failure = "The pass couldn't start: ${messageFor(e)}");
     } finally {
       if (mounted) setState(() => _pending = false);
     }

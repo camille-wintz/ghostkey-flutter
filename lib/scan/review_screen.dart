@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../access/quota_refusals.dart';
 import '../core/words.dart';
 import '../ds/tokens.dart';
 import '../server/errors.dart';
@@ -60,6 +61,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
 
   void _onOcr() {
     if (!mounted) return;
+    // A spent allowance is explained by the notice, and no retry here can help.
+    if (reportQuotaRefusal(_ocr.error)) return widget.onClose();
     final text = _ocr.text;
     if (text != null && _edited.text != text) _edited.text = text;
     setState(() {});

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../access/quota_refusals.dart';
 import '../../server/dossiers/api.dart';
 import '../../server/dto/bible.dart';
 import '../../server/dto/jobs.dart';
@@ -143,7 +144,7 @@ class EntityDossierState extends ChangeNotifier {
       // Two runs, still nothing filed under this key.
       error = 'The dossier came back empty. Try again.';
     } catch (e) {
-      if (_alive) error = messageFor(e);
+      if (_alive && !reportQuotaRefusal(e)) error = messageFor(e);
     } finally {
       if (_alive) {
         building = false;

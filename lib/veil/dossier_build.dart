@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../access/capability.dart';
+import '../access/quota_refusals.dart';
 import '../server/dto/jobs.dart';
 import '../server/dto/projects.dart';
 import '../server/errors.dart';
@@ -142,7 +143,8 @@ class DossierBuild extends Notifier<DossierBuildState> {
       // Two runs, still nothing filed under this key.
       state = const DossierBuildState(error: 'The dossier came back empty. Try again.');
     } catch (e) {
-      if (ref.mounted) state = DossierBuildState(error: messageFor(e));
+      if (!ref.mounted) return;
+      state = reportQuotaRefusal(e) ? const DossierBuildState() : DossierBuildState(error: messageFor(e));
     }
   }
 }

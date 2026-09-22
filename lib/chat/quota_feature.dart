@@ -32,6 +32,5 @@ String? quotaLine(FeatureQuota? q) {
   final remaining = q.remaining;
   final allowance = q.allowance;
   if (remaining == null || allowance == null) return null;
-  final window = q.cadence == QuotaCadence.weekly ? 'this week' : 'this period';
-  return '$remaining of $allowance ${q.label.toLowerCase()} left $window';
+  return '$remaining of $allowance ${q.label.toLowerCase()} left ${q.cadence.window}';
 }
