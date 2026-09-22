@@ -1,7 +1,7 @@
 name: ghostkey
 description: Ghostkey — the writing app, on a phone.
 publish_to: 'none'
-version: 0.1.1+6
+version: 0.1.3+8
 
 environment:
   sdk: ^3.13.0
