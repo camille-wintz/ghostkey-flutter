@@ -26,11 +26,15 @@ import 'policy.dart';
 
 /// What came back for one chunk. `verbatim` is the transcript the cleaned
 /// text was diffed against — the session's next turn. Falls back to `text`
-/// when the server's pipeline reports none.
+/// when the server's pipeline reports none. `quotaRemaining` is the seconds
+/// of dictation left after this chunk, null when the plan does not count it;
+/// `quotaRead` is false when the server sent no reading.
 class Transcript {
-  const Transcript({required this.text, required this.verbatim});
+  const Transcript({required this.text, required this.verbatim, this.quotaRemaining, this.quotaRead = false});
   final String text;
   final String verbatim;
+  final int? quotaRemaining;
+  final bool quotaRead;
 }
 
 Future<Transcript> transcribeAudioChunk(
@@ -83,7 +87,7 @@ Future<Transcript> transcribeAudioChunk(
   // insert. `verbatim` is context only, so it keeps its trim.
   final raw = data.text;
   final text = raw.trim().isEmpty && !raw.contains('\n') ? '' : raw;
-  return Transcript(text: text, verbatim: (data.verbatim ?? text).trim());
+  return Transcript(text: text, verbatim: (data.verbatim ?? text).trim(), quotaRemaining: data.quotaRemaining, quotaRead: data.quotaRead);
 }
 
 /// The `turns` field: a JSON array of `{verbatim, cleaned}`, oldest first.

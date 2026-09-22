@@ -1,12 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../access/quota_refusals.dart';
 import '../ds/tokens.dart';
 import '../editor/editor_controller.dart';
 import '../screens/project/project_root.dart';
+import '../server/dto/billing.dart';
 import '../server/errors.dart';
+import '../server/providers.dart';
 import '../ui/notice_modal.dart';
 import 'anchor.dart';
 import 'dock/record_dock.dart';
@@ -30,15 +33,33 @@ import 'transcribe.dart';
 
 Future<void> startDictation(BuildContext context, EditorController editor) async {
   if (editor.capturing) return;
+  // Held across the quota read, so a second tap cannot start a second take.
+  editor.capturing = true;
+  final container = ProviderScope.containerOf(context, listen: false);
   final projectId = ProjectScope.of(context);
   final overlay = Overlay.of(context, rootOverlay: true);
+
+  // The week's dictation is read at the tap, not found at the first refused
+  // chunk: a writer with none left gets the notice instead of a dock that
+  // records words it cannot land.
+  final quota = await _readQuota(container);
+  final left = quota?.feature(_feature);
+  final remaining = left == null || left.unlimited ? null : left.remaining;
+  if (remaining != null && remaining <= 0) {
+    editor.capturing = false;
+    reportQuotaSpent(_feature, snapshot: quota);
+    return;
+  }
+  if (!context.mounted) {
+    editor.capturing = false;
+    return;
+  }
 
   final anchor = DictationAnchor(editor)..open();
   final paragraphs = ParagraphPass(
     editor,
     (paragraph, {required finished}) => cleanDictatedParagraph(paragraph, finished: finished, projectId: projectId),
   );
-  editor.capturing = true;
 
   late final DictationSession session;
   late final OverlayEntry entry;
@@ -61,6 +82,12 @@ Future<void> startDictation(BuildContext context, EditorController editor) async
     },
     onSettled: () => paragraphs.finish(anchor.landingPoint),
     previousText: anchor.textBeforeDictation,
+    // The take reached the week's line and its last chunk has landed: close
+    // the dock, then the notice — read fresh, so it shows the week spent.
+    onQuotaSpent: () {
+      unawaited(close());
+      unawaited(_readQuota(container).then((q) => reportQuotaSpent(_feature, snapshot: q)));
+    },
     // A plan or quota refusal refuses every chunk: close the dock and say so once.
     onRefused: (ServerError e) {
       unawaited(close());
@@ -77,6 +104,8 @@ Future<void> startDictation(BuildContext context, EditorController editor) async
     },
   );
 
+  session.meterQuota(remaining);
+
   entry = OverlayEntry(
     builder: (context) => _DockHost(child: RecordDock(session: session, onDone: () => unawaited(close()))),
   );
@@ -92,6 +121,20 @@ Future<void> startDictation(BuildContext context, EditorController editor) async
     anchor.dispose();
     session.dispose();
   }));
+}
+
+const _feature = 'dictation';
+
+/// A fresh quota read, or null when it cannot be had — the take then runs
+/// unmetered and the server's refusal is the backstop.
+Future<QuotaSnapshot?> _readQuota(ProviderContainer container) async {
+  try {
+    container.invalidate(quotaProvider);
+    return await container.read(quotaProvider.future).timeout(const Duration(seconds: 5));
+  } catch (e) {
+    debugPrint('[dictation] quota read failed — recording unmetered: $e');
+    return null;
+  }
 }
 
 /// Pins the dock to the bottom of the screen, above the keyboard when one is

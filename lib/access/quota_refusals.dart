@@ -19,3 +19,27 @@ bool reportQuotaRefusal(Object? e) {
   _reports.add((feature: e.quota?.feature, refused: e.quota));
   return true;
 }
+
+/// Report [feature] as spent without a refusal to go with it — a room that
+/// read the counter first and did not make the call. [snapshot] is a fresh
+/// quota read, whose numbers the notice shows; without one the notice falls
+/// back to the cached read.
+void reportQuotaSpent(String feature, {QuotaSnapshot? snapshot}) {
+  final f = snapshot?.feature(feature);
+  _reports.add((
+    feature: feature,
+    refused: f == null
+        ? null
+        : QuotaExceeded(
+            feature: f.feature,
+            label: f.label,
+            plan: snapshot!.plan,
+            allowance: f.allowance,
+            used: f.used,
+            periodEnd: f.periodEnd,
+            upgradePlan: null,
+            upgradeAllowance: null,
+            unit: f.unit,
+          ),
+  ));
+}

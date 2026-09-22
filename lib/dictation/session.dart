@@ -33,6 +33,7 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
     required this.onTranscript,
     required this.previousText,
     this.onRefused,
+    this.onQuotaSpent,
     this.onSettled,
   });
 
@@ -49,6 +50,10 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
   /// A plan refusal will refuse every chunk: the flow closes the dock rather
   /// than let it keep recording what can never land.
   final void Function(ServerError error)? onRefused;
+
+  /// The week's dictation ran out mid-take: the recording was ended at the
+  /// line, its last chunk shipped, and every chunk has now landed. Fires once.
+  final void Function()? onQuotaSpent;
 
   /// The recording is not running (paused, stopped, auto-stopped) and every
   /// chunk it sent has landed or been given up. May fire more than once.
@@ -68,6 +73,17 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
   int _sessions = 0;
   int _lastElapsedMs = 0;
   int _durationBase = 0;
+
+  // The week's dictation, metered against `durationMs`: the take ends itself
+  // when the clock reaches this, so its last chunk is admitted and lands
+  // instead of being refused. Null when the plan does not count dictation.
+  // Seeded from the quota read at the tap, then re-read from every chunk's
+  // response — the server's own count after that chunk's charge, laid
+  // against where that chunk ended — so rounding and erased silence never
+  // drift the two apart.
+  int? _limitMs;
+  bool _quotaSpent = false;
+  bool _quotaReported = false;
 
   // The session so far, in spoken order — appended as each chunk's transcript
   // LANDS (inside the ordered delivery chain), not as it is dispatched, so a
@@ -107,9 +123,25 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
 
   // ── Start / pause / resume / stop ─────────────────────────────────────────
 
+  /// Meter this take against [remainingSeconds] of dictation, or leave it
+  /// unmetered with null. Call before [start].
+  void meterQuota(int? remainingSeconds) {
+    _limitMs = remainingSeconds == null ? null : durationMs + remainingSeconds * 1000;
+  }
+
+  bool get _quotaReached {
+    final limit = _limitMs;
+    return limit != null && durationMs >= limit;
+  }
+
   /// Begin (or, after an auto-stop, begin again). No-op while live.
   Future<void> start() async {
     if (_live || _starting || _disposed) return;
+    if (_quotaReached) {
+      _quotaSpent = true;
+      _settleIfIdle();
+      return;
+    }
     _starting = true;
     try {
       final perms = await _native.permissions();
@@ -216,6 +248,10 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
     levels = [...levels.skip(1), DictationPolicy.normalizeDb(e.db)];
     notifyListeners();
     if (!_live || _paused || _cutting) return;
+    if (_quotaReached) {
+      _endForQuota();
+      return;
+    }
     switch (_policy.onLevel(db: e.db, nowMs: _now, sampleMs: sampleMs)) {
       case KeepGoing():
         break;
@@ -315,6 +351,15 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// The clock reached the week's line: end the take the way Done does, so
+  /// the running chunk ships and lands; the flow is told once it has.
+  void _endForQuota() {
+    if (_quotaSpent || !_live) return;
+    _quotaSpent = true;
+    debugPrint('[dictation] quota reached — ending the take');
+    unawaited(_end(null));
+  }
+
   Future<void> _end(AutoStopReason? reason) async {
     if (!_live) return;
     _live = false;
@@ -347,13 +392,17 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
   void _dispatch(String path) {
     _policy.pending += 1;
     notifyListeners();
+    // Where on the take's clock this chunk ended — what its response's
+    // remaining seconds are counted from.
+    final endedAtMs = durationMs;
     final result = _transcribe(path);
     // The chain only attaches its handler when this chunk's turn comes; an
     // earlier rejection would surface as unhandled in the meantime.
-    result.catchError((Object _) => const TranscriptTurn(verbatim: '', cleaned: ''));
+    result.catchError((Object _) => _nothingSent);
     _delivery = _delivery.then((_) async {
       try {
-        final turn = await result;
+        final (:turn, :answered, :quotaRemaining) = await result;
+        if (answered) _remeter(quotaRemaining, endedAtMs);
         if (turn.cleaned.isNotEmpty) {
           _policy.noteActivity(_now);
           _turns.add(turn);
@@ -370,8 +419,19 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
     });
   }
 
+  /// The server's count after a chunk, laid against where that chunk ended.
+  /// Applied in spoken order, so the latest chunk's reading is the one held.
+  void _remeter(int? quotaRemaining, int endedAtMs) {
+    _limitMs = quotaRemaining == null ? null : endedAtMs + quotaRemaining * 1000;
+    if (_live && !_cutting && _quotaReached) _endForQuota();
+  }
+
+  static const ({TranscriptTurn turn, bool answered, int? quotaRemaining}) _nothingSent = (turn: TranscriptTurn(verbatim: '', cleaned: ''), answered: false, quotaRemaining: null);
+
   /// Ship one chunk, retrying what may pass. The file goes either way.
-  Future<TranscriptTurn> _transcribe(String path) async {
+  /// `answered` is whether the server sent a quota reading with it, and so
+  /// whether `quotaRemaining` is one at all.
+  Future<({TranscriptTurn turn, bool answered, int? quotaRemaining})> _transcribe(String path) async {
     try {
       // The silence comes out BEFORE the chunk is sent, never after the text
       // comes back: the transcription model invents words over non-speech,
@@ -392,7 +452,7 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
       final audio = prepared.payload;
       if (audio == null) {
         debugPrint('[dictation] chunk dropped — ${prepared.dropped}');
-        return const TranscriptTurn(verbatim: '', cleaned: '');
+        return _nothingSent;
       }
       if (prepared.removedMs > 0) {
         debugPrint('[dictation] erased ${prepared.removedMs}ms of silence from a chunk');
@@ -416,7 +476,11 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
             previous: previous,
             turns: List.of(_turns),
           );
-          return TranscriptTurn(cleaned: res.text, verbatim: res.verbatim);
+          return (
+            turn: TranscriptTurn(cleaned: res.text, verbatim: res.verbatim),
+            answered: res.quotaRead,
+            quotaRemaining: res.quotaRemaining,
+          );
         } catch (e) {
           if (attempt >= DictationPolicy.retryDelaysMs.length || !_isRetryable(e)) rethrow;
           debugPrint('[dictation] transcribe failed (attempt ${attempt + 1}) — retrying: $e');
@@ -457,7 +521,12 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
   // ── Plumbing ──────────────────────────────────────────────────────────────
 
   void _settleIfIdle() {
-    if (!isRecording && _policy.pending == 0) onSettled?.call();
+    if (isRecording || _policy.pending > 0) return;
+    onSettled?.call();
+    if (_quotaSpent && !_quotaReported && !_disposed) {
+      _quotaReported = true;
+      onQuotaSpent?.call();
+    }
   }
 
   int get _now => DateTime.now().millisecondsSinceEpoch;

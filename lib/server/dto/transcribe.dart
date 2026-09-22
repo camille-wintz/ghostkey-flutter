@@ -11,15 +11,23 @@ class TranscriptTurn {
 }
 
 /// POST /api/transcribe response. `verbatim` is present on the Gemini
-/// pipeline only; the client falls back to `text`.
+/// pipeline only; the client falls back to `text`. `quotaRemaining` is the
+/// seconds of dictation left this week after this chunk was charged — null
+/// when the plan does not count dictation. `quotaRead` is false when the
+/// field is absent (a server older than it), which is no reading at all
+/// rather than a null one.
 class TranscribeResponse {
-  const TranscribeResponse({required this.text, required this.verbatim});
+  const TranscribeResponse({required this.text, required this.verbatim, this.quotaRemaining, this.quotaRead = false});
   final String text;
   final String? verbatim;
+  final int? quotaRemaining;
+  final bool quotaRead;
 
   static TranscribeResponse fromJson(Json json) => TranscribeResponse(
         text: asString(json['text']),
         verbatim: json['verbatim'] as String?,
+        quotaRemaining: (json['quota_remaining'] as num?)?.toInt(),
+        quotaRead: json.containsKey('quota_remaining'),
       );
 }
 
