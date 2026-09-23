@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../editor/capture_launchers.dart';
+import '../../server/dto/projects.dart';
 import '../../server/errors.dart';
 import '../../server/providers.dart';
 import '../../store/active_project.dart';
@@ -15,6 +16,7 @@ import 'chapter_editor.dart';
 import 'document_resolve.dart';
 import 'nav/chapter_nav.dart';
 import 'nav/chapter_nav_state.dart';
+import 'nav/document_menu.dart';
 
 /// The page under the chapter list: resolves the active chapter's filename to
 /// a document and mounts [ChapterEditor] for it, keyed by document id — so a
@@ -55,6 +57,16 @@ class _ChapterScreenState extends ConsumerState<ChapterScreen> {
         builder: (context) => ChapterNav(state: widget.nav, rename: widget.rename),
       ).whenComplete(() => _navOpen = false),
     );
+  }
+
+  /// The open chapter's own menu. Read fresh on press: the tree the screen
+  /// last built from may already be behind a rename.
+  void _openMenu(String documentId) {
+    final data = ref.read(projectProvider(ProjectScope.of(context))).value;
+    if (data == null) return;
+    final doc = [...chaptersInTree(data.chapters), ...data.notes].where((d) => d.id == documentId).firstOrNull;
+    if (doc == null) return;
+    unawaited(showDocumentMenu(context, ref, state: widget.nav, recent: widget.rename, data: data, doc: doc));
   }
 
   /// Open the chapter list when no chapter is selected — once per time the
@@ -104,6 +116,7 @@ class _ChapterScreenState extends ConsumerState<ChapterScreen> {
       typography: data.project.typography,
       onBack: () => Navigator.of(context).pop(),
       onOpenChapters: _openNav,
+      onMenu: () => _openMenu(documentId),
       onDictate: widget.onDictate,
       onScan: widget.onScan,
     );

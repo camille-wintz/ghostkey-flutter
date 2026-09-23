@@ -19,10 +19,10 @@ import '../document_resolve.dart';
 import '../room_alert.dart';
 import 'chapter_nav_state.dart';
 import 'chapter_tile.dart';
+import 'document_menu.dart';
 import 'nav_items.dart';
 import 'folder_tile.dart';
 import 'hold_to_drag.dart';
-import 'row_sheets.dart';
 import 'section_header.dart';
 
 /// The chapters/notes panel, unfolded from the title above it: which book you
@@ -107,29 +107,8 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
         if (mounted) _select(filename);
       }, 'Could not create note');
 
-  Future<void> _rowMenu(ProjectFull data, DocumentSummary doc, {required bool note}) async {
-    final action = await showRowMenu(context, label: doc.label);
-    if (!mounted || action == null) return;
-    final active = ref.read(activeProjectProvider).activeChapter;
-    switch (action) {
-      case RowAction.rename:
-        final title = await showRenameSheet(context, current: doc.label);
-        if (!mounted || title == null) return;
-        await _guard(() async {
-          final filename = await widget.state.rename(doc, title);
-          if (doc.filename == active) {
-            widget.rename.note(doc.id, filename);
-            ref.read(activeProjectProvider.notifier).setActiveChapter(filename);
-          }
-        }, 'Rename failed');
-      case RowAction.delete:
-        if (!await confirmDelete(context, label: doc.label) || !mounted) return;
-        await _guard(() async {
-          await (note ? widget.state.deleteNote(data, doc) : widget.state.deleteChapter(data, doc));
-          if (doc.filename == active) ref.read(activeProjectProvider.notifier).setActiveChapter(null);
-        }, 'Could not delete');
-    }
-  }
+  Future<void> _rowMenu(ProjectFull data, DocumentSummary doc) =>
+      showDocumentMenu(context, ref, state: widget.state, recent: widget.rename, data: data, doc: doc);
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +156,7 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
                         onReorderEnd: (i) {
                           if (i != _liftedChapter || data == null) return;
                           final row = layout.chapterRows[i];
-                          if (row is ChapterRow) _rowMenu(data, row.doc, note: false);
+                          if (row is ChapterRow) _rowMenu(data, row.doc);
                         },
                         onReorderItem: (from, to) {
                           if (data == null) return;
@@ -202,7 +181,7 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
                                   nested: nested,
                                   marker: markers[doc.id],
                                   onTap: () => _select(doc.filename),
-                                  onLongPress: canReorder || data == null ? null : () => _rowMenu(data, doc, note: false),
+                                  onLongPress: canReorder || data == null ? null : () => _rowMenu(data, doc),
                                 ),
                               ),
                           };
@@ -223,7 +202,7 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
                         onReorderStart: (i) => _lift(() => _liftedNote = i),
                         onReorderEnd: (i) {
                           if (i != _liftedNote || data == null) return;
-                          _rowMenu(data, layout.notes[i], note: true);
+                          _rowMenu(data, layout.notes[i]);
                         },
                         onReorderItem: (from, to) {
                           if (data == null) return;
@@ -240,7 +219,7 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
                               active: doc.filename == active,
                               nested: false,
                               onTap: () => _select(doc.filename),
-                              onLongPress: canReorder || data == null ? null : () => _rowMenu(data, doc, note: true),
+                              onLongPress: canReorder || data == null ? null : () => _rowMenu(data, doc),
                             ),
                           );
                         },

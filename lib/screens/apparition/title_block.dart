@@ -25,11 +25,12 @@ const double _markSlot = 17;
 /// title you could type into, which put the room's navigation in the one place
 /// a phone reserves for the way back — so leaving Apparition meant opening a
 /// drawer and pressing its head, a door behind a door. The corner is the way
-/// back now, the title is the list, and renaming a chapter is the list's own
-/// row menu, where renaming any *other* chapter already lived.
+/// back now, and the title is the list.
 ///
-/// The empty box opposite the back chevron is doing real work: it keeps the
-/// title centred on the SCREEN rather than in the space the chevron left over.
+/// The opposite corner is the open chapter's own menu — rename, delete — the
+/// same one a held row in the list opens. It is the back chevron's size, which
+/// keeps the title centred on the SCREEN rather than in the space the chevron
+/// left over.
 ///
 /// The save state is a tick beside the word count and nothing else. A word
 /// count that has just moved and no tick beside it *is* the unsaved state, so
@@ -56,6 +57,7 @@ class TitleBlock extends StatefulWidget {
     required this.collapsed,
     required this.onBack,
     required this.onOpenChapters,
+    required this.onMenu,
   });
 
   final String title;
@@ -68,6 +70,9 @@ class TitleBlock extends StatefulWidget {
 
   /// Open the chapter list, unfolded from the title's own box.
   final void Function(Rect? anchor) onOpenChapters;
+
+  /// Rename or delete the open chapter.
+  final VoidCallback onMenu;
 
   @override
   State<TitleBlock> createState() => _TitleBlockState();
@@ -180,7 +185,20 @@ class _TitleBlockState extends State<TitleBlock> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: DsGeom.row),
+                  Press(
+                    onPressed: widget.onMenu,
+                    semanticLabel: 'Chapter options',
+                    builder: (context, pressed) => Container(
+                      width: DsGeom.row,
+                      height: DsGeom.row,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: pressed ? Ds.veil : const Color(0x00000000),
+                        borderRadius: BorderRadius.circular(DsGeom.radius),
+                      ),
+                      child: Icon(LucideIcons.ellipsisVertical, size: 20, color: Ds.mid),
+                    ),
+                  ),
                 ],
               ),
             );
