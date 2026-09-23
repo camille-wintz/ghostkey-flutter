@@ -99,23 +99,51 @@ enum ChatRole {
   static ChatRole fromWire(String? value) => value == 'assistant' ? ChatRole.assistant : ChatRole.user;
 }
 
-/// One turn of a saved transcript.
+/// One question a turn stopped to ask (ChatTurnPlan.questions), with the
+/// answers it suggests as taps. Never the whole answer: free text stays open.
+class ChatQuestion {
+  const ChatQuestion({required this.question, this.options = const []});
+  final String question;
+  final List<String> options;
+
+  static ChatQuestion fromJson(Json json) => ChatQuestion(
+        question: asString(json['question']),
+        options: [for (final o in json['options'] as List? ?? const []) if (o is String) o],
+      );
+
+  static List<ChatQuestion> listFromJson(Object? json) =>
+      asJsonList(json is List ? json : null).map(ChatQuestion.fromJson).toList();
+
+  Json toJson() => {'question': question, 'options': options};
+}
+
+/// One turn of a saved transcript. `questions` rides on an assistant turn
+/// that stopped to ask; it goes back with the transcript unchanged, since a
+/// save without it erases it from the session.
 class ChatMessage {
-  const ChatMessage({required this.role, required this.text, this.attachments = const []});
+  const ChatMessage({
+    required this.role,
+    required this.text,
+    this.attachments = const [],
+    this.questions = const [],
+  });
   final ChatRole role;
   final String text;
   final List<ChatAttachment> attachments;
+  final List<ChatQuestion> questions;
 
   static ChatMessage fromJson(Json json) => ChatMessage(
         role: ChatRole.fromWire(json['role'] as String?),
         text: asString(json['text']),
         attachments: asJsonList(json['attachments']).map(ChatAttachment.fromJson).toList(),
+        questions: ChatQuestion.listFromJson(json['questions']),
       );
 
   Json toJson() => {
         'role': role.name,
         'text': text,
         if (attachments.isNotEmpty) 'attachments': attachments.map((a) => a.toJson()).toList(),
+        if (questions.isNotEmpty) 'questions': questions.map((q) => q.toJson()).toList(),
       };
 }
 
@@ -287,7 +315,9 @@ class ChatTurnEdits {
 }
 
 /// The `result` frame of a turn. `session` is the updated row when
-/// `session_id` was sent and the write landed; null otherwise.
+/// `session_id` was sent and the write landed; null otherwise. `questions`
+/// is the plan's (`plan.questions`) — non-empty exactly when the turn
+/// stopped to ask; the rest of the plan is not read here.
 class ChatTurnResult {
   const ChatTurnResult({
     required this.answer,
@@ -296,8 +326,10 @@ class ChatTurnResult {
     required this.session,
     this.chapterEdits = const [],
     this.bibleEdits = const [],
+    this.questions = const [],
   });
   final String answer;
+  final List<ChatQuestion> questions;
   final List<ChatToolStep> steps;
   final List<ChatSavedNote> savedNotes;
   final ChatSession? session;
@@ -313,6 +345,7 @@ class ChatTurnResult {
         session: json['session'] == null ? null : ChatSession.fromJson(asJson(json['session'])),
         chapterEdits: asJsonList(json['chapterEdits']).map(ChatChapterEdit.fromJson).toList(),
         bibleEdits: asJsonList(json['bibleEdits']).map(ChatBibleEdit.fromJson).toList(),
+        questions: ChatQuestion.listFromJson(json['plan'] is Map ? json['plan']['questions'] : null),
       );
 }
 

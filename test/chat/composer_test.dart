@@ -173,6 +173,25 @@ void main() {
     });
   });
 
+  group('an override', () {
+    test('sends itself and leaves what the author is typing in the field', () async {
+      final h = Harness();
+      h.composer.text.text = 'half a thought';
+      expect(await h.composer.send(override: '1. Yes'), isNull);
+      expect(h.sent.single.$1, '1. Yes');
+      expect(h.composer.text.text, 'half a thought');
+    });
+    test('refused, it comes back only into an empty field', () async {
+      final h = Harness(outcome: SendRefused(ServerError('plan_insufficient', 403, null, null, null, null), '1. Yes', const []));
+      h.composer.text.text = 'half a thought';
+      await h.composer.send(override: '1. Yes');
+      expect(h.composer.text.text, 'half a thought');
+      h.composer.text.clear();
+      await h.composer.send(override: '1. Yes');
+      expect(h.composer.text.text, '1. Yes');
+    });
+  });
+
   test('planOrNull reads only the ladder', () {
     expect(planOrNull('pro'), Plan.pro);
     expect(planOrNull('basic'), Plan.basic);

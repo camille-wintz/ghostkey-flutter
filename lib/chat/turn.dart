@@ -211,7 +211,7 @@ class ChatTurnNotifier extends Notifier<ChatTurnState> with WidgetsBindingObserv
       ]);
       if (result == null) return const SendStopped();
 
-      final finalMessages = [...transcript, ChatMessage(role: ChatRole.assistant, text: result.answer)];
+      final finalMessages = [...transcript, ChatMessage(role: ChatRole.assistant, text: result.answer, questions: result.questions)];
       if (token == _token && _alive) {
         state = state.copyWith(
           messages: finalMessages,

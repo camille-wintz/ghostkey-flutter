@@ -6,13 +6,21 @@ import 'attachment_chip.dart';
 import 'chat_markdown.dart';
 import 'recall_rail.dart';
 import 'edit_receipt.dart';
+import 'question_card.dart';
 import 'saved_note_receipt.dart';
 
 /// A user turn is a bubble on the right with its attachment chips beneath;
-/// an assistant turn is prose — the recall rail above, a saved-note receipt
-/// below.
+/// an assistant turn is prose — the recall rail above, receipts and any
+/// questions it stopped on below.
 class ChatMessageView extends StatelessWidget {
-  const ChatMessageView({super.key, required this.message, this.steps, this.savedNotes, this.edits});
+  const ChatMessageView({
+    super.key,
+    required this.message,
+    this.steps,
+    this.savedNotes,
+    this.edits,
+    this.onAnswer,
+  });
 
   final ChatMessage message;
 
@@ -22,6 +30,10 @@ class ChatMessageView extends StatelessWidget {
 
   /// Chapters and world-bible cards the turn changed. Same receipt shape.
   final ChatTurnEdits? edits;
+
+  /// Set only when this turn's questions are still open to answer — the last
+  /// message, nothing in flight. Null draws them read-only.
+  final ValueChanged<String>? onAnswer;
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +48,7 @@ class ChatMessageView extends StatelessWidget {
           ChatMarkdown(message.text),
           if (savedNotes case final n?) SavedNoteReceipt(notes: n),
           if (edits case final e?) EditReceipt(edits: e),
+          if (message.questions.isNotEmpty) QuestionCard(questions: message.questions, onAnswer: onAnswer),
         ],
       ),
     );

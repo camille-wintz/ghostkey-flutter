@@ -22,6 +22,7 @@ class ChatThread extends StatelessWidget {
     required this.pending,
     required this.controller,
     required this.intro,
+    required this.onAnswer,
   });
 
   final List<ChatMessage> messages;
@@ -33,6 +34,9 @@ class ChatThread extends StatelessWidget {
 
   /// What the empty thread shows instead of nothing.
   final Widget intro;
+
+  /// Sends the answers to the last turn's questions as the next message.
+  final ValueChanged<String> onAnswer;
 
   @override
   Widget build(BuildContext context) {
@@ -60,6 +64,7 @@ class ChatThread extends StatelessWidget {
           steps: stepsByIndex[index],
           savedNotes: notesByIndex[index],
           edits: editsByIndex[index],
+          onAnswer: index == messages.length - 1 && pending == null ? onAnswer : null,
         );
       },
     );

@@ -221,6 +221,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 pending: chat.pending,
                 controller: _scroll,
                 intro: ChatIntro(planning: planning, onPick: _send, disabled: chat.sending),
+                onAnswer: _send,
               ),
             ),
             if (chat.error case final error?) ErrorBar(message: error, onDismiss: turn.clearError),

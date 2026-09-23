@@ -115,7 +115,8 @@ class ComposerController extends ChangeNotifier {
   /// Put a refused message's attachments back.
   void restore(List<ChatAttachment> restored) => _set(restored);
 
-  /// Send what the composer holds (or `override`, an intro suggestion). Null
+  /// Send what the composer holds (or `override`, an intro suggestion or a
+  /// question's answers — attachments still go with it). Null
   /// when the message went, or when there was nothing to send; a refusal
   /// when a counter or the plan said no — the message is back in the
   /// composer by then.
@@ -128,11 +129,14 @@ class ComposerController extends ChangeNotifier {
     if (body.isEmpty && attached.isEmpty) return null;
     final quota = quotaFor(model);
     if (quota.exhausted) return QuotaRefusal(feature: quota.feature);
-    text.clear();
+    // An override (an intro pick, a question's answers) was never in the
+    // field, so what the author is typing there stays — and a refused
+    // override only comes back into an empty field.
+    if (override == null) text.clear();
     clear();
     final outcome = await sendTurn(body, attached, model);
     if (outcome is! SendRefused) return null;
-    text.text = outcome.text;
+    if (override == null || text.text.trim().isEmpty) text.text = outcome.text;
     restore(outcome.attachments);
     final error = outcome.error;
     if (error.code == 'quota_exceeded') {
