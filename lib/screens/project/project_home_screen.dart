@@ -17,7 +17,8 @@ import 'room_row.dart';
 /// The project home — the launcher's project page on a phone. The whole
 /// screen is one statement about which book is open: its own cover lights the
 /// backdrop, is held above the fold, and names itself before anything else
-/// is offered. Then the rooms, as rows.
+/// is offered. Then the rooms, as rows — Apparition first and larger, and the
+/// cover itself a door to it, as on the desktop.
 ///
 /// One way out, not two: the header's "Home" closes the project, and the
 /// footer link that said the same thing at the other end of the scroll is
@@ -33,19 +34,30 @@ class ProjectHomeScreen extends ConsumerWidget {
     final project = data?.project;
     final cover = project != null ? projectCoverUrl(project, data?.assets ?? const []) : null;
 
+    // Apparition is the room the house is for — where the book is — so it is
+    // the one wide door, and the book itself opens it too.
+    final featured = roomFor(RoomKey.apparition);
+    final apparition = capabilityFrom(access, featured.capability);
+
     return ProjectStage(
       project: project,
       coverUrl: cover,
       onHome: () => ref.read(activeProjectProvider.notifier).close(),
       onSettings: project != null ? () => showProjectSettings(context, ref, project) : null,
+      onOpenBook: apparition.granted ? () => Navigator.of(context).pushNamed(routeForRoom(featured.key)) : null,
       below: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: _RoomEntry(room: featured, access: access, primary: true),
+          ),
           for (final room in rooms)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _RoomEntry(room: room, access: access),
-            ),
+            if (room != featured)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _RoomEntry(room: room, access: access),
+              ),
         ],
       ),
     );
@@ -53,9 +65,10 @@ class ProjectHomeScreen extends ConsumerWidget {
 }
 
 class _RoomEntry extends StatelessWidget {
-  const _RoomEntry({required this.room, required this.access});
+  const _RoomEntry({required this.room, required this.access, this.primary = false});
   final Room room;
   final AccessSnapshot? access;
+  final bool primary;
 
   @override
   Widget build(BuildContext context) {
@@ -64,6 +77,7 @@ class _RoomEntry extends StatelessWidget {
       room: room,
       granted: state.granted,
       requiredPlan: state.requiredPlan,
+      primary: primary,
       onOpen: () => state.granted
           ? Navigator.of(context).pushNamed(routeForRoom(room.key))
           : _explainLock(context, room, state.requiredPlan),

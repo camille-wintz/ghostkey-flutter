@@ -27,6 +27,7 @@ class ProjectStage extends StatelessWidget {
     required this.below,
     this.coverUrl,
     this.onSettings,
+    this.onOpenBook,
   });
 
   final ProjectMeta? project;
@@ -40,6 +41,11 @@ class ProjectStage extends StatelessWidget {
   /// Opens the project's settings. Absent while the project is still loading,
   /// when there is nothing yet to edit.
   final VoidCallback? onSettings;
+
+  /// The book itself is a door to Apparition, as on the desktop. Absent while
+  /// the project loads, and when the plan locks the room — then it stays a
+  /// book to look at, and Apparition's own row explains the lock.
+  final VoidCallback? onOpenBook;
 
   @override
   Widget build(BuildContext context) {
@@ -124,10 +130,13 @@ class ProjectStage extends StatelessWidget {
                           Padding(
                             padding: const EdgeInsets.only(top: 14, bottom: 30),
                             child: Center(
-                              child: ProjectCover(
-                                coverUrl: coverUrl,
-                                thumbnailUrl: project != null ? projectThumbnailUrl(project) : null,
-                                title: title,
+                              child: _BookDoor(
+                                onOpen: onOpenBook,
+                                child: ProjectCover(
+                                  coverUrl: coverUrl,
+                                  thumbnailUrl: project != null ? projectThumbnailUrl(project) : null,
+                                  title: title,
+                                ),
                               ),
                             ),
                           ),
@@ -192,6 +201,29 @@ class ProjectStage extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The cover as a press when it opens something; the cover alone otherwise.
+/// Pressed, the book sinks a little — it floats and tilts, so a fill behind
+/// it would show nothing.
+class _BookDoor extends StatelessWidget {
+  const _BookDoor({required this.onOpen, required this.child});
+  final VoidCallback? onOpen;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (onOpen == null) return child;
+    return Press(
+      onPressed: onOpen,
+      semanticLabel: 'Open in Apparition',
+      builder: (context, pressed) => AnimatedScale(
+        scale: pressed ? 0.97 : 1,
+        duration: const Duration(milliseconds: 140),
+        child: child,
       ),
     );
   }
