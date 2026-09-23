@@ -12,6 +12,11 @@ void main() {
       expect(findUniqueQuoteRange('She smiled. He left. She smiled.', 'She smiled'), isNull);
     });
 
+    test('French spacing before ! and ? folds away', () {
+      const doc = 'Il cria\u202f: \u00ab\u202fViens\u202f!\u202f\u00bb Puis rien.';
+      expect(findUniqueQuoteRange(doc, 'cria: "Viens!"'), (from: 3, to: 21));
+    });
+
     test('typography folds both ways and maps back onto the original', () {
       const doc = 'Il dit : « Bonjour » et partit.';
       final range = findUniqueQuoteRange(doc, '"Bonjour" et partit');

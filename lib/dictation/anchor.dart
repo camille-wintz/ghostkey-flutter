@@ -90,14 +90,17 @@ LandingPlan planLanding(String text, int at, String chunk, TypographyMode typogr
   final head = text.substring(0, clamped).replaceFirst(_trailingSpace, '');
   final gap = text.substring(head.length, clamped);
   final split = splitClosingMark(head, chunk);
-  final before = head + split.mark + gap;
+  // Typeset like any insert, so French spacing puts its no-break space
+  // before a handed-forward ? or !.
+  final mark = split.mark.isEmpty ? '' : applyTypography(split.mark, head, typography);
+  final before = head + mark + gap;
   final leading =
       before.isNotEmpty && !_endsInSpace.hasMatch(before) && !split.body.startsWith('\n') ? ' ' : '';
   final insert = leading + applyTypography(split.body, before + leading, typography);
   return LandingPlan(
     markAt: head.length,
-    mark: split.mark,
-    insertAt: clamped + split.mark.length,
+    mark: mark,
+    insertAt: clamped + mark.length,
     insert: insert,
     point: before.length + insert.length,
   );

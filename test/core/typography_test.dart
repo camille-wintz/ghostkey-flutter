@@ -191,4 +191,17 @@ void main() {
     test('none #46', () => expect(applySmartEdit("It's", "It's ", mode('none')), isNull));
     test('none #47', () => expect(applySmartEdit("abc", "abd", mode('none')), isNull));
   });
+
+  // Hand-written, not generated: the same cases the server's copy was checked
+  // against when these rules went in (2026-09-23).
+  group('French edge cases', () {
+    test('a clock time keeps its colon tight', () => expect(applyTypography("à 12:30", "", mode('guillemets')), "à 12:30"));
+    test('a URL scheme keeps its colon tight', () => expect(applyTypography("https://x.fr", "", mode('guillemets')), "https://x.fr"));
+    test('a colon after a word is still spaced', () => expect(applyTypography("Il dit: oui", "", mode('guillemets')), "Il dit : oui"));
+    test('typesetting twice changes nothing', () {
+      final once = applyTypography("\"Viens !\"", "", mode('guillemets'));
+      expect(once, "« Viens ! »");
+      expect(applyTypography(once, "", mode('guillemets')), once);
+    });
+  });
 }

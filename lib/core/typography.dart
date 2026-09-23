@@ -101,6 +101,16 @@ bool _takesSpaceBefore(String? ch) => ch != null && _takesSpace.hasMatch(ch);
 
 bool _isNoBreakSpace(String? ch) => ch == _nbsp || ch == _nnbsp;
 
+final RegExp _digitEnd = RegExp(r'\d$');
+final RegExp _schemeEnd = RegExp(r'(^|[^\p{L}])https?$', caseSensitive: false, unicode: true);
+
+/// A colon French spacing leaves alone: a clock time (12:30) and a URL's
+/// scheme (https://) are not the punctuation mark the rule is about.
+bool _isBareColon(String before, String? next) =>
+    _digitEnd.hasMatch(before) || next == '/' || _schemeEnd.hasMatch(before);
+
+String _tail(String text) => text.length > 8 ? text.substring(text.length - 8) : text;
+
 String? _lastChar(String text) => text.isEmpty ? null : text[text.length - 1];
 
 String? _charAt(String text, int i) => i >= 0 && i < text.length ? text[i] : null;
@@ -173,7 +183,8 @@ String applyTypography(String text, String contextBefore, TypographyMode mode) {
       state.doubleOpen = !state.doubleOpen;
     } else if (mode == TypographyMode.guillemets && ch == '«') {
       result.write(style.open);
-      if (next == ' ') i++;
+      // Its space typed after it, or already there (a pass over typeset text).
+      if (next == ' ' || _isNoBreakSpace(next)) i++;
       state.doubleOpen = true;
     } else if (mode == TypographyMode.guillemets && ch == '»') {
       if (_lastChar(current) == ' ') dropLast();
@@ -195,6 +206,8 @@ String applyTypography(String text, String contextBefore, TypographyMode mode) {
     } else if (ch == '.' && current.length >= 2 && current.endsWith('..')) {
       dropLast(2);
       result.write('…');
+    } else if (ch == ':' && _isBareColon(_tail(contextBefore) + current, next)) {
+      result.write(ch);
     } else if (style.spaceBefore.containsKey(ch)) {
       final space = style.spaceBefore[ch]!;
       final beforeSpace = current.length >= 2 ? current[current.length - 2] : _lastChar(contextBefore);

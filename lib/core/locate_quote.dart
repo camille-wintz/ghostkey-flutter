@@ -33,12 +33,15 @@ const Map<String, String> _glyphs = {
   '\t': ' ',
 };
 
+/// Marks French spacing puts a no-break space before.
+const String _spacedMarks = ';:!?';
+
 /// `map[i]` is the index in the original of folded unit `i`; `map[length]` is
 /// the original length, so a range end maps too.
 typedef _Folded = ({String text, List<int> map});
 
-/// A run of spaces collapses to one and a space next to a quotation mark is
-/// dropped, which is what makes the doc's `« Bonjour »` and a model's
+/// A run of spaces collapses to one and a space next to a quotation mark, or
+/// before ; : ! ?, is dropped, which is what makes the doc's `« Bonjour »` and a model's
 /// `"Bonjour"` equal. Nothing else moves, so a folded index maps straight
 /// back onto the original.
 _Folded _fold(String s) {
@@ -49,7 +52,7 @@ _Folded _fold(String s) {
     final ch = _glyphs[s[i]] ?? s[i].toLowerCase();
     if (ch == ' ') {
       if (last == ' ' || last == '"' || last == "'") continue;
-    } else if (ch == '"' || ch == "'") {
+    } else if (ch == '"' || ch == "'" || _spacedMarks.contains(ch)) {
       if (last == ' ') {
         chars.removeLast();
         map.removeLast();
@@ -85,7 +88,10 @@ QuoteRange? findUniqueQuoteRange(String doc, String quote) {
   if (foldedQuote.isEmpty) return null;
   if (_countUpToTwo(foldedDoc.text, foldedQuote) != 1) return null;
   final at = foldedDoc.text.indexOf(foldedQuote);
-  return (from: foldedDoc.map[at], to: foldedDoc.map[at + foldedQuote.length]);
+  // One past the last matched unit, not the start of the next surviving one:
+  // a space the fold dropped after the match (after a closing », before a
+  // French !) stays outside the range instead of being replaced away.
+  return (from: foldedDoc.map[at], to: foldedDoc.map[at + foldedQuote.length - 1] + 1);
 }
 
 /// Why a note has no Accept.

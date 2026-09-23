@@ -21,6 +21,11 @@ void main() {
       expect(countWords('  '), 0);
       expect(countWords('one two  three\nfour'), 4);
     });
+    test('punctuation alone is not a word', () {
+      expect(countWords('\u00ab\u202fViens\u202f!\u202f\u00bb \u2014 dit-il.'), 2);
+      expect(countWords("l'homme qu\u2019il aime"), 3);
+      expect(countWords('# Chapitre un\n\n---\n\n* item'), 3);
+    });
     test('formats with space groups', () {
       expect(formatWords(0), '0');
       expect(formatWords(999), '999');
