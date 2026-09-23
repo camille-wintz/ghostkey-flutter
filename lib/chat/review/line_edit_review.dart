@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/locate_quote.dart';
@@ -16,7 +18,12 @@ import 'providers.dart';
 // what comes back is the new copy the next note resolves against.
 //
 // Verdicts are local, as on the desk: nothing about an accepted or rejected
-// note is recorded on the job row. Done deletes the row, and the notes with it.
+// note is recorded on the job row. Done deletes the row, and the notes with it
+// — and the last verdict is Done on its own, after a beat, as on the desk
+// (2026-09-23): with every note ruled on there is nothing left to press for.
+
+/// How long a fully answered pass stays up before it closes itself.
+const _autoDoneDelay = Duration(milliseconds: 900);
 
 enum NoteVerdict { pending, accepted, rejected }
 
@@ -99,6 +106,7 @@ class LineEditReview extends AsyncNotifier<LineEditState> {
 
   @override
   Future<LineEditState> build() async {
+    ref.onDispose(() => _autoDone?.cancel());
     final job = await getJob(key.projectId, key.jobId);
     final result = EditPassResult.tryParse(job.result);
     if (result == null) throw ServerError('not_found', 404, 'This pass left no notes.');
@@ -201,6 +209,19 @@ class LineEditReview extends AsyncNotifier<LineEditState> {
     }
     state = AsyncData(s.copyWith(text: subject.text, version: subject.version, notes: notes, index: index, saving: false));
     if (_outline && verdict == NoteVerdict.accepted) ref.invalidate(authoredOutlineProvider(key.projectId));
+    if (notes.every((n) => n.verdict != NoteVerdict.pending)) _closeAfterBeat();
+  }
+
+  Timer? _autoDone;
+
+  /// The last verdict's Done, a beat later so it can be read as the last
+  /// verdict first. The review may be left before the beat is up (the page
+  /// popped, the provider gone) — then there is nothing to close.
+  void _closeAfterBeat() {
+    _autoDone?.cancel();
+    _autoDone = Timer(_autoDoneDelay, () {
+      if (ref.mounted) done();
+    });
   }
 
   /// Close the review: the row goes, and the notes with it.
