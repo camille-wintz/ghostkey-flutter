@@ -36,7 +36,7 @@ class GkButton extends StatelessWidget {
   /// "Already going" — a spinner in place of the label.
   final bool busy;
 
-  /// The create panel stacks two full-width 44px buttons; the default is the
+  /// A sheet's commit is a full-width 44px button; the default is the
   /// 34px inline control.
   final bool wide;
 

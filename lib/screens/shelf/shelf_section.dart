@@ -7,12 +7,17 @@ import '../../server/errors.dart';
 import '../../server/providers.dart';
 import '../../store/active_project.dart';
 import '../../ui/text.dart';
+import 'empty_shelf_card.dart';
 import 'folder_card.dart';
+import 'new_novel_card.dart';
+import 'new_novel_sheet.dart';
 import 'project_card.dart';
 
 /// The shelf: what is in the cloud root, drawn as books — a two-up grid of
 /// covers, because an author picks the book they mean by recognising it.
 /// Folders keep a row apiece above the grid, because a folder has no cover.
+/// The grid's first cell is the book not written yet, as on the desk; an
+/// author with no shelf at all gets one door instead.
 class ShelfSection extends ConsumerWidget {
   const ShelfSection({super.key});
 
@@ -36,18 +41,19 @@ class ShelfSection extends ConsumerWidget {
           padding: EdgeInsets.only(bottom: 12),
           child: Eyebrow('Cloud'),
         ),
-        if (error != null)
-          _Notice(messageFor(error))
-        else if (loading && folderList.isEmpty && projectList.isEmpty)
-          const Row(
+        if (error != null) ...[
+          _Notice(messageFor(error)),
+          _Grid(projects: const [], series: null, onOpen: (_) {}, onNew: () => showNewNovelSheet(context)),
+        ] else if (loading && folderList.isEmpty && projectList.isEmpty)
+          Row(
             children: [
-              Expanded(child: ProjectCardSkeleton()),
-              SizedBox(width: 16),
-              Expanded(child: ProjectCardSkeleton()),
+              Expanded(child: NewNovelCard(onPressed: () => showNewNovelSheet(context))),
+              const SizedBox(width: 16),
+              const Expanded(child: ProjectCardSkeleton()),
             ],
           )
         else if (empty)
-          const _Notice('No projects in your cloud yet. Create one above to start writing.')
+          EmptyShelfCard(onPressed: () => showNewNovelSheet(context))
         else ...[
           if (folderList.isNotEmpty)
             Padding(
@@ -66,6 +72,7 @@ class ShelfSection extends ConsumerWidget {
             projects: projectList,
             series: series,
             onOpen: (project) => ref.read(activeProjectProvider.notifier).open(project),
+            onNew: () => showNewNovelSheet(context),
           ),
         ],
       ],
@@ -74,10 +81,11 @@ class ShelfSection extends ConsumerWidget {
 }
 
 class _Grid extends StatelessWidget {
-  const _Grid({required this.projects, required this.series, required this.onOpen});
+  const _Grid({required this.projects, required this.series, required this.onOpen, required this.onNew});
   final List<ProjectMeta> projects;
   final Map<String, Series>? series;
   final ValueChanged<ProjectMeta> onOpen;
+  final VoidCallback onNew;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -88,6 +96,7 @@ class _Grid extends StatelessWidget {
             spacing: constraints.maxWidth * 0.04,
             runSpacing: 20,
             children: [
+              SizedBox(width: width, child: NewNovelCard(onPressed: onNew)),
               for (final project in projects)
                 SizedBox(
                   width: width,

@@ -109,7 +109,7 @@ lib/
   ui/                       the primitives
   screens/
     auth/                   sign-in
-    shelf/ account/         the shelf (home, cards, create, notices) · account
+    shelf/ account/         the shelf (home, cards, the new-novel sheet, notices) · account
     project/                project_root · project_home · cover · backdrop · room_row · room_entering
     apparition/ veil/ poltergeist/ phantom/ wisp/   the rooms
 ```

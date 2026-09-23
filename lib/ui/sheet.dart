@@ -9,15 +9,22 @@ import 'press.dart';
 ///
 /// Sized to its content up to `maxHeightFraction` of the screen. Everything
 /// under the header scrolls; the header and the bar are the drag handle.
+///
+/// A sheet that must sometimes refuse to close (it owns work it has to be
+/// there to finish) holds a `PopScope` in its body: the scrim tap and the back
+/// button ask the route and are refused. The drag does not ask — it pops — so
+/// such a sheet passes `draggable: false`.
 Future<T?> showGkSheet<T>(
   BuildContext context, {
   required Widget Function(BuildContext context) builder,
   Widget? header,
   double maxHeightFraction = 0.78,
+  bool draggable = true,
 }) {
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: true,
+    enableDrag: draggable,
     backgroundColor: const Color(0x00000000),
     barrierColor: const Color(0x80000000),
     useSafeArea: true,

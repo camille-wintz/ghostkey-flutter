@@ -22,8 +22,10 @@ class _ShelfRootState extends State<ShelfRoot> {
     return HardwareBack(
       onBack: () {
         final nav = _nav.currentState;
+        // maybePop, so a sheet that is mid-request (the new novel's) can
+        // hold the back button with a PopScope.
         if (nav != null && nav.canPop()) {
-          nav.pop();
+          nav.maybePop();
         } else {
           exitApp();
         }
