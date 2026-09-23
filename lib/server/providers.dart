@@ -4,8 +4,10 @@ import '../auth/session.dart';
 import 'billing/api.dart';
 import 'dto/billing.dart';
 import 'dto/models.dart';
+import 'dto/gift.dart';
 import 'dto/projects.dart';
 import 'folders/api.dart';
+import 'gift/api.dart';
 import 'models/api.dart';
 import 'projects/api.dart';
 import 'series/api.dart';
@@ -69,6 +71,10 @@ final planCatalogProvider = FutureProvider<PlanCatalog>((ref) => getPlanCatalog(
 /// the chat picker offers nothing and a turn sends no model.
 final modelCatalogProvider = FutureProvider<ModelCatalog>((ref) => getModelCatalog());
 
+/// Both sides of the account's gift — the free Basic it can give once it
+/// pays, and the one it holds. The first read after paying mints the code.
+final giftProvider = FutureProvider.autoDispose<GiftRead>((ref) => getMyGift());
+
 /// Drop every server read. Called on sign-out, so the next account on this
 /// phone never sees the last one's shelf for a frame.
 void clearServerCache(WidgetRef ref) {
@@ -81,6 +87,7 @@ void clearServerCache(WidgetRef ref) {
   ref.invalidate(subscriptionProvider);
   ref.invalidate(accessProvider);
   ref.invalidate(quotaProvider);
+  ref.invalidate(giftProvider);
 }
 
 /// The signed-in gate every read above assumes. Watch it where a screen can

@@ -22,8 +22,9 @@ enum Plan {
       };
 }
 
-/// A plan handed out without billing — by an operator (`comp`) or by the
-/// system at signup (`welcome`, the welcome week).
+/// A plan handed out without billing — by an operator (`comp`), by the
+/// system at signup (`welcome`, the welcome week), or by a paying author's
+/// gift (`gift`, whose expiry follows the giver's billing period).
 class PlanGrant {
   const PlanGrant({
     required this.plan,
@@ -41,6 +42,7 @@ class PlanGrant {
 
   bool get isWelcome => kind == 'welcome';
   bool get isComp => kind == 'comp';
+  bool get isGift => kind == 'gift';
 
   /// Has this grant run out? Distinct from "revoked", which has no expiry.
   bool get hasExpired {

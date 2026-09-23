@@ -50,8 +50,11 @@ Future<AuthSession> _postSession(String path, Json body) async {
   return AuthSession.fromJson(asJson(jsonDecode(res.body)));
 }
 
-Future<AuthSession> postSignup(String email, String password) =>
-    _postSession('/api/auth/signup', {'email': email, 'password': password});
+/// [giftCode] is a friend's gift; one the server will not take refuses the
+/// signup by name (`unknown_gift_code`, `gift_code_taken`, `gift_inactive`)
+/// rather than being dropped.
+Future<AuthSession> postSignup(String email, String password, {String? giftCode}) =>
+    _postSession('/api/auth/signup', {'email': email, 'password': password, 'gift_code': ?giftCode});
 
 Future<AuthSession> postSignin(String email, String password) =>
     _postSession('/api/auth/signin', {'email': email, 'password': password});
@@ -59,8 +62,9 @@ Future<AuthSession> postSignin(String email, String password) =>
 /// Sign in — or register — with a Google ID token; [AuthSession.created] says
 /// which. `password_required` means an account already sits on that address
 /// and never confirmed it: same call, same token, with its [password].
-Future<AuthSession> postGoogle(String idToken, {String? password}) =>
-    _postSession('/api/auth/google', {'id_token': idToken, 'password': ?password});
+/// [giftCode] is read only when this call makes the account.
+Future<AuthSession> postGoogle(String idToken, {String? password, String? giftCode}) =>
+    _postSession('/api/auth/google', {'id_token': idToken, 'password': ?password, 'gift_code': ?giftCode});
 
 Future<AuthSession> postRefresh(String refreshToken) =>
     _postSession('/api/auth/refresh', {'refresh_token': refreshToken});

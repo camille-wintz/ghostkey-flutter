@@ -69,6 +69,14 @@ const Map<String, String> _messages = {
   'throwaway_email':
       "That's a throwaway inbox, and a password reset would go straight to it. "
       "Please use an address you'll keep.",
+  // The gift plan's refusals (GET /api/me/gift). The raw value is never shown.
+  'unknown_gift_code': "We don't recognise that code. Check it, or clear it to sign up without one.",
+  'gift_code_taken': 'That code has already been taken.',
+  'gift_inactive': "That code is paused: the person who gave it isn't on a plan right now.",
+  'own_gift_code': "That's your own code — it's for someone else.",
+  'already_subscribed': "A gift is for someone who hasn't had a plan yet, and this account has.",
+  'already_gifted': 'This account already holds a gift.',
+  'same_network': "This code can't be used from here.",
   'invalid_google_token': "Google sign-in didn't go through. Please try again.",
   'google_failed': "Google sign-in didn't go through. Please try again.",
   'google_email_unverified':
