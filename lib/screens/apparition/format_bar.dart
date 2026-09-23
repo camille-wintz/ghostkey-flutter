@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/words.dart';
 import '../../ds/tokens.dart';
@@ -13,9 +12,9 @@ const double formatBarHeight = 48;
 /// Which emphasis the caret sits in, for the two buttons' lit state.
 typedef FormatActive = ({bool bold, bool italic});
 
-/// B · I · mic — and the word count at the far end, so it is in reach while
-/// the title block has stepped down out of the way. No camera: a page to scan
-/// is a thing the writer goes looking for, and the + menu is where they look.
+/// B · I — and the word count at the far end, so it is in reach while the
+/// title block has stepped down out of the way. No mic and no camera: both
+/// live in the + menu, and one door each is enough.
 /// The page keeps this bar up whether or not the keyboard is. The active state
 /// and the count arrive as listenables so a keystroke redraws two glyphs and
 /// nothing else.
@@ -26,7 +25,6 @@ class FormatBar extends StatelessWidget {
     required this.words,
     required this.onBold,
     required this.onItalic,
-    required this.onMic,
     this.bottomInset = 0,
   });
 
@@ -34,10 +32,6 @@ class FormatBar extends StatelessWidget {
   final ValueListenable<int> words;
   final VoidCallback onBold;
   final VoidCallback onItalic;
-
-  /// Null when no launcher is wired, or while a session already owns the
-  /// editor: the button draws dimmed.
-  final VoidCallback? onMic;
 
   /// Safe-area padding below the tools, so the bar clears the system
   /// navigation bar when it rests at the bottom of an edge-to-edge screen.
@@ -84,12 +78,6 @@ class FormatBar extends StatelessWidget {
                   color: state.italic ? Ds.accent : Ds.mid,
                 ),
               ),
-            ),
-            const SizedBox(width: 4),
-            _Tool(
-              onPressed: onMic,
-              label: 'Dictate',
-              child: Icon(LucideIcons.mic, size: 17, color: Ds.mid),
             ),
             const Spacer(),
             ValueListenableBuilder<int>(

@@ -21,7 +21,12 @@ import '../../server/dto/projects.dart';
 import '../../server/errors.dart';
 import '../../scan/scan_context.dart';
 import '../../server/providers.dart';
+import '../../chat/review/providers.dart';
+import '../../server/dto/jobs.dart';
 import '../../ui/state_screen.dart';
+import '../wisp/line_edit_chapter_screen.dart';
+import '../wisp/line_edit_sheet.dart';
+import '../wisp/line_editing_page.dart';
 import 'add_menu.dart';
 import 'fab.dart';
 import 'format_bar.dart';
@@ -411,6 +416,24 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
     _keepCaret();
   }
 
+  /// This document's line edit, from the + menu: the notes on Wisp's page
+  /// when a pass is running or has left some — the phone rules on them there,
+  /// over the text — else the sheet that starts one.
+  void _openLineEdit(DocumentSummary doc, JobSnapshot? pass) {
+    _menuTookKeyboard = false;
+    setState(() => _menuOpen = false);
+    _rest();
+    if ((pass?.isRunning ?? false) || (waitingNotes(pass) ?? 0) > 0) {
+      unawaited(
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => LineEditChapterScreen(projectId: widget.projectId, chapter: doc)),
+        ),
+      );
+    } else {
+      unawaited(showLineEditSheet(context, projectId: widget.projectId, chapter: doc));
+    }
+  }
+
   Future<void> _file(NameCandidate candidate, {required bool hidden}) async {
     try {
       await _names.file(candidate, hidden: hidden);
@@ -457,6 +480,20 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
     final canSweep = ref.watch(capabilityProvider('veil.name_scan')).granted;
     final dictate = widget.onDictate;
     final scan = widget.onScan;
+    // Watched while the page is up, not only while the + is open: the row's
+    // hint and where it leads have to be right on the first press.
+    final pass = ref.watch(editPassJobProvider((projectId: widget.projectId, subject: widget.documentId))).value;
+    final project = ref.watch(projectProvider(widget.projectId)).value;
+    final doc = project == null
+        ? null
+        : [...chaptersInTree(project.chapters), ...project.notes].where((d) => d.id == widget.documentId).firstOrNull;
+    // A pass that found nothing has nothing to review: the row offers another.
+    final notes = switch (waitingNotes(pass)) { final n? when n > 0 => n, _ => null };
+    final lineEditHint = (pass?.isRunning ?? false)
+        ? 'running…'
+        : notes != null
+            ? '$notes ${notes == 1 ? 'note' : 'notes'} waiting'
+            : 'craft notes, plus the proofread';
 
     return Stack(
       fit: StackFit.expand,
@@ -534,19 +571,13 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
             ),
             // Drawn through a dictation too, though the dock covers it: the
             // dock is the same panel at the same edge, and a bar that left for
-            // the session would move the page's foot twice for nothing. The
-            // mic dims all the same — a tap that found its way past the dock
-            // must not open a second session.
-            ListenableBuilder(
-              listenable: _editor,
-              builder: (context, _) => FormatBar(
-                active: _format,
-                words: _words,
-                bottomInset: bottomPad,
-                onBold: () => _applyFormat(InlineMarker.bold),
-                onItalic: () => _applyFormat(InlineMarker.italic),
-                onMic: dictate == null || _editor.capturing ? null : () => _capture(dictate, overPage: true),
-              ),
+            // the session would move the page's foot twice for nothing.
+            FormatBar(
+              active: _format,
+              words: _words,
+              bottomInset: bottomPad,
+              onBold: () => _applyFormat(InlineMarker.bold),
+              onItalic: () => _applyFormat(InlineMarker.italic),
             ),
           ],
         ),
@@ -560,6 +591,8 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
               onNames: _openNames,
               onPhoto: scan == null || _editor.capturing ? null : () => _capture(scan),
               onRecord: dictate == null || _editor.capturing ? null : () => _capture(dictate, overPage: true),
+              lineEditHint: lineEditHint,
+              onLineEdit: doc == null ? null : () => _openLineEdit(doc, pass),
               onClose: () {
                 setState(() => _menuOpen = false);
                 if (_menuTookKeyboard) {

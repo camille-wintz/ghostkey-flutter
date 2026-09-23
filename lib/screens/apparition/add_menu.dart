@@ -12,7 +12,8 @@ String nameList(List<String> names) {
   return '${names.sublist(0, names.length - 1).join(', ')} and ${names.last}';
 }
 
-/// The '+' fans into Notes & names / Photo / Record over a dimmed page.
+/// The '+' fans into Line edit / Notes & names / Photo / Record over a
+/// dimmed page.
 ///
 /// Fills the page's stack. The ✕ lands on the spot the + rests at
 /// (`fabBottom` from the screen edge), or opening the fan would drop it into
@@ -25,6 +26,8 @@ class AddMenu extends StatefulWidget {
     required this.onNames,
     required this.onPhoto,
     required this.onRecord,
+    required this.lineEditHint,
+    required this.onLineEdit,
     required this.onClose,
   });
 
@@ -40,6 +43,12 @@ class AddMenu extends StatefulWidget {
   /// Null when no launcher is wired: the row draws dimmed.
   final VoidCallback? onPhoto;
   final VoidCallback? onRecord;
+
+  /// Where this chapter's line edit stands — notes waiting, running, or what
+  /// one is — and the way to it. Farthest from the +: it reads the chapter
+  /// rather than adding to it.
+  final String lineEditHint;
+  final VoidCallback? onLineEdit;
   final VoidCallback onClose;
 
   @override
@@ -84,6 +93,14 @@ class _AddMenuState extends State<AddMenu> with SingleTickerProviderStateMixin {
               _Action(
                 animation: _in,
                 start: 0,
+                icon: LucideIcons.penLine,
+                label: 'Line edit',
+                hint: widget.lineEditHint,
+                onPressed: widget.onLineEdit,
+              ),
+              _Action(
+                animation: _in,
+                start: 0.08,
                 icon: LucideIcons.bookMarked,
                 label: 'Notes & names',
                 hint: widget.newNames.isEmpty ? "this chapter's people and places" : nameList(widget.newNames),
@@ -92,7 +109,7 @@ class _AddMenuState extends State<AddMenu> with SingleTickerProviderStateMixin {
               ),
               _Action(
                 animation: _in,
-                start: 0.12,
+                start: 0.16,
                 icon: LucideIcons.camera,
                 label: 'Photo',
                 hint: 'scan your handwriting',
