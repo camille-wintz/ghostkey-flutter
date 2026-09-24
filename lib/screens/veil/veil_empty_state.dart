@@ -61,7 +61,7 @@ class VeilEmptyState extends StatelessWidget {
                 children: [
                   if (hasChapters) GkButton(label: 'Analyze your world', onPressed: onGenerate, busy: running),
                   GkButton(
-                    label: 'Add one yourself',
+                    label: 'Add character',
                     variant: hasChapters ? ButtonVariant.outline : ButtonVariant.primary,
                     onPressed: onAdd,
                   ),
