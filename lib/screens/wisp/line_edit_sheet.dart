@@ -17,19 +17,21 @@ import 'wisp_lock.dart';
 
 /// Ask for a line edit on one chapter: what this pass should watch for, if
 /// anything, and Run. The model is the server's default — the desk's picker
-/// is not carried here.
-Future<void> showLineEditSheet(BuildContext context, {required String projectId, required DocumentSummary chapter}) {
+/// is not carried here. True when a pass started, so the caller can take the
+/// author to it.
+Future<bool> showLineEditSheet(BuildContext context, {required String projectId, required DocumentSummary chapter}) async {
   final container = ProviderScope.containerOf(context);
   final gate = container.read(capabilityProvider(lineEditCapability));
   if (!gate.granted) {
     explainWispLock(context, gate, 'Line editing');
-    return Future.value();
+    return false;
   }
-  return showGkSheet<void>(
+  final started = await showGkSheet<bool>(
     context,
     header: SheetHeader(eyebrow: 'Line edit', onClose: () => Navigator.of(context).pop()),
     builder: (context) => _LineEditForm(projectId: projectId, chapter: chapter),
   );
+  return started ?? false;
 }
 
 class _LineEditForm extends ConsumerStatefulWidget {
@@ -60,7 +62,7 @@ class _LineEditFormState extends ConsumerState<_LineEditForm> {
     try {
       await startLineEdit(ref, widget.projectId, widget.chapter.id, _focus.text);
       ref.invalidate(quotaProvider);
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
       // The notice explains a spent allowance; the sheet has nothing left to offer.

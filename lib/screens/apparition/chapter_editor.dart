@@ -418,20 +418,20 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
 
   /// This document's line edit, from the + menu: the notes on Wisp's page
   /// when a pass is running or has left some — the phone rules on them there,
-  /// over the text — else the sheet that starts one.
-  void _openLineEdit(DocumentSummary doc, JobSnapshot? pass) {
+  /// over the text — else the sheet that starts one, and then that page, so
+  /// Run lands on the pass rather than back on the chapter.
+  Future<void> _openLineEdit(DocumentSummary doc, JobSnapshot? pass) async {
     _menuTookKeyboard = false;
     setState(() => _menuOpen = false);
     _rest();
-    if ((pass?.isRunning ?? false) || (waitingNotes(pass) ?? 0) > 0) {
-      unawaited(
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => LineEditChapterScreen(projectId: widget.projectId, chapter: doc)),
-        ),
-      );
-    } else {
-      unawaited(showLineEditSheet(context, projectId: widget.projectId, chapter: doc));
-    }
+    final underway = (pass?.isRunning ?? false) || (waitingNotes(pass) ?? 0) > 0;
+    if (!underway && !await showLineEditSheet(context, projectId: widget.projectId, chapter: doc)) return;
+    if (!mounted) return;
+    unawaited(
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => LineEditChapterScreen(projectId: widget.projectId, chapter: doc)),
+      ),
+    );
   }
 
   Future<void> _file(NameCandidate candidate, {required bool hidden}) async {
