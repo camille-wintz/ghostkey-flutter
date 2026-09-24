@@ -9,7 +9,7 @@ import 'veil_section.dart';
 /// an actual series — for a standalone it would restate the chapter count
 /// above it. Books the entity never appears in are listed too: "not in book
 /// 3 yet" is something the author wants to see, and an absent row would
-/// read as "unknown". No Open button — that opens Mara, a desktop room.
+/// read as "unknown". No Open button: on the desk it opens Mara's chapter plan, which the phone has not wired from here.
 class EntityBooks extends StatelessWidget {
   const EntityBooks({super.key, required this.entity, required this.projectId});
   final BibleEntity entity;

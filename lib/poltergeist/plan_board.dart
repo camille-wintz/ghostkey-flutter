@@ -168,6 +168,27 @@ class PlanBoardNotifier extends AsyncNotifier<PlanBoardState> {
     _notesTimer = Timer(_notesDebounce, _flushNotes);
   }
 
+  /// A row's length target rides the same debounce as its notes: it is
+  /// typed, a digit at a time.
+  void setTargetWords(String rowId, int? words) {
+    final current = state.value?.plan;
+    if (current == null) return;
+    final next = withRowTargetWords(current, rowId, words);
+    _show(next);
+    _pendingNotes = next;
+    _notesTimer?.cancel();
+    _notesTimer = Timer(_notesDebounce, _flushNotes);
+  }
+
+  /// The rows a commit owes its new chapters. Call once the board has been
+  /// rebuilt against the new draft's tree.
+  void adoptCommitted(List<CommittedRow> committed) {
+    final current = state.value?.plan;
+    if (current == null || committed.isEmpty) return;
+    _flushNotes();
+    _commit(withCommittedChapters(current, committed, _tree, now: nowIso(), newId: newId));
+  }
+
   void _flushNotes() {
     _notesTimer?.cancel();
     _notesTimer = null;

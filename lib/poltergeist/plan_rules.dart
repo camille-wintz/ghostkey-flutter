@@ -324,6 +324,58 @@ PlanChapter? _confirm(PlanChapter row, List<DocumentSummary> docs, String now) {
 ProjectPlan withRowNotes(ProjectPlan plan, String rowId, String notes) =>
     plan.withChapters([for (final c in plan.chapters) c.id == rowId ? c.copyWith(notes: notes) : c]);
 
+/// The row's length target, in words; null clears it.
+ProjectPlan withRowTargetWords(ProjectPlan plan, String rowId, int? words) => plan.withChapters([
+      for (final c in plan.chapters)
+        c.id == rowId ? c.copyWith(targetWords: words, clearTargetWords: words == null) : c,
+    ]);
+
+/// A chapter a commit just created, and what its row carries.
+typedef CommittedRow = ({String documentId, String notes, int? words});
+
+/// The rows a commit owes (the desk's `commitAuthoredOutline`): each new
+/// chapter's row carries the card's notes and length target and owes its
+/// write, anchored on what the chapter holds now — empty, or the prose it
+/// carried across, so the write reads as done only once it is rewritten. A
+/// row the reconcile has already minted for the chapter is filled in rather
+/// than duplicated, and a note or target the author already has is never
+/// overwritten.
+ProjectPlan withCommittedChapters(
+  ProjectPlan plan,
+  List<CommittedRow> committed,
+  List<ChaptersListEntry> tree, {
+  required String now,
+  required String Function() newId,
+}) {
+  final docs = {for (final d in chaptersInTree(tree)) d.id: d};
+  final chapters = List<PlanChapter>.from(plan.chapters);
+  for (final c in committed) {
+    final doc = docs[c.documentId];
+    final write = PlanAction.fresh(
+      PlanActionKind.write,
+      now,
+      anchor: doc == null ? PlanActionAnchor.empty : contentAnchor(doc),
+    );
+    final at = chapters.indexWhere((r) => r.documentId == c.documentId);
+    if (at < 0) {
+      chapters.add(
+        PlanChapter.linked(id: newId(), documentId: c.documentId, filename: doc?.filename ?? '', action: write)
+            .copyWith(notes: c.notes, targetWords: c.words),
+      );
+      continue;
+    }
+    final row = chapters[at];
+    chapters[at] = row.copyWith(
+      notes: row.notes.trim().isEmpty ? c.notes : null,
+      targetWords: row.targetWords == null ? c.words : null,
+      // Minted by the reconcile a moment ago, as any new chapter is: it owes
+      // the write, whatever the reconcile guessed from its words.
+      pending: row.history.isEmpty && !row.done ? write : null,
+    );
+  }
+  return plan.withChapters(chapters);
+}
+
 /// Only missing rows can leave the board by hand — a linked row would come
 /// straight back on the next reconcile.
 ProjectPlan? withoutRow(ProjectPlan plan, String rowId) {

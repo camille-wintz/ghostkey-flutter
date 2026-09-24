@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../access/capability.dart';
 import '../../access/plans.dart';
+import '../../chat/arrival.dart';
 import '../../ds/tokens.dart';
 import '../../rooms/rooms.dart';
 import '../../server/chat/api.dart';
@@ -22,19 +23,23 @@ import 'chat_screen.dart';
 /// owner and the thread mount at once, and doing that inside the entry
 /// animation reads as a freeze.
 class PhantomScreen extends StatelessWidget {
-  const PhantomScreen({super.key});
+  const PhantomScreen({super.key, this.arrival});
   static const route = '/phantom';
+
+  /// A conversation to open on, when a door elsewhere sent the author here.
+  final ChatArrival? arrival;
 
   @override
   Widget build(BuildContext context) => Entered(
         room: roomFor(RoomKey.phantom),
-        builder: (context) => _PhantomRoom(projectId: ProjectScope.of(context)),
+        builder: (context) => _PhantomRoom(projectId: ProjectScope.of(context), arrival: arrival),
       );
 }
 
 class _PhantomRoom extends ConsumerStatefulWidget {
-  const _PhantomRoom({required this.projectId});
+  const _PhantomRoom({required this.projectId, this.arrival});
   final String projectId;
+  final ChatArrival? arrival;
 
   @override
   ConsumerState<_PhantomRoom> createState() => _PhantomRoomState();
@@ -72,7 +77,7 @@ class _PhantomRoomState extends ConsumerState<_PhantomRoom> {
 
     return Scaffold(
       backgroundColor: Ds.void_,
-      body: ChatScreen(projectId: widget.projectId),
+      body: ChatScreen(projectId: widget.projectId, arrival: widget.arrival),
     );
   }
 }

@@ -21,9 +21,11 @@ The rooms that make sense in a pocket, and only those:
 | **Veil** | The world bible. |
 | **Poltergeist** | Dashboard, word stats, tasks, plan board. |
 | **PhantomMemory** | Chat with the book. |
+| **Mara** | Plotting: the outline, the cards, and the chapters they become. |
+| **Wisp** | Editing: line edits, continuity, the analyses, the reverse outline. |
 
-Mara (plotting), Séance (boards) and Glamour (marketing) are desk rooms and
-stay on the desktop.
+Séance (boards) and Glamour (marketing) are desk rooms and stay on the
+desktop.
 
 The editor, dictation and scan are the reason this app exists. Quality there is
 load-bearing; feature count is not.

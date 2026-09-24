@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../chat/review/providers.dart';
+import '../../../mara/providers.dart';
 import '../../../server/dto/edit_pass.dart';
 import '../../../server/errors.dart';
 import '../../../ui/state_screen.dart';
 import 'line_edit_review_view.dart';
-import 'outline_editor.dart';
+import 'outline_review_editor.dart';
 import 'pass_status.dart';
 
 /// The Outline page a turn opened: editable. A finished pass on the outline
@@ -36,7 +37,7 @@ class OutlineReview extends ConsumerWidget {
       ),
       data: (outline) => Column(
         children: [
-          Expanded(child: OutlineEditor(projectId: projectId, initial: outline.text)),
+          Expanded(child: OutlineReviewEditor(projectId: projectId, initial: outline.text)),
           PassStatus(subject: subject, job: job),
         ],
       ),

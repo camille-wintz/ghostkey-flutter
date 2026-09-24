@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../chat/review/providers.dart';
-import '../../../server/dto/plan.dart';
+import '../../../chat/providers.dart';
+import '../../../mara/providers.dart';
 import '../../../server/errors.dart';
 import '../../../ui/state_screen.dart';
-import 'story_card_tile.dart';
+import '../../mara/cards/board_card_list.dart';
 
-/// One of the author's boards, read only: its cards in order, section marks
-/// as headings. The board itself is edited on the desk.
+/// One of the author's boards, as Mara's Cards page lists it — editable,
+/// except while a chat turn runs: the turn may be writing the same board.
 class BoardReview extends ConsumerWidget {
   const BoardReview({super.key, required this.projectId, required this.boardId});
   final String projectId;
@@ -17,7 +17,10 @@ class BoardReview extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final maps = ref.watch(storyMapsProvider(projectId));
+    final templates = ref.watch(storyTemplatesProvider).value;
+    final turnRunning = ref.watch(chatTurnProvider(projectId).select((s) => s.sending));
     return maps.when(
+      skipLoadingOnReload: true,
       loading: () => const StateScreen(spinner: true, message: 'Opening the board…'),
       error: (e, _) => StateScreen(
         message: 'The board would not open',
@@ -28,21 +31,10 @@ class BoardReview extends ConsumerWidget {
       data: (maps) {
         final board = maps.where((m) => m.authored && m.id == boardId).firstOrNull;
         if (board == null) return const StateScreen(message: 'This board is gone');
-        final cards = _flatten(board.nodes);
-        if (cards.isEmpty) return const StateScreen(message: 'This board has no cards yet');
-        return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 48),
-          itemCount: cards.length,
-          separatorBuilder: (context, i) => SizedBox(height: cards[i + 1].isLabel ? 24 : 10),
-          itemBuilder: (context, i) => StoryCardTile(card: cards[i]),
-        );
+        if (board.cards.isEmpty) return const StateScreen(message: 'This board has no cards yet');
+        final hints = templates?.where((t) => t.id == board.templateId).firstOrNull?.hints ?? const <String, String>{};
+        return BoardCardList(projectId: projectId, board: board, hints: hints, editable: !turnRunning);
       },
     );
   }
-
-  /// Boards saved before the plan went flat nest their beats; every reader
-  /// flattens them.
-  static List<StoryCard> _flatten(List<StoryCard> cards) => [
-        for (final card in cards) ...[card, ..._flatten(card.cards)],
-      ];
 }

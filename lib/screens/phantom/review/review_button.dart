@@ -69,10 +69,9 @@ String reviewTitle(ChatView view) => switch (view.title?.trim()) {
         },
     };
 
-/// The kinds the phone can review. The Chapters page — a breakdown's
-/// proposal — is reviewed on the desk.
+/// Whether the phone can open what a view names: a chapter and a board need
+/// their id; the outline and the chapters are the book's one of each.
 bool canReview(ChatView view) => switch (view.kind) {
       ChatViewKind.chapter || ChatViewKind.board => view.id != null,
-      ChatViewKind.outline => true,
-      ChatViewKind.chapters => false,
+      ChatViewKind.outline || ChatViewKind.chapters => true,
     };

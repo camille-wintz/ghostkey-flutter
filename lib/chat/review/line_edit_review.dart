@@ -10,6 +10,7 @@ import '../../server/jobs/api.dart';
 import '../../server/plan/api.dart';
 import '../../server/projects/api.dart';
 import '../../server/providers.dart';
+import '../../mara/providers.dart';
 import 'providers.dart';
 
 // One finished edit pass, reviewed a note at a time: the phone's EditReview.

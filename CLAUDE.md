@@ -15,10 +15,16 @@ load-bearing, feature count is not.**
 
 The rooms this app carries: **Apparition** (the editor), **Veil** (the world
 bible), **Poltergeist** (dashboard, words, tasks, plan board, cats), **PhantomMemory**
-(chat), **Wisp** (editing: line edits per chapter, continuity, the theme /
+(chat), **Mara** (plot: the Outline, Cards — a board as a list, its order and
+labels drawn as the desk's chains — and Chapters: the proposal or changeset
+the chat wrote, reviewed and committed, then the book's chapters with their
+notes and targets; since 2026-09-24, spec `../ghost-key/docs/mara-phone-plan.md`),
+**Wisp** (editing: line edits per chapter, continuity, the theme /
 pacing / genre analyses, the reverse outline — its chapter review is
-PhantomMemory's), plus dictation and scan landing in the editor. Mara, Séance
-and Glamour are desk rooms and never come here.
+PhantomMemory's), plus dictation and scan landing in the editor. Séance and
+Glamour are desk rooms and never come here. The chat's review views mount
+Mara's own components (the card list, the outline editor, the Chapters view);
+a board's writes are the server's one-card routes, never a whole-map PUT.
 
 ## Stack
 
@@ -54,8 +60,17 @@ and Glamour are desk rooms and never come here.
   and the splash — run by hand, never at build time.
 - **Primitives** in `lib/ui/`: `Press` (the house press, no ripple),
   `GkButton`, `GkField`, `BrandTitle` / `Eyebrow` / `UiText`, `showGkSheet`
-  + `SheetHeader`, `showNoticeModal`, `StateScreen`. Use these; a size or a
-  colour typed at a call site is the tell that something has left the system.
+  + `SheetHeader`, `showMenuSheet`, `showConfirmSheet`, `showNameSheet`,
+  `showNoticeModal`, `explainLock` (a padlock's notice), `StateScreen`,
+  `PageRow` (a room's list of pages), `PageNotice`, `PageFooter`,
+  `JobRunning` / `ProgressLine`, `SaveLine`, `HoldToDrag` (the 200ms lift every
+  reorderable list uses). Use these; a size or a colour typed at a call site is
+  the tell that something has left the system.
+- **Owners worth knowing before adding a second**: `server/jobs/job_run.dart`
+  (`JobRun` — start, attach to, settle and refresh after any server job; a
+  room subclasses it with its patience and what a landing makes stale) and
+  `autosave/field_autosave.dart` (`FieldAutosave` — a typed field that is not
+  a manuscript document, debounced and flushed on dispose).
 - **Pure logic** in `lib/core/`: `typography` (smart quotes — one text in
   four repos, edit all together), `chapter_search`, `chapter_reorder`,
   `plan_markers`, `dictation_join`, `words`, `dates`. Testable without a
@@ -103,7 +118,7 @@ lib/
                             poltergeist/rewards.dart.
   dictation/ scan/          recorder channel · session · policy + room meter · silence pass ·
                             seam ledger · anchors | camera · OCR · insert
-  chat/ veil/ poltergeist/ wisp/   the logic half of those rooms (see below)
+  chat/ veil/ poltergeist/ mara/ wisp/   the logic half of those rooms (see below)
   rooms/                    the rooms table · marks · tile
   backdrop/                 glow · motes · ambient_motion
   ui/                       the primitives
@@ -111,7 +126,7 @@ lib/
     auth/                   sign-in
     shelf/ account/         the shelf (home, cards, the new-novel sheet, notices) · account
     project/                project_root · project_home · cover · backdrop · room_row · room_entering
-    apparition/ veil/ poltergeist/ phantom/ wisp/   the rooms
+    apparition/ veil/ poltergeist/ phantom/ mara/ wisp/   the rooms
 ```
 
 **A room is two directories.** `screens/<room>/` draws it — widgets only —

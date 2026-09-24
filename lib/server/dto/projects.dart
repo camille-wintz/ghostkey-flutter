@@ -694,6 +694,9 @@ class PlanChapter {
   /// Writer's free notes — the one always-editable text on a row.
   final String notes;
 
+  /// How long the chapter is meant to be, in words; null when unset.
+  int? get targetWords => raw['target_words'] is num ? (raw['target_words'] as num).toInt() : null;
+
   /// The pending action, whole. `action` is its kind.
   final PlanAction? pending;
 
@@ -763,6 +766,8 @@ class PlanChapter {
     bool clearDocument = false,
     String? filename,
     String? notes,
+    int? targetWords,
+    bool clearTargetWords = false,
     List<PlanHistoryEntry>? history,
     bool? missing,
   }) {
@@ -785,6 +790,11 @@ class PlanChapter {
       if (filename != null) next['filename'] = filename;
     }
     if (notes != null) next['notes'] = notes;
+    if (clearTargetWords) {
+      next['target_words'] = null;
+    } else if (targetWords != null) {
+      next['target_words'] = targetWords;
+    }
     if (history != null) next['history'] = history.map((h) => h.toJson()).toList();
     if (missing != null) next['missing'] = missing;
     return PlanChapter.fromJson(next);

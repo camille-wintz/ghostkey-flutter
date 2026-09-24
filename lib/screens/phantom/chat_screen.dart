@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../chat/arrival.dart';
 import '../../chat/composer.dart';
 import '../../chat/models.dart';
 import '../../chat/providers.dart';
@@ -36,8 +37,11 @@ import 'review/review_screen.dart';
 /// turn · composer. It also owns the chat list, because the name in that bar
 /// is what opens it.
 class ChatScreen extends ConsumerStatefulWidget {
-  const ChatScreen({super.key, required this.projectId});
+  const ChatScreen({super.key, required this.projectId, this.arrival});
   final String projectId;
+
+  /// Open on this conversation, and say its first message.
+  final ChatArrival? arrival;
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -71,6 +75,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     isSending: () => ref.read(chatTurnProvider(_projectId)).sending,
   );
   final ScrollController _scroll = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.arrival case final arrival?) WidgetsBinding.instance.addPostFrameCallback((_) => _arrive(arrival));
+  }
+
+  Future<void> _arrive(ChatArrival arrival) async {
+    await ref.read(chatTurnProvider(_projectId).notifier).selectSession(arrival.sessionId);
+    if (!mounted) return;
+    if (arrival.ask case final ask?) await _send(ask);
+  }
 
   @override
   void dispose() {
