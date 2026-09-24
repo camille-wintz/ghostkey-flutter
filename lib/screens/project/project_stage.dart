@@ -27,6 +27,7 @@ class ProjectStage extends StatelessWidget {
     required this.below,
     this.coverUrl,
     this.onSettings,
+    this.onExport,
     this.onOpenBook,
   });
 
@@ -41,6 +42,9 @@ class ProjectStage extends StatelessWidget {
   /// Opens the project's settings. Absent while the project is still loading,
   /// when there is nothing yet to edit.
   final VoidCallback? onSettings;
+
+  /// Opens the export sheet. Absent while the project is still loading.
+  final VoidCallback? onExport;
 
   /// The book itself is a door to Apparition, as on the desktop. Absent while
   /// the project loads, and when the plan locks the room — then it stays a
@@ -79,43 +83,19 @@ class ProjectStage extends StatelessWidget {
                           semanticLabel: 'Back to Home',
                           builder: (context, pressed) => Container(
                             height: 44,
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            width: 44,
                             decoration: BoxDecoration(
                               color: pressed ? Ds.veil : const Color(0x00000000),
                               borderRadius: BorderRadius.circular(DsGeom.radius),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(LucideIcons.chevronLeft, size: 17, color: Ds.mid),
-                                const SizedBox(width: 4),
-                                UiText('Home', color: Ds.mid),
-                              ],
-                            ),
+                            child: Icon(LucideIcons.chevronLeft, size: 17, color: Ds.mid),
                           ),
                         ),
                         const Spacer(),
+                        if (onExport != null)
+                          _BarLink(icon: LucideIcons.download, label: 'Export', onPressed: onExport!),
                         if (onSettings != null)
-                          Press(
-                            onPressed: onSettings,
-                            semanticLabel: 'Project settings',
-                            builder: (context, pressed) => Container(
-                              height: 44,
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              decoration: BoxDecoration(
-                                color: pressed ? Ds.veil : const Color(0x00000000),
-                                borderRadius: BorderRadius.circular(DsGeom.radius),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(LucideIcons.settings, size: 15, color: Ds.mid),
-                                  const SizedBox(width: 6),
-                                  UiText('Project settings', color: Ds.mid),
-                                ],
-                              ),
-                            ),
-                          ),
+                          _BarLink(icon: LucideIcons.settings, label: 'Project settings', onPressed: onSettings!),
                       ],
                     ),
                   ),
@@ -227,6 +207,36 @@ class _BookDoor extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A quiet labelled action in the stage's top bar.
+class _BarLink extends StatelessWidget {
+  const _BarLink({required this.icon, required this.label, required this.onPressed});
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Press(
+        onPressed: onPressed,
+        semanticLabel: label,
+        builder: (context, pressed) => Container(
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            color: pressed ? Ds.veil : const Color(0x00000000),
+            borderRadius: BorderRadius.circular(DsGeom.radius),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 15, color: Ds.mid),
+              const SizedBox(width: 6),
+              UiText(label, color: Ds.mid),
+            ],
+          ),
+        ),
+      );
 }
 
 class _Chip extends StatelessWidget {

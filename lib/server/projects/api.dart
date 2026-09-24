@@ -186,8 +186,31 @@ Future<ProjectMeta> setProjectCover(String projectId, Uint8List bytes, {required
 
 Future<ProjectMeta> removeProjectCover(String projectId) => patchProject(projectId, coverFilename: '');
 
-/// The one content type the import route accepts.
+/// The publish formats the phone can save. PDF is left out: the server
+/// sends print-ready HTML for it and each client renders the PDF itself, and
+/// this app carries no HTML → PDF renderer.
+enum ExportFormat {
+  docx('docx', docxMime),
+  epub('epub', 'application/epub+zip'),
+  txt('txt', 'text/plain');
+
+  const ExportFormat(this.extension, this.mimeType);
+  final String extension;
+  final String mimeType;
+}
+
+/// GET /api/projects/{id}/export/{format} — the whole manuscript assembled
+/// server-side in reading order. One-way: nothing reads these back.
+Future<Uint8List> exportProject(String projectId, ExportFormat format, {bool includeNotes = true}) async {
+  final query = includeNotes ? '' : '?notes=false';
+  final res = await apiFetch('/api/projects/$projectId/export/${format.extension}$query');
+  return res.bodyBytes;
+}
+
+/// The content types the phone sends to the import route. The server reads
+/// the bytes, not this header; it is sent so a request says what it carries.
 const docxMime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const epubMime = 'application/epub+zip';
 
 class DocxImportStart {
   const DocxImportStart({required this.project, required this.job});
@@ -196,14 +219,19 @@ class DocxImportStart {
 }
 
 /// POST /api/projects/{id}/import-manuscript — start a bulk chapter import.
-/// The route also takes a zipped Scrivener project; the phone only offers a
-/// .docx. The chapters are written by a `manuscript_import` job; follow the
-/// returned job.
-Future<DocxImportStart> importProjectDocx(String projectId, Uint8List bytes, String filename) async {
+/// The route also takes a zipped Scrivener project; the phone offers a .docx
+/// or an .epub. The chapters are written by a `manuscript_import` job; follow
+/// the returned job.
+Future<DocxImportStart> importProjectDocx(
+  String projectId,
+  Uint8List bytes,
+  String filename, {
+  String mimeType = docxMime,
+}) async {
   final res = await apiFetch(
     '/api/projects/$projectId/import-manuscript?name=${Uri.encodeQueryComponent(filename)}',
     method: 'POST',
-    headers: {'Content-Type': docxMime},
+    headers: {'Content-Type': mimeType},
     body: bytes,
   );
   final json = res.jsonObject();

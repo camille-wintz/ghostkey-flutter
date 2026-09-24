@@ -9,6 +9,7 @@ import '../../server/projects/covers.dart';
 import '../../server/providers.dart';
 import '../../store/active_project.dart';
 import '../../ui/notice_modal.dart';
+import 'project_export_sheet.dart';
 import 'project_root.dart';
 import 'project_settings_sheet.dart';
 import 'project_stage.dart';
@@ -44,6 +45,7 @@ class ProjectHomeScreen extends ConsumerWidget {
       coverUrl: cover,
       onHome: () => ref.read(activeProjectProvider.notifier).close(),
       onSettings: project != null ? () => showProjectSettings(context, ref, project) : null,
+      onExport: project != null ? () => showProjectExport(context, project) : null,
       onOpenBook: apparition.granted ? () => Navigator.of(context).pushNamed(routeForRoom(featured.key)) : null,
       below: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
