@@ -31,12 +31,19 @@ class VeilEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final padding = EdgeInsets.fromLTRB(20, 32, 20, 40 + MediaQuery.paddingOf(context).bottom);
+    final padding = EdgeInsets.fromLTRB(
+      20,
+      32,
+      20,
+      40 + MediaQuery.paddingOf(context).bottom,
+    );
     return LayoutBuilder(
       builder: (context, box) => SingleChildScrollView(
         padding: padding,
         child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: box.maxHeight - padding.vertical),
+          constraints: BoxConstraints(
+            minHeight: box.maxHeight - padding.vertical,
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -59,10 +66,17 @@ class VeilEmptyState extends StatelessWidget {
                 spacing: 10,
                 runSpacing: 10,
                 children: [
-                  if (hasChapters) GkButton(label: 'Analyze your world', onPressed: onGenerate, busy: running),
+                  if (hasChapters)
+                    GkButton(
+                      label: 'Analyze your world',
+                      onPressed: onGenerate,
+                      busy: running,
+                    ),
                   GkButton(
                     label: 'Add character',
-                    variant: hasChapters ? ButtonVariant.outline : ButtonVariant.primary,
+                    variant: hasChapters
+                        ? ButtonVariant.outline
+                        : ButtonVariant.primary,
                     onPressed: onAdd,
                   ),
                 ],
