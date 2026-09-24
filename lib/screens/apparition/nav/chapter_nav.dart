@@ -14,7 +14,7 @@ import '../../../server/errors.dart';
 import '../../../server/providers.dart';
 import '../../../store/active_project.dart';
 import '../../../ui/press.dart';
-import '../../../ui/panel_head.dart';
+import '../../../ui/room_title_bar.dart';
 import '../document_resolve.dart';
 import '../room_alert.dart';
 import 'chapter_nav_state.dart';
@@ -25,24 +25,26 @@ import 'folder_tile.dart';
 import '../../../ui/hold_to_drag.dart';
 import 'section_header.dart';
 
-/// The chapters/notes panel, unfolded from the title above it: which book you
-/// are in, search (reaches notes too), plan dots, and it opens on the chapter
-/// you are in. ONE scroll view over both sections, every row a fixed extent —
-/// a hundred-chapter book mounts a screenful, which matters because the panel
-/// is built as it starts to open.
+/// The page Apparition opens on (Cleo, 2026-09-24 — it used to be a panel
+/// unfolded from the open chapter's title, which read as a menu over a
+/// chapter rather than the room itself): the book in the bar with its count
+/// under it, search (reaches notes too), plan dots, and it opens scrolled to
+/// the chapter you were last in, which is marked. ONE scroll view over both
+/// sections, every row a fixed extent — a hundred-chapter book mounts a
+/// screenful.
 ///
-/// It carries no way out of the room: that is the chevron in the room's own
-/// chrome now, and a second door at the head of this list is what used to make
-/// leaving Apparition a door behind a door.
-///
-/// Mounted fresh on every open (the panel is a route, gone when it closes),
-/// which is what makes the reveal a starting offset rather than a jump: the
-/// list is built already positioned, from the same layout table it draws by,
-/// so a row it has never mounted is landed on exactly.
+/// A row opens its document as a page pushed on top ([onOpen]); the bar's
+/// chevron is the way out of the room. The reveal is a starting offset rather
+/// than a jump: the list is built already positioned, from the same layout
+/// table it draws by, so a row it has never mounted is landed on exactly.
 class ChapterNav extends ConsumerStatefulWidget {
-  const ChapterNav({super.key, required this.state, required this.rename});
+  const ChapterNav({super.key, required this.state, required this.rename, required this.onBack, required this.onOpen});
   final ChapterNavState state;
   final RecentRename rename;
+  final VoidCallback onBack;
+
+  /// Open a document (a chapter or a note), by filename, as its own page.
+  final ValueChanged<String> onOpen;
 
   @override
   ConsumerState<ChapterNav> createState() => _ChapterNavState();
@@ -82,12 +84,7 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
     return layoutNav(rows, notes, state.query);
   }
 
-  void _close() => Navigator.of(context).pop();
-
-  void _select(String filename) {
-    ref.read(activeProjectProvider.notifier).setActiveChapter(filename);
-    _close();
-  }
+  void _select(String filename) => widget.onOpen(filename);
 
   Future<void> _guard(Future<void> Function() action, String title) async {
     try {
@@ -129,13 +126,16 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
         final canReorder = state.query.isEmpty && !state.pending;
 
         return ColoredBox(
-          color: Ds.panel,
+          color: Ds.void_,
           child: Column(
             children: [
-              PanelHead(
+              RoomTitleBar(
                 title: title,
-                meta: '$chapterCount ${chapterCount == 1 ? 'chapter' : 'chapters'}'
-                    '${words != null ? ' · ${formatWords(words)} words' : ''}',
+                onBack: widget.onBack,
+                subtitle: data == null
+                    ? null
+                    : Text('$chapterCount ${chapterCount == 1 ? 'chapter' : 'chapters'}'
+                        '${words != null ? ' · ${formatWords(words)} words' : ''}'),
               ),
               _SearchRow(controller: _search, query: state.query, onChanged: state.setQuery),
               Expanded(
@@ -225,9 +225,8 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
                         },
                       ),
                     ],
-                    // The panel keeps the safe area off its own edges, so the
-                    // list only owes its last row a little air.
-                    const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                    // The page runs under the gesture bar; the last row clears it.
+                    SliverToBoxAdapter(child: SizedBox(height: MediaQuery.paddingOf(context).bottom + 24)),
                   ],
                 ),
               ),
@@ -256,7 +255,7 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
           final lift = Curves.easeOutQuart.transform(animation.value);
           return DecoratedBox(
             decoration: BoxDecoration(
-              color: Color.lerp(Ds.panel, Ds.raise, lift),
+              color: Color.lerp(Ds.void_, Ds.raise, lift),
               border: Border.symmetric(horizontal: BorderSide(color: Ds.edgeHi.withValues(alpha: lift))),
             ),
             child: child,

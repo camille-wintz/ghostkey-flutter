@@ -85,7 +85,6 @@ class ChapterEditor extends ConsumerStatefulWidget {
     required this.filename,
     required this.typography,
     required this.onBack,
-    required this.onOpenChapters,
     required this.onMenu,
     this.onDictate,
     this.onScan,
@@ -97,9 +96,6 @@ class ChapterEditor extends ConsumerStatefulWidget {
   final TypographyMode typography;
 
   final VoidCallback onBack;
-
-  /// Open the chapter list, unfolded from the control that asked for it.
-  final void Function(Rect? anchor) onOpenChapters;
 
   /// Rename or delete this chapter.
   final VoidCallback onMenu;
@@ -506,7 +502,6 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
               saved: _autosave!.saved,
               collapsed: _scrolled,
               onBack: widget.onBack,
-              onOpenChapters: widget.onOpenChapters,
               onMenu: widget.onMenu,
             ),
             Expanded(

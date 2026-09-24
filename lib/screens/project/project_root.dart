@@ -90,7 +90,7 @@ class _ProjectRootState extends ConsumerState<ProjectRoot> {
           onGenerateRoute: (settings) => MaterialPageRoute<void>(
             settings: settings,
             builder: (context) => switch (settings.name) {
-              ApparitionScreen.route => const ApparitionScreen(),
+              ApparitionScreen.route => ApparitionScreen(open: settings.arguments as String?),
               VeilScreen.route => const VeilScreen(),
               PoltergeistScreen.route => const PoltergeistScreen(),
               PhantomScreen.route => PhantomScreen(arrival: settings.arguments as ChatArrival?),

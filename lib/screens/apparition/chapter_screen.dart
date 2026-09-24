@@ -2,31 +2,28 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../ds/tokens.dart';
 import '../../editor/capture_launchers.dart';
 import '../../server/dto/projects.dart';
 import '../../server/errors.dart';
 import '../../server/providers.dart';
 import '../../store/active_project.dart';
-import '../../ui/anchored_panel.dart';
 import '../../ui/state_screen.dart';
 import '../project/project_root.dart';
 import 'chapter_editor.dart';
 import 'document_resolve.dart';
-import 'nav/chapter_nav.dart';
 import 'nav/chapter_nav_state.dart';
 import 'nav/document_menu.dart';
 
-/// The page under the chapter list: resolves the active chapter's filename to
-/// a document and mounts [ChapterEditor] for it, keyed by document id — so a
-/// title rename doesn't wipe the editor, and a chapter switch is one editor
-/// going (flushing) and the next arriving.
+/// One document as a page, pushed over the chapter list: resolves the active
+/// chapter's filename to a document and mounts [ChapterEditor] for it, keyed
+/// by document id — so a title rename doesn't wipe the editor. Leaving is a
+/// pop, which is the editor going (flushing).
 ///
-/// It also owns the list, because it is what opens it: from the title's own
-/// chevron while a chapter is open, and from the middle of the screen while
-/// none is.
-class ChapterScreen extends ConsumerStatefulWidget {
+/// Deleting the open document from its own menu empties the selection, and
+/// the page goes back to the list with it.
+class ChapterScreen extends ConsumerWidget {
   const ChapterScreen({super.key, required this.nav, required this.rename, this.onDictate, this.onScan});
 
   final ChapterNavState nav;
@@ -34,91 +31,59 @@ class ChapterScreen extends ConsumerStatefulWidget {
   final CaptureLauncher? onDictate;
   final CaptureLauncher? onScan;
 
-  @override
-  ConsumerState<ChapterScreen> createState() => _ChapterScreenState();
-}
-
-class _ChapterScreenState extends ConsumerState<ChapterScreen> {
-  bool _openedForEmpty = false;
-
-  /// The list is a route, so a second open would stack a second panel on the
-  /// first — which is what deleting the chapter you are in does, since that
-  /// empties the selection while the list that deleted it is still up.
-  bool _navOpen = false;
-
-  void _openNav([Rect? anchor]) {
-    if (_navOpen) return;
-    _navOpen = true;
-    unawaited(
-      showAnchoredPanel<void>(
-        context,
-        anchor: anchor,
-        label: 'Chapters',
-        builder: (context) => ChapterNav(state: widget.nav, rename: widget.rename),
-      ).whenComplete(() => _navOpen = false),
-    );
-  }
-
-  /// The open chapter's own menu. Read fresh on press: the tree the screen
+  /// The open chapter's own menu. Read fresh on press: the tree the page
   /// last built from may already be behind a rename.
-  void _openMenu(String documentId) {
+  void _openMenu(BuildContext context, WidgetRef ref, String documentId) {
     final data = ref.read(projectProvider(ProjectScope.of(context))).value;
     if (data == null) return;
     final doc = [...chaptersInTree(data.chapters), ...data.notes].where((d) => d.id == documentId).firstOrNull;
     if (doc == null) return;
-    unawaited(showDocumentMenu(context, ref, state: widget.nav, recent: widget.rename, data: data, doc: doc));
-  }
-
-  /// Open the chapter list when no chapter is selected — once per time the
-  /// selection goes empty, not on every build.
-  void _autoOpen(bool empty) {
-    if (!empty) {
-      _openedForEmpty = false;
-      return;
-    }
-    if (_openedForEmpty) return;
-    _openedForEmpty = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _openNav();
-    });
+    unawaited(showDocumentMenu(context, ref, state: nav, recent: rename, data: data, doc: doc));
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final projectId = ProjectScope.of(context);
     final filename = ref.watch(activeProjectProvider.select((p) => p.activeChapter));
     final project = ref.watch(projectProvider(projectId));
     final data = project.value;
+    void back() => Navigator.of(context).maybePop();
 
-    _autoOpen(filename == null);
+    ref.listen(activeProjectProvider.select((p) => p.activeChapter), (_, next) {
+      if (next == null) back();
+    });
 
-    if (filename == null) {
-      return StateScreen(
-        icon: LucideIcons.bookOpen,
-        message: 'Pick a chapter to start writing.',
-        actionLabel: 'Open chapter list',
-        onAction: _openNav,
-      );
-    }
-    if (data == null) {
-      return project.hasError
-          ? StateScreen(message: messageFor(project.error))
-          : const StateScreen(spinner: true, message: 'Loading chapter…');
-    }
-    final documentId = resolveDocumentId(data, filename, widget.rename);
-    if (documentId == null) return StateScreen(message: 'Chapter "$filename" not found.');
-
-    return ChapterEditor(
-      key: ValueKey(documentId),
-      projectId: projectId,
-      documentId: documentId,
-      filename: filename,
-      typography: data.project.typography,
-      onBack: () => Navigator.of(context).pop(),
-      onOpenChapters: _openNav,
-      onMenu: () => _openMenu(documentId),
-      onDictate: widget.onDictate,
-      onScan: widget.onScan,
+    return Scaffold(
+      backgroundColor: Ds.void_,
+      body: Builder(
+        builder: (context) {
+          if (filename == null) return const SizedBox.shrink();
+          if (data == null) {
+            return project.hasError
+                ? StateScreen(message: messageFor(project.error), actionLabel: 'Back to the chapters', onAction: back)
+                : const StateScreen(spinner: true, message: 'Loading chapter…');
+          }
+          final documentId = resolveDocumentId(data, filename, rename);
+          if (documentId == null) {
+            return StateScreen(
+              message: "That chapter isn't in this book any more.",
+              actionLabel: 'Back to the chapters',
+              onAction: back,
+            );
+          }
+          return ChapterEditor(
+            key: ValueKey(documentId),
+            projectId: projectId,
+            documentId: documentId,
+            filename: filename,
+            typography: data.project.typography,
+            onBack: back,
+            onMenu: () => _openMenu(context, ref, documentId),
+            onDictate: onDictate,
+            onScan: onScan,
+          );
+        },
+      ),
     );
   }
 }

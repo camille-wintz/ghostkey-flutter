@@ -4,7 +4,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/words.dart';
 import '../../ds/tokens.dart';
-import '../../ui/anchored_panel.dart';
 import '../../ui/press.dart';
 import '../../ui/room_back_button.dart';
 
@@ -12,20 +11,17 @@ import '../../ui/room_back_button.dart';
 const double _markSize = 12;
 const double _markSlot = 17;
 
-/// The chapter's name, how long it is, and the way to its neighbours.
+/// The chapter's name, how long it is, and the way back to the list.
 ///
 /// The title is the serif voice at display size — the one place in the room
 /// where the app speaks like a book about the book. It is not the manuscript
 /// face: the page below is Spectral, and a title in the page's own face would
 /// read as the first line of the prose.
 ///
-/// The name is also the way into the chapter list: the chevron beside it is
-/// the hinge the list unfolds from, and the name is held to one line so that
-/// chevron always has room. It used to be a hamburger in the corner and a
-/// title you could type into, which put the room's navigation in the one place
-/// a phone reserves for the way back — so leaving Apparition meant opening a
-/// drawer and pressing its head, a door behind a door. The corner is the way
-/// back now, and the title is the list.
+/// The chapter list is the page under this one (Cleo, 2026-09-24): the room
+/// opens on it and a chapter is pushed on top, so the corner's chevron is the
+/// way back to it. The title used to unfold the list as a panel over the
+/// chapter; it is only the name now, held to one line.
 ///
 /// The opposite corner is the open chapter's own menu — rename, delete — the
 /// same one a held row in the list opens. It is the back chevron's size, which
@@ -56,7 +52,6 @@ class TitleBlock extends StatefulWidget {
     required this.saved,
     required this.collapsed,
     required this.onBack,
-    required this.onOpenChapters,
     required this.onMenu,
   });
 
@@ -68,9 +63,6 @@ class TitleBlock extends StatefulWidget {
   final ValueListenable<bool> collapsed;
   final VoidCallback onBack;
 
-  /// Open the chapter list, unfolded from the title's own box.
-  final void Function(Rect? anchor) onOpenChapters;
-
   /// Rename or delete the open chapter.
   final VoidCallback onMenu;
 
@@ -79,8 +71,6 @@ class TitleBlock extends StatefulWidget {
 }
 
 class _TitleBlockState extends State<TitleBlock> {
-  final GlobalKey _titleKey = GlobalKey();
-
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
@@ -111,52 +101,24 @@ class _TitleBlockState extends State<TitleBlock> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  RoomBackButton(onPressed: widget.onBack, semanticLabel: 'Back to the book'),
+                  RoomBackButton(onPressed: widget.onBack, semanticLabel: 'Back to the chapters'),
                   Expanded(
                     child: Column(
                       children: [
-                        Press(
-                          key: _titleKey,
-                          onPressed: () => widget.onOpenChapters(anchorRectOf(_titleKey)),
-                          semanticLabel: '${widget.title}, open the chapter list',
-                          builder: (context, pressed) => Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: pressed ? Ds.veil : const Color(0x00000000),
-                              borderRadius: BorderRadius.circular(DsGeom.radius),
-                            ),
-                            // The name is capped to one line so the chevron
-                            // always has room beside it. That cap is what puts
-                            // it there: a text allowed to wrap fills its whole
-                            // box, so a chevron next to it lands at the far
-                            // right with nothing near it, and a chevron set IN
-                            // the text is dropped onto a line of its own by the
-                            // line breaker. Held to one line the box hugs the
-                            // name, and the mark sits against the last letter
-                            // whether that is the whole title or an ellipsis.
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    widget.title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontFamily: DsFonts.prose,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: fontSize,
-                                      height: lineHeight / fontSize,
-                                      color: Ds.hi,
-                                      leadingDistribution: TextLeadingDistribution.even,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: lerp(8, 6)),
-                                Icon(LucideIcons.chevronDown, size: lerp(21, 16), color: Ds.mid),
-                              ],
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          child: Text(
+                            widget.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: DsFonts.prose,
+                              fontWeight: FontWeight.w600,
+                              fontSize: fontSize,
+                              height: lineHeight / fontSize,
+                              color: Ds.hi,
+                              leadingDistribution: TextLeadingDistribution.even,
                             ),
                           ),
                         ),

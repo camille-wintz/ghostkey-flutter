@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../ds/tokens.dart';
 import '../../../mara/chapter_plan.dart';
 import '../../../rooms/rooms.dart';
-import '../../../store/active_project.dart';
 import '../../../ui/button.dart';
 import '../../project/project_root.dart';
 
@@ -41,8 +40,11 @@ class CommitReceiptBanner extends ConsumerWidget {
               label: 'Open chapter one',
               onPressed: () {
                 ref.read(chapterPlanWritesProvider(projectId).notifier).forgetCommit();
-                ref.read(activeProjectProvider.notifier).setActiveChapter(first);
-                Navigator.of(context).pushNamedAndRemoveUntil(routeForRoom(RoomKey.apparition), (route) => route.isFirst);
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  routeForRoom(RoomKey.apparition),
+                  (route) => route.isFirst,
+                  arguments: first,
+                );
               },
             ),
           ],
