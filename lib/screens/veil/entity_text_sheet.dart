@@ -28,7 +28,6 @@ Future<void> showEntityTextSheet(
 }) =>
     showGkSheet<void>(
       context,
-      draggable: false,
       builder: (context) => _EntityTextSheet(
         eyebrow: eyebrow,
         trailing: trailing,

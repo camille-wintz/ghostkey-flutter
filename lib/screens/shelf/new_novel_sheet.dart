@@ -23,7 +23,6 @@ import 'docx_import.dart';
 /// the project is being made either way, and the sheet is what opens it.
 Future<void> showNewNovelSheet(BuildContext context) => showGkSheet<void>(
       context,
-      draggable: false,
       builder: (context) => const _NewNovel(),
     );
 

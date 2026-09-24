@@ -28,7 +28,6 @@ Future<void> showAddEntitySheet(
   final navigator = Navigator.of(context);
   return showGkSheet<void>(
     context,
-    draggable: false,
     builder: (context) => _AddEntity(projectId: projectId, initialType: type, navigator: navigator),
   );
 }
