@@ -8,8 +8,9 @@ import '../../server/errors.dart';
 import '../../server/jobs/run_job.dart';
 import '../../server/projects/api.dart';
 
-/// A manuscript arriving from a desk: a `.docx` picked on the phone becomes a
-/// new project whose chapters are split out of the document's headings.
+/// A manuscript arriving from a desk: a `.docx` or an `.epub` picked on the
+/// phone becomes a new project whose chapters are split out of the document's
+/// headings, or the book's table of contents.
 ///
 /// The desktop offers this beside Create, and so does the shelf, but the two
 /// are not the same call. The server route is additive — it imports into a
@@ -50,7 +51,8 @@ class DocxImportDone extends DocxImport {
 /// but a hundred-chapter book is minutes, so it is generous.
 const Duration _watchTimeout = Duration(minutes: 10);
 
-/// Pick a `.docx`, make a project of it, and follow the import to the end.
+/// Pick a `.docx` or an `.epub`, make a project of it, and follow the import
+/// to the end.
 ///
 /// [onProgress] is called with a line to put under the button. [isAlive] lets
 /// the caller stop the watch when the screen goes away; the import itself is
@@ -69,7 +71,7 @@ Future<DocxImport> importDocxAsProject({
       // document picker takes the extension, and a .docx offered by Drive or
       // by a mail attachment arrives under half a dozen different mime types.
       type: FileType.custom,
-      allowedExtensions: const ['docx'],
+      allowedExtensions: const ['docx', 'epub'],
     );
   } catch (e) {
     return DocxImportFailed('The file picker would not open. $e');
@@ -77,10 +79,11 @@ Future<DocxImport> importDocxAsProject({
   if (file == null) return const DocxImportCancelled();
 
   final name = file.name;
-  if (file.extension?.toLowerCase() != 'docx') {
+  final extension = file.extension?.toLowerCase();
+  if (extension != 'docx' && extension != 'epub') {
     return const DocxImportFailed(
-      'That is not a Word document. Ghostkey imports .docx files — the format Word, '
-      'Pages and Google Docs all export.',
+      'That is not a manuscript this can read. Ghostkey imports .docx files — the format '
+      'Word, Pages and Google Docs all export — and .epub books.',
     );
   }
 
@@ -121,7 +124,12 @@ Future<DocxImport> importDocxAsProject({
 
   try {
     onProgress('Sending $name…');
-    final started = await importProjectDocx(project.id, bytes, name);
+    final started = await importProjectDocx(
+      project.id,
+      bytes,
+      name,
+      mimeType: extension == 'epub' ? epubMime : docxMime,
+    );
     onProgress(_lineFor(started.job) ?? 'Reading the document…');
 
     final outcome = await awaitJob(
@@ -197,7 +205,7 @@ String? _lineFor(JobSnapshot job) {
 
 /// "The Hollow Crown - final draft (2).docx" → "The Hollow Crown - final draft".
 String _titleFrom(String filename) {
-  final stem = filename.replaceAll(RegExp(r'\.docx$', caseSensitive: false), '').trim();
+  final stem = filename.replaceAll(RegExp(r'\.(docx|epub)$', caseSensitive: false), '').trim();
   return stem.isEmpty ? 'Imported manuscript' : stem;
 }
 
