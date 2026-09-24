@@ -21,7 +21,10 @@ class FolderTile extends StatelessWidget {
           builder: (context, pressed) => Container(
             height: DsGeom.row,
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            color: pressed ? Ds.veil : const Color(0x00000000),
+            decoration: BoxDecoration(
+              color: pressed ? Ds.veil : const Color(0x00000000),
+              border: Border(bottom: BorderSide(color: Ds.edge)),
+            ),
             child: Row(
               children: [
                 Icon(open ? LucideIcons.chevronDown : LucideIcons.chevronRight, size: 14, color: Ds.mid),

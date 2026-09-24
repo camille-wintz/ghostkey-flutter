@@ -44,7 +44,12 @@ class ChapterTile extends StatelessWidget {
           height: DsGeom.row,
           padding: EdgeInsets.only(left: indent, right: 20),
           decoration: BoxDecoration(
-            border: active ? Border(left: BorderSide(color: Ds.accent, width: 2)) : null,
+            // The hairline under every row says "tap me" without a chevron;
+            // it sits inside the box, so the row stays `DsGeom.row` tall.
+            border: Border(
+              left: active ? BorderSide(color: Ds.accent, width: 2) : BorderSide.none,
+              bottom: BorderSide(color: Ds.edge),
+            ),
             color: active
                 ? Ds.accentMix(10)
                 : pressed

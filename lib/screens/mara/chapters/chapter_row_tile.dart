@@ -57,6 +57,9 @@ class ChapterRowTile extends StatelessWidget {
             color: pressed ? Ds.veil : (tint ?? const Color(0x00000000)),
             borderRadius: BorderRadius.circular(DsGeom.radius),
           ),
+          // A hairline under each row, square under the rounded press wash, so
+          // the list reads as rows to open rather than lines of text.
+          foregroundDecoration: BoxDecoration(border: Border(bottom: BorderSide(color: Ds.edge))),
           child: Row(
             children: [
               SizedBox(
