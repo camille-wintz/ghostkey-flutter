@@ -1,4 +1,3 @@
-import 'background_mode.dart';
 import 'policy.dart';
 
 // What the dock says. Ported from ghostkey-mobile `RecordOverlay.tsx`.
@@ -25,17 +24,6 @@ DockNotice autoStopNotice(AutoStopReason reason) => DockNotice(
         AutoStopReason.locked =>
           'Paused when the screen locked. Allow notifications for Ghostkey to keep dictating with the screen off.',
         AutoStopReason.stopped => 'Stopped from the notification. Tap play to keep dictating.',
-      },
-    );
-
-/// The session is on, but only while the screen is: said up front rather
-/// than after the first lock has eaten a sentence.
-DockNotice foregroundOnlyNotice(ForegroundOnlyReason reason) => DockNotice(
-      NoticeKind.warning,
-      switch (reason) {
-        ForegroundOnlyReason.notificationsDenied =>
-          'Dictation will pause when the screen locks. Allow notifications for Ghostkey in Settings to keep it going.',
-        ForegroundOnlyReason.noService => 'Dictation will pause when the screen locks in this build.',
       },
     );
 

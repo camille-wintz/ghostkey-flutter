@@ -14,31 +14,16 @@ import 'recorder_channel.dart';
 
 enum BackgroundMode { background, foreground }
 
-/// Why a session is foreground-only: the notification was refused, or this
-/// build/OS has no service to post one.
-enum ForegroundOnlyReason { notificationsDenied, noService }
-
-class BackgroundChoice {
-  const BackgroundChoice.background()
-      : mode = BackgroundMode.background,
-        reason = null;
-  const BackgroundChoice.foreground(this.reason) : mode = BackgroundMode.foreground;
-  final BackgroundMode mode;
-  final ForegroundOnlyReason? reason;
-}
-
-Future<BackgroundChoice> chooseBackgroundMode(NativeRecorder recorder) async {
-  if (!defaultTargetPlatform.isAndroid) return const BackgroundChoice.background();
+Future<BackgroundMode> chooseBackgroundMode(NativeRecorder recorder) async {
+  if (!defaultTargetPlatform.isAndroid) return BackgroundMode.background;
   try {
     final perms = await recorder.permissions();
-    if (perms.sdk < 33) return const BackgroundChoice.background();
+    if (perms.sdk < 33) return BackgroundMode.background;
     final granted = perms.notifications || await recorder.requestNotifications();
-    return granted
-        ? const BackgroundChoice.background()
-        : const BackgroundChoice.foreground(ForegroundOnlyReason.notificationsDenied);
+    return granted ? BackgroundMode.background : BackgroundMode.foreground;
   } catch (e) {
     debugPrint('[dictation] notification permission request failed: $e');
-    return const BackgroundChoice.foreground(ForegroundOnlyReason.notificationsDenied);
+    return BackgroundMode.foreground;
   }
 }
 

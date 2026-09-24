@@ -149,9 +149,7 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
         _setNotice(microphoneDeniedNotice);
         return;
       }
-      final chosen = await chooseBackgroundMode(_native);
-      _mode = chosen.mode;
-      if (chosen.reason != null) _setNotice(foregroundOnlyNotice(chosen.reason!));
+      _mode = await chooseBackgroundMode(_native);
 
       _events ??= _native.events.listen(_onEvent);
       _sessions += 1;
@@ -168,7 +166,6 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
       final startedEvent = event as RecorderStarted;
       if (!startedEvent.backgroundCapable && _mode == BackgroundMode.background) {
         _mode = BackgroundMode.foreground;
-        _setNotice(foregroundOnlyNotice(ForegroundOnlyReason.noService));
       }
       _live = true;
       _paused = false;
