@@ -24,18 +24,27 @@ Future<void> showAddEntitySheet(
   BuildContext context, {
   required String projectId,
   BibleEntityType type = BibleEntityType.character,
+  String name = '',
 }) {
   final navigator = Navigator.of(context);
   return showGkSheet<void>(
     context,
-    builder: (context) => _AddEntity(projectId: projectId, initialType: type, navigator: navigator),
+    builder: (context) => _AddEntity(projectId: projectId, initialType: type, initialName: name, navigator: navigator),
   );
 }
 
 class _AddEntity extends ConsumerStatefulWidget {
-  const _AddEntity({required this.projectId, required this.initialType, required this.navigator});
+  const _AddEntity({
+    required this.projectId,
+    required this.initialType,
+    required this.initialName,
+    required this.navigator,
+  });
   final String projectId;
   final BibleEntityType initialType;
+
+  /// The search that found nothing, when that is where the sheet came from.
+  final String initialName;
   final NavigatorState navigator;
 
   @override
@@ -43,7 +52,7 @@ class _AddEntity extends ConsumerStatefulWidget {
 }
 
 class _AddEntityState extends ConsumerState<_AddEntity> {
-  final _name = TextEditingController();
+  late final _name = TextEditingController(text: widget.initialName);
   late BibleEntityType _type = widget.initialType;
   bool _saving = false;
   String? _error;

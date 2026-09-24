@@ -77,8 +77,8 @@ class _VeilRoom extends ConsumerWidget {
       unawaited(ref.read(worldBibleRunProvider(projectId).notifier).start(force: force));
     }
 
-    void add([BibleEntityType? type]) =>
-        showAddEntitySheet(context, projectId: projectId, type: type ?? BibleEntityType.character);
+    void add([BibleEntityType? type, String name = '']) =>
+        showAddEntitySheet(context, projectId: projectId, type: type ?? BibleEntityType.character, name: name);
 
     Future<void> unhide(BibleEntity entity) async {
       try {

@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../ds/tokens.dart';
 import '../../server/dto/bible.dart';
+import '../../ui/button.dart';
 import '../../ui/field.dart';
 import '../../ui/press.dart';
 import '../../veil/providers.dart';
@@ -39,8 +40,9 @@ class VeilRoster extends ConsumerStatefulWidget {
   final bool running;
   final VoidCallback onGenerate;
 
-  /// Add an entry by hand, of the type the tabs are narrowed to if they are.
-  final void Function(BibleEntityType? type) onAdd;
+  /// Add an entry by hand, of the type the tabs are narrowed to if they are —
+  /// named after the search, when it is the search that came up empty.
+  final void Function(BibleEntityType? type, [String name]) onAdd;
   final Future<void> Function(BibleEntity entity) onUnhide;
 
   @override
@@ -153,7 +155,7 @@ class _VeilRosterState extends ConsumerState<VeilRoster> {
           _HeaderRow(group.type, group.entities.length),
           for (final entity in group.entities) _EntityRow(entity),
         ],
-        if (view.groups.isEmpty) _EmptyRow(_emptyMessage(view)),
+        if (view.groups.isEmpty) _EmptyRow(_emptyMessage(view), _addable()),
         if (view.hidden.isNotEmpty) const _HiddenRow(),
         _FooterRow(
           view.shown == view.total
@@ -161,6 +163,15 @@ class _VeilRosterState extends ConsumerState<VeilRoster> {
               : '${view.shown} of ${view.total} shown',
         ),
       ];
+
+  /// A search that finds nothing is usually a name the bible doesn't have
+  /// yet, so the empty list offers it — unless a hidden card already answers
+  /// to it, which the hidden pile is the way back to.
+  String? _addable() {
+    final query = _query.text.trim();
+    if (query.isEmpty || entityAnsweringTo(widget.bible.entities, query) != null) return null;
+    return query;
+  }
 
   String _emptyMessage(RosterView view) {
     final query = _query.text.trim();
@@ -185,9 +196,21 @@ class _VeilRosterState extends ConsumerState<VeilRoster> {
             seriesId: widget.bible.seriesId,
             onOpen: () => _open(entity),
           ),
-        _EmptyRow(:final message) => Padding(
+        _EmptyRow(:final message, :final addable) => Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
-            child: Text(message, textAlign: TextAlign.center, style: DsStyle.ui(DsText.body, color: Ds.low)),
+            child: Column(
+              children: [
+                Text(message, textAlign: TextAlign.center, style: DsStyle.ui(DsText.body, color: Ds.low)),
+                if (addable != null) ...[
+                  const SizedBox(height: 16),
+                  GkButton(
+                    label: 'Add “$addable”',
+                    leading: Icon(LucideIcons.plus, size: 16, color: Ds.accent),
+                    onPressed: () => widget.onAdd(_type, addable),
+                  ),
+                ],
+              ],
+            ),
           ),
         _HiddenRow() => VeilHiddenPile(
             entities: view.hidden,
@@ -257,8 +280,11 @@ class _EntityRow extends _Row {
 }
 
 class _EmptyRow extends _Row {
-  const _EmptyRow(this.message);
+  const _EmptyRow(this.message, this.addable);
   final String message;
+
+  /// The name the empty search offers to add, if it offers one.
+  final String? addable;
 }
 
 class _HiddenRow extends _Row {
