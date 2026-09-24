@@ -14,7 +14,7 @@ import 'line_edit_chapter_row.dart';
 import 'line_edit_chapter_screen.dart';
 import 'line_edit_sheet.dart';
 import 'report_card.dart';
-import 'wisp_notice.dart';
+import '../../ui/page_notice.dart';
 
 /// Every chapter with its line edit, so a book can be passed over chapter by
 /// chapter from one list. A chapter opens onto its own page, where its notes
@@ -64,7 +64,7 @@ class LineEditingPage extends ConsumerWidget {
           ),
           const SizedBox(height: 14),
           if (chapters.isEmpty)
-            const WispNotice('The manuscript has no chapters yet. Add some in Apparition and come back to Wisp.')
+            const PageNotice('The manuscript has no chapters yet. Add some in Apparition and come back to Wisp.')
           else
             ReportCard(
               padding: EdgeInsets.zero,

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../ds/tokens.dart';
+import '../ds/tokens.dart';
 
 /// A line above a page's content: a run that failed, or why there is nothing
 /// to read.
-class WispNotice extends StatelessWidget {
-  const WispNotice(this.text, {super.key, this.error = false});
+class PageNotice extends StatelessWidget {
+  const PageNotice(this.text, {super.key, this.error = false});
   final String text;
   final bool error;
 

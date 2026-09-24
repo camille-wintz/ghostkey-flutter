@@ -22,7 +22,7 @@ import 'chapter_tile.dart';
 import 'document_menu.dart';
 import 'nav_items.dart';
 import 'folder_tile.dart';
-import 'hold_to_drag.dart';
+import '../../../ui/hold_to_drag.dart';
 import 'section_header.dart';
 
 /// The chapters/notes panel, unfolded from the title above it: which book you

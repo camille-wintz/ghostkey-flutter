@@ -18,10 +18,10 @@ import 'condensed_outline_view.dart';
 import 'outline_length_tabs.dart';
 import 'run_again.dart';
 import 'wisp_intro.dart';
-import 'wisp_lock.dart';
-import 'wisp_notice.dart';
+import '../../ui/lock_notice.dart';
+import '../../ui/page_notice.dart';
 import 'wisp_page_loading.dart';
-import 'wisp_running.dart';
+import '../../ui/job_running.dart';
 
 ({String blurb, String action, String title}) _copyFor(OutlineLength length) => switch (length) {
       OutlineLength.synopsis => (
@@ -71,15 +71,15 @@ class _ReverseOutlinePageState extends ConsumerState<ReverseOutlinePage> {
 
     // A run found already going does not say which length it makes, so it
     // holds every tab.
-    final runningHere = run.running && (run.length == null || run.length == _length);
+    final runningHere = run.running && (run.tag == null || run.tag == _length);
     final runningElsewhere = run.running && !runningHere;
 
     void start({required bool force}) {
-      if (!gate.granted) return explainWispLock(context, gate, 'Reverse outline');
+      if (!gate.granted) return explainLock(context, gate, 'Reverse outline');
       ref.read(wispRunProvider(runKey).notifier).start({
         if (_length != OutlineLength.detailed) 'length': _length.wire,
         if (force) 'force': true,
-      }, length: _length);
+      }, tag: _length);
     }
 
     final result = outline.value;
@@ -88,10 +88,10 @@ class _ReverseOutlinePageState extends ConsumerState<ReverseOutlinePage> {
 
     final Widget body;
     if (project != null && !hasChapters) {
-      body = const WispNotice('The manuscript has no chapters yet. Add some in Apparition and come back to Wisp.');
+      body = const PageNotice('The manuscript has no chapters yet. Add some in Apparition and come back to Wisp.');
     } else if (runningHere) {
       final outlined = run.progress?.current ?? 0;
-      body = WispRunning(
+      body = JobRunning(
         progress: run.progress,
         starting: 'Outlining the manuscript',
         note: _length == OutlineLength.detailed && outlined > 0
@@ -99,7 +99,7 @@ class _ReverseOutlinePageState extends ConsumerState<ReverseOutlinePage> {
             : null,
       );
     } else if (outline.hasError && !outline.hasValue) {
-      body = WispNotice("The saved outline wouldn't load: ${messageFor(outline.error)}", error: true);
+      body = PageNotice("The saved outline wouldn't load: ${messageFor(outline.error)}", error: true);
     } else if (!outline.hasValue) {
       body = const WispPageLoading('Looking for a saved outline…');
     } else if (condensed != null || (_length == OutlineLength.detailed && hasDetailed)) {
@@ -140,7 +140,7 @@ class _ReverseOutlinePageState extends ConsumerState<ReverseOutlinePage> {
         children: [
           OutlineLengthTabs(value: _length, onChange: (length) => setState(() => _length = length)),
           const SizedBox(height: 18),
-          if (run.error case final error? when !run.running) WispNotice(error, error: true),
+          if (run.error case final error? when !run.running) PageNotice(error, error: true),
           body,
         ],
       ),

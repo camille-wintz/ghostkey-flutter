@@ -12,7 +12,7 @@ import '../../wisp/providers.dart';
 import '../project/project_root.dart';
 import '../../wisp/pages.dart';
 import 'wisp_page_screen.dart';
-import 'wisp_task_row.dart';
+import '../../ui/page_row.dart';
 
 /// The room once it has arrived: the book in the bar, and every task as a
 /// row — the list IS the room, as Veil's roster is. A task opens as a page
@@ -55,8 +55,10 @@ class WispRoom extends ConsumerWidget {
                   padding: const EdgeInsets.fromLTRB(8, 12, 8, 40),
                   children: [
                     for (final page in WispPage.values)
-                      WispTaskRow(
-                        page: page,
+                      PageRow(
+                        icon: page.icon,
+                        label: page.label,
+                        description: page.description,
                         status: switch (page) {
                           WispPage.continuity when questions > 0 =>
                             '$questions ${questions == 1 ? 'question' : 'questions'} waiting',

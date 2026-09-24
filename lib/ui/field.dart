@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../ds/tokens.dart';
 
@@ -20,6 +21,7 @@ class GkField extends StatelessWidget {
     this.enabled = true,
     this.minLines = 1,
     this.maxLines = 1,
+    this.maxLength,
   });
 
   final TextEditingController controller;
@@ -38,6 +40,9 @@ class GkField extends StatelessWidget {
   /// after, and a return is a new line rather than a submit.
   final int minLines;
   final int maxLines;
+
+  /// A hard cap on the characters the field takes, uncounted on screen.
+  final int? maxLength;
 
   bool get _multiline => maxLines != 1;
 
@@ -65,6 +70,7 @@ class GkField extends StatelessWidget {
         onSubmitted: onSubmitted,
         onChanged: onChanged,
         autofillHints: autofillHints,
+        inputFormatters: maxLength == null ? null : [LengthLimitingTextInputFormatter(maxLength)],
         cursorColor: Ds.accent,
         textCapitalization: _multiline ? TextCapitalization.sentences : TextCapitalization.none,
         style: DsStyle.ui(DsText.body, color: Ds.hi),

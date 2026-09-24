@@ -13,7 +13,7 @@ import '../../ui/field.dart';
 import '../../ui/sheet.dart';
 import '../../wisp/access.dart';
 import '../../wisp/line_edit.dart';
-import 'wisp_lock.dart';
+import '../../ui/lock_notice.dart';
 
 /// Ask for a line edit on one chapter: what this pass should watch for, if
 /// anything, and Run. The model is the server's default — the desk's picker
@@ -23,7 +23,7 @@ Future<bool> showLineEditSheet(BuildContext context, {required String projectId,
   final container = ProviderScope.containerOf(context);
   final gate = container.read(capabilityProvider(lineEditCapability));
   if (!gate.granted) {
-    explainWispLock(context, gate, 'Line editing');
+    explainLock(context, gate, 'Line editing');
     return false;
   }
   final started = await showGkSheet<bool>(

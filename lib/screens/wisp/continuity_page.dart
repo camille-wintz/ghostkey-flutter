@@ -16,10 +16,10 @@ import 'continuity_report_view.dart';
 import 'job_question_card.dart';
 import 'run_again.dart';
 import 'wisp_intro.dart';
-import 'wisp_lock.dart';
-import 'wisp_notice.dart';
+import '../../ui/lock_notice.dart';
+import '../../ui/page_notice.dart';
 import 'wisp_page_loading.dart';
-import 'wisp_running.dart';
+import '../../ui/job_running.dart';
 
 /// Plot holes and continuity errors. The check is long (extract → walk →
 /// verify), and the contradictions it confirms become questions — which
@@ -41,28 +41,28 @@ class ContinuityPage extends ConsumerWidget {
     final quota = quotaLine(ref.watch(quotaProvider).value?.feature(continuityQuotaFeature));
 
     void start({required bool force}) {
-      if (!gate.granted) return explainWispLock(context, gate, 'Continuity check');
+      if (!gate.granted) return explainLock(context, gate, 'Continuity check');
       ref.read(wispRunProvider(runKey).notifier).start({if (force) 'force': true});
     }
 
     final Widget body;
     if (project != null && !hasChapters) {
-      body = const WispNotice('The manuscript has no chapters yet. Add some in Apparition and come back to Wisp.');
+      body = const PageNotice('The manuscript has no chapters yet. Add some in Apparition and come back to Wisp.');
     } else if (run.running) {
-      body = WispRunning(
+      body = JobRunning(
         progress: run.progress,
         starting: 'Starting the check',
         note: 'Extract → walk → verify. Confirmed contradictions become questions above, while the run keeps going. You can leave this page — the result is kept.',
       );
     } else if (report.hasError && !report.hasValue) {
-      body = WispNotice("The saved report wouldn't load: ${messageFor(report.error)}", error: true);
+      body = PageNotice("The saved report wouldn't load: ${messageFor(report.error)}", error: true);
     } else if (!report.hasValue) {
       body = const WispPageLoading('Checking for a saved report…');
     } else if (report.value case final r?) {
       body = Column(
         children: [
           if (r.extractionFailures.isNotEmpty)
-            WispNotice(
+            PageNotice(
               'Extraction failed for ${r.extractionFailures.join(', ')} — these chapters were not checked. Re-run to try again.',
             ),
           ContinuityReportView(report: r),
@@ -91,7 +91,7 @@ class ContinuityPage extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 40),
         children: [
-          if (run.error case final error? when !run.running) WispNotice(error, error: true),
+          if (run.error case final error? when !run.running) PageNotice(error, error: true),
           for (final open in questions)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
