@@ -29,6 +29,8 @@ class VeilRoster extends ConsumerStatefulWidget {
     required this.hasChapters,
     required this.running,
     required this.onGenerate,
+    required this.onAdd,
+    required this.onUnhide,
   });
 
   final String projectId;
@@ -36,6 +38,10 @@ class VeilRoster extends ConsumerStatefulWidget {
   final bool hasChapters;
   final bool running;
   final VoidCallback onGenerate;
+
+  /// Add an entry by hand, of the type the tabs are narrowed to if they are.
+  final void Function(BibleEntityType? type) onAdd;
+  final Future<void> Function(BibleEntity entity) onUnhide;
 
   @override
   ConsumerState<VeilRoster> createState() => _VeilRosterState();
@@ -77,7 +83,12 @@ class _VeilRosterState extends ConsumerState<VeilRoster> {
   Widget build(BuildContext context) {
     final entities = widget.bible.entities;
     if (entities.isEmpty) {
-      return VeilEmptyState(hasChapters: widget.hasChapters, running: widget.running, onGenerate: widget.onGenerate);
+      return VeilEmptyState(
+        hasChapters: widget.hasChapters,
+        running: widget.running,
+        onGenerate: widget.onGenerate,
+        onAdd: () => widget.onAdd(null),
+      );
     }
 
     final dossiers = ref.watch(dossiersProvider(widget.projectId)).value ?? const <String, Dossier>{};
@@ -182,6 +193,7 @@ class _VeilRosterState extends ConsumerState<VeilRoster> {
             entities: view.hidden,
             open: _hiddenOpen,
             onToggle: () => setState(() => _hiddenOpen = !_hiddenOpen),
+            onUnhide: widget.onUnhide,
           ),
         _FooterRow(:final text) => Padding(
             padding: const EdgeInsets.fromLTRB(8, 14, 8, 0),

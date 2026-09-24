@@ -8,6 +8,7 @@ import '../../access/capability.dart';
 import '../../access/plans.dart';
 import '../../ds/tokens.dart';
 import '../../rooms/rooms.dart';
+import '../../server/dto/bible.dart';
 import '../../server/dto/projects.dart';
 import '../../server/errors.dart';
 import '../../server/providers.dart';
@@ -15,10 +16,12 @@ import '../../ui/notice_modal.dart';
 import '../../ui/room_bar_action.dart';
 import '../../ui/room_title_bar.dart';
 import '../../ui/state_screen.dart';
+import '../../veil/entity_writes.dart';
 import '../../veil/providers.dart';
 import '../../veil/world_bible_run.dart';
 import '../project/project_root.dart';
 import '../project/room_entering.dart';
+import 'add_entity_sheet.dart';
 import 'veil_actions_sheet.dart';
 import 'veil_roster.dart';
 import 'veil_run_banner.dart';
@@ -74,8 +77,27 @@ class _VeilRoom extends ConsumerWidget {
       unawaited(ref.read(worldBibleRunProvider(projectId).notifier).start(force: force));
     }
 
+    void add([BibleEntityType? type]) =>
+        showAddEntitySheet(context, projectId: projectId, type: type ?? BibleEntityType.character);
+
+    Future<void> unhide(BibleEntity entity) async {
+      try {
+        await editEntity(ref, projectId, entity.id, hidden: false);
+      } catch (e) {
+        if (!context.mounted) return;
+        unawaited(showNoticeModal(
+          context,
+          eyebrow: 'Veil',
+          title: 'That did not save',
+          action: 'Got it',
+          children: [NoticeText(messageFor(e))],
+        ));
+      }
+    }
+
     void openActions() => showVeilActions(
           context,
+          onAdd: add,
           hasExtraction: bible.value?.hasExtraction ?? false,
           hasChapters: hasChapters,
           locked: !generate.granted,
@@ -91,6 +113,8 @@ class _VeilRoom extends ConsumerWidget {
         hasChapters: hasChapters,
         running: run.running,
         onGenerate: () => start(false),
+        onAdd: add,
+        onUnhide: unhide,
       );
     } else if (bible.isLoading) {
       body = const StateScreen(spinner: true, message: 'Checking for a saved bible…');

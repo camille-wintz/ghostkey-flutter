@@ -103,6 +103,7 @@ const Map<String, String> _messages = {
   'invalid_model': 'That model is not available.',
   'refusal': 'The model declined to answer that one.',
   'empty_response': 'The model returned nothing. Try again.',
+  'name_taken': 'Something else already goes by that name.',
   'unknown': 'Something went wrong. Please try again.',
 };
 

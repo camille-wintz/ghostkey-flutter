@@ -1,37 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../ds/tokens.dart';
 import '../../server/dto/bible.dart';
 import 'veil_section.dart';
+import 'veil_section_link.dart';
+import 'veil_writable.dart';
 
-/// What this entity looks like: the author's words when they have written
-/// some, the dossier's when they haven't — labelled as such, because on the
-/// desktop the dossier's text only pre-fills a box the author then commits.
-/// Read-only here until the per-entity write routes exist.
+/// What this entity looks like, in the author's words. When they have
+/// written none, the dossier's appearance stands in, drawn fainter and
+/// labelled as a suggestion: Keep makes it theirs, and editing starts from
+/// it — the desk pre-fills its box the same way.
 class EntityAppearance extends StatelessWidget {
-  const EntityAppearance({super.key, required this.entity, required this.dossier});
+  const EntityAppearance({
+    super.key,
+    required this.entity,
+    required this.dossier,
+    required this.onEdit,
+    required this.onKeep,
+  });
+
   final BibleEntity entity;
   final Dossier? dossier;
+  final VoidCallback onEdit;
+
+  /// Adopt the dossier's appearance as the author's.
+  final VoidCallback onKeep;
 
   @override
   Widget build(BuildContext context) {
     final own = entity.description.trim();
-    final text = own.isNotEmpty ? own : (dossier?.appearance.trim() ?? '');
+    final suggestion = dossier?.appearance.trim() ?? '';
+    final suggested = own.isEmpty && suggestion.isNotEmpty;
     return VeilSection(
       title: 'Physical description',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(text, style: DsStyle.prose(DsText.body, color: Ds.ink)),
-          if (own.isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                'From the dossier — yours to keep or rewrite on the desktop.',
-                style: DsStyle.ui(DsText.eyebrow, color: Ds.faint),
-              ),
-            ),
-        ],
+      trailing: suggested ? VeilSectionLink(icon: LucideIcons.sparkles, label: "Keep the dossier's", onTap: onKeep) : null,
+      child: VeilWritable(
+        text: suggested ? suggestion : own,
+        suggested: suggested,
+        placeholder: 'How they look, in your words.',
+        onTap: onEdit,
+        semanticLabel: 'Edit the physical description',
       ),
     );
   }

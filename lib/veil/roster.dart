@@ -177,5 +177,18 @@ String dossierSummary(Dossier? dossier) {
   return (match?.group(0) ?? overview).trim();
 }
 
+/// The card that already answers to [name], by its name or an alias — asked
+/// while the author types, so the add sheet can say so before they press
+/// Add. The server decides for real (a name it knows comes back as that
+/// card); this is the same fold the search uses, which is close enough to
+/// warn.
+BibleEntity? entityAnsweringTo(List<BibleEntity> entities, String name) {
+  final needle = _nameKey(name);
+  if (needle.isEmpty) return null;
+  return entities.where((e) => _nameKey(e.name) == needle || e.aliases.any((a) => _nameKey(a) == needle)).firstOrNull;
+}
+
+String _nameKey(String name) => fold(name).replaceAll(RegExp(r'\s+'), ' ');
+
 /// A chapter filename as a title: the `.md` dropped.
 String chapterLabel(String filename) => filename.replaceAll(RegExp(r'\.md$', caseSensitive: false), '');

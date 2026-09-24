@@ -7,14 +7,20 @@ import '../../ui/press.dart';
 import '../../veil/roster.dart';
 
 /// The collapsed pile of hidden entities at the end of the roster. Hides
-/// must stay reversible, so the cards never just vanish — but unhiding is a
-/// write, and writes wait for the per-entity routes; until then the pile is
-/// a list to read.
+/// must stay reversible, so the cards never just vanish: each one here can
+/// be brought back.
 class VeilHiddenPile extends StatelessWidget {
-  const VeilHiddenPile({super.key, required this.entities, required this.open, required this.onToggle});
+  const VeilHiddenPile({
+    super.key,
+    required this.entities,
+    required this.open,
+    required this.onToggle,
+    required this.onUnhide,
+  });
   final List<BibleEntity> entities;
   final bool open;
   final VoidCallback onToggle;
+  final Future<void> Function(BibleEntity entity) onUnhide;
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +50,7 @@ class VeilHiddenPile extends StatelessWidget {
             for (final entity in entities)
               Container(
                 margin: const EdgeInsets.only(top: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                padding: const EdgeInsets.only(left: 12),
                 decoration: BoxDecoration(
                   border: Border.all(color: Ds.edge),
                   borderRadius: BorderRadius.circular(DsGeom.radius),
@@ -59,7 +65,22 @@ class VeilHiddenPile extends StatelessWidget {
                         style: DsStyle.ui(DsText.ui, color: Ds.low),
                       ),
                     ),
-                    Icon(LucideIcons.eyeOff, size: 14, color: Ds.faint),
+                    Press(
+                      onPressed: () => onUnhide(entity),
+                      semanticLabel: 'Unhide ${titleCase(entity.name)}',
+                      builder: (context, pressed) => Container(
+                        height: DsGeom.row,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        color: pressed ? Ds.veil : const Color(0x00000000),
+                        child: Row(
+                          children: [
+                            Icon(LucideIcons.eye, size: 14, color: Ds.low),
+                            const SizedBox(width: 6),
+                            Text('Unhide', style: DsStyle.ui(DsText.ui, color: Ds.low)),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

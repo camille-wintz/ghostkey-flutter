@@ -195,11 +195,13 @@ class DocxImportStart {
   final JobSnapshot job;
 }
 
-/// POST /api/projects/{id}/import-docx — start a bulk chapter import. The
-/// chapters are written by a `docx_import` job; follow the returned job.
+/// POST /api/projects/{id}/import-manuscript — start a bulk chapter import.
+/// The route also takes a zipped Scrivener project; the phone only offers a
+/// .docx. The chapters are written by a `manuscript_import` job; follow the
+/// returned job.
 Future<DocxImportStart> importProjectDocx(String projectId, Uint8List bytes, String filename) async {
   final res = await apiFetch(
-    '/api/projects/$projectId/import-docx?name=${Uri.encodeQueryComponent(filename)}',
+    '/api/projects/$projectId/import-manuscript?name=${Uri.encodeQueryComponent(filename)}',
     method: 'POST',
     headers: {'Content-Type': docxMime},
     body: bytes,

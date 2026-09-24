@@ -18,6 +18,8 @@ class GkField extends StatelessWidget {
     this.onChanged,
     this.autofillHints,
     this.enabled = true,
+    this.minLines = 1,
+    this.maxLines = 1,
   });
 
   final TextEditingController controller;
@@ -32,10 +34,17 @@ class GkField extends StatelessWidget {
   final Iterable<String>? autofillHints;
   final bool enabled;
 
+  /// Above 1 the field grows with its text up to [maxLines] and scrolls
+  /// after, and a return is a new line rather than a submit.
+  final int minLines;
+  final int maxLines;
+
+  bool get _multiline => maxLines != 1;
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 44,
+      height: _multiline ? null : 44,
       decoration: BoxDecoration(
         color: Ds.void_,
         border: Border.all(color: Ds.edge),
@@ -45,7 +54,9 @@ class GkField extends StatelessWidget {
       child: TextField(
         controller: controller,
         enabled: enabled,
-        keyboardType: keyboardType,
+        keyboardType: _multiline ? TextInputType.multiline : keyboardType,
+        minLines: minLines,
+        maxLines: maxLines,
         obscureText: obscure,
         autocorrect: autocorrect,
         enableSuggestions: autocorrect,
@@ -55,6 +66,7 @@ class GkField extends StatelessWidget {
         onChanged: onChanged,
         autofillHints: autofillHints,
         cursorColor: Ds.accent,
+        textCapitalization: _multiline ? TextCapitalization.sentences : TextCapitalization.none,
         style: DsStyle.ui(DsText.body, color: Ds.hi),
         decoration: InputDecoration(
           isDense: true,

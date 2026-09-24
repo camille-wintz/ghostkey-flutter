@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../ds/tokens.dart';
-import '../../ui/press.dart';
 import '../../ui/sheet.dart';
 import '../../veil/world_bible_run.dart';
+import 'veil_action_row.dart';
 
 /// The actions that work on the bible as a whole, in the desktop's shape:
 /// Generate before any extraction; Update (the cheap incremental run, a
 /// cache hit when nothing changed) and Rebuild (`force`) after. A run
-/// already going is said rather than offered twice.
+/// already going is said rather than offered twice. Adding an entry by hand
+/// comes first and is never gated: it costs nothing and needs no manuscript.
 Future<void> showVeilActions(
   BuildContext context, {
+  required VoidCallback onAdd,
   required bool hasExtraction,
   required bool hasChapters,
   required bool locked,
@@ -33,6 +35,17 @@ Future<void> showVeilActions(
         shrinkWrap: true,
         padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
         children: [
+          VeilActionRow(
+            icon: LucideIcons.plus,
+            title: 'Add an entry',
+            subtitle: 'A character, place or term, written in by hand.',
+            enabled: true,
+            locked: false,
+            onTap: () {
+              Navigator.of(sheet).pop();
+              onAdd();
+            },
+          ),
           if (run.running)
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
@@ -42,7 +55,7 @@ Future<void> showVeilActions(
               ),
             )
           else if (!hasExtraction)
-            _ActionRow(
+            VeilActionRow(
               icon: LucideIcons.play,
               title: 'Generate from the story outline',
               subtitle: hint ??
@@ -52,7 +65,7 @@ Future<void> showVeilActions(
               onTap: () => pick(false),
             )
           else ...[
-            _ActionRow(
+            VeilActionRow(
               icon: LucideIcons.refreshCw,
               title: 'Update',
               subtitle: hint ?? 'Re-check edited chapters. Unchanged ones are free.',
@@ -60,7 +73,7 @@ Future<void> showVeilActions(
               locked: locked,
               onTap: () => pick(false),
             ),
-            _ActionRow(
+            VeilActionRow(
               icon: LucideIcons.rotateCcw,
               title: 'Rebuild from scratch',
               subtitle: hint ??
@@ -74,67 +87,4 @@ Future<void> showVeilActions(
       );
     },
   );
-}
-
-class _ActionRow extends StatelessWidget {
-  const _ActionRow({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.enabled,
-    required this.locked,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final bool enabled;
-
-  /// Not on the plan: drawn with a padlock and still tappable, so the tap
-  /// can explain which plan opens it.
-  final bool locked;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Press(
-        onPressed: onTap,
-        enabled: enabled,
-        semanticLabel: title,
-        builder: (context, pressed) => Opacity(
-          opacity: enabled ? 1 : 0.45,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            decoration: BoxDecoration(
-              color: pressed ? Ds.veil : const Color(0x00000000),
-              borderRadius: BorderRadius.circular(DsGeom.radius),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Icon(icon, size: 17, color: Ds.accent),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: DsStyle.ui(DsText.body, color: Ds.hi, weight: FontWeight.w600)),
-                      const SizedBox(height: 3),
-                      Text(subtitle, style: DsStyle.ui(DsText.ui, color: Ds.mid)),
-                    ],
-                  ),
-                ),
-                if (locked)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 10, top: 3),
-                    child: Icon(LucideIcons.lock, size: 15, color: Ds.faint),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      );
 }

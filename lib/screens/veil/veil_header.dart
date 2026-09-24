@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../ds/tokens.dart';
 import '../../server/dto/bible.dart';
 import '../../ui/room_back_button.dart';
+import '../../ui/room_bar_action.dart';
 import '../../veil/roster.dart';
 import '../../veil/tone.dart';
 
@@ -11,10 +13,13 @@ import '../../veil/tone.dart';
 /// the shared [RoomTitleBar]; this one sits left rather than centred because
 /// the name is the page's title, not a room's.
 class VeilHeader extends StatelessWidget {
-  const VeilHeader({super.key, required this.entity, required this.onBack});
+  const VeilHeader({super.key, required this.entity, required this.onBack, this.onMore});
 
   final BibleEntity entity;
   final VoidCallback onBack;
+
+  /// The card's own actions (rename, hide).
+  final VoidCallback? onMore;
 
   @override
   Widget build(BuildContext context) {
@@ -66,6 +71,8 @@ class VeilHeader extends StatelessWidget {
               ],
             ),
           ),
+          if (onMore case final onMore?)
+            RoomBarAction(icon: LucideIcons.ellipsisVertical, onPressed: onMore, semanticLabel: 'More'),
         ],
       ),
     );

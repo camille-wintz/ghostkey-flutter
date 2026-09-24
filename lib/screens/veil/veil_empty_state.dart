@@ -10,16 +10,24 @@ import 'veil_nightscape.dart';
 /// because an empty state framed inside an empty page reads as a page that
 /// failed to load.
 ///
-/// One button where the desk has three: importing a bible and writing an
-/// entry by hand are desk moves, so the copy names them rather than the
-/// screen offering doors that go nowhere.
+/// Two doors where the desk has three: importing a bible is a desk move, so
+/// the copy names it rather than the screen offering a door that goes
+/// nowhere. Writing an entry by hand needs no manuscript, so it is offered
+/// even to a book with no chapters.
 class VeilEmptyState extends StatelessWidget {
-  const VeilEmptyState({super.key, required this.hasChapters, required this.running, required this.onGenerate});
+  const VeilEmptyState({
+    super.key,
+    required this.hasChapters,
+    required this.running,
+    required this.onGenerate,
+    required this.onAdd,
+  });
 
   /// False when the book has no chapters yet — there is nothing to read.
   final bool hasChapters;
   final bool running;
   final VoidCallback onGenerate;
+  final VoidCallback onAdd;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +47,7 @@ class VeilEmptyState extends StatelessWidget {
               const SizedBox(height: 14),
               Text(
                 'The characters, places and lore your book keeps track of. Let Ghostkey find them in the '
-                'manuscript — or, on the desktop, bring in a bible you already keep and write them in yourself.',
+                'manuscript, write them in yourself — or, on the desktop, bring in a bible you already keep.',
                 style: DsStyle.ui(DsText.body, color: Ds.mid),
               ),
               const SizedBox(height: 32),
@@ -47,16 +55,25 @@ class VeilEmptyState extends StatelessWidget {
               const SizedBox(height: 32),
               const VeilNightscape(),
               const SizedBox(height: 32),
-              if (hasChapters)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: GkButton(label: 'Analyze your world', onPressed: onGenerate, busy: running),
-                )
-              else
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  if (hasChapters) GkButton(label: 'Analyze your world', onPressed: onGenerate, busy: running),
+                  GkButton(
+                    label: 'Add one yourself',
+                    variant: hasChapters ? ButtonVariant.outline : ButtonVariant.primary,
+                    onPressed: onAdd,
+                  ),
+                ],
+              ),
+              if (!hasChapters) ...[
+                const SizedBox(height: 14),
                 Text(
-                  'Write a chapter first — the bible is read from what you have written.',
+                  'Analyzing needs a chapter first — the bible is read from what you have written.',
                   style: DsStyle.ui(DsText.ui, color: Ds.low),
                 ),
+              ],
             ],
           ),
         ),

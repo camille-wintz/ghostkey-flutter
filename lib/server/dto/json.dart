@@ -24,3 +24,8 @@ double asDouble(dynamic value, [double fallback = 0]) =>
 
 bool asBool(dynamic value, [bool fallback = false]) =>
     value is bool ? value : fallback;
+
+Map<String, String> asStringMap(dynamic value) => {
+      for (final MapEntry(:key, :value) in (value as Map? ?? const {}).entries)
+        if (key is String && value is String) key: value,
+    };

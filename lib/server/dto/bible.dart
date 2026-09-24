@@ -120,6 +120,7 @@ class BibleEntity {
     required this.facts,
     required this.notes,
     required this.description,
+    this.gmc = const {},
     required this.plannedChapters,
     required this.books,
     required this.raw,
@@ -146,6 +147,11 @@ class BibleEntity {
   final List<String> facts;
   final String notes;
   final String description;
+
+  /// A character's GMC in the author's words, keyed by glance label
+  /// ("External goal" … "Internal arc") — only the cells they filled. The
+  /// dossier's own GMC is a separate suggestion and never lands here.
+  final Map<String, String> gmc;
   /// Chapter DOCUMENT IDS the author plans this entity for, in this book.
   final List<String> plannedChapters;
   final List<BibleEntityBook> books;
@@ -187,6 +193,7 @@ class BibleEntity {
         facts: asStringList(json['facts']),
         notes: asString(json['notes'] ?? json['author_notes']),
         description: asString(json['description'] ?? json['physical_description']),
+        gmc: asStringMap(json['gmc']),
         plannedChapters: asStringList(json['planned_chapters']),
         books: asJsonList(json['books']).map(BibleEntityBook.fromJson).toList(),
         raw: json,
@@ -239,13 +246,18 @@ class BibleResponse {
 /// What a single-entity write answers: the refreshed bible, plus the id the
 /// write landed on.
 class BibleEntityWriteResponse {
-  const BibleEntityWriteResponse({required this.id, required this.bible});
+  const BibleEntityWriteResponse({required this.id, required this.bible, this.rejected = const []});
   final String id;
   final BibleResponse bible;
+
+  /// On an edit: added spellings another card already answers to, left with
+  /// that card. Always empty on an add.
+  final List<String> rejected;
 
   static BibleEntityWriteResponse fromJson(Json json) => BibleEntityWriteResponse(
         id: asString(json['id']),
         bible: BibleResponse.fromJson(json),
+        rejected: asStringList(json['rejected']),
       );
 }
 

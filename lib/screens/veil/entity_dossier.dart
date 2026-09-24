@@ -9,11 +9,11 @@ import '../../access/plans.dart';
 import '../../ds/tokens.dart';
 import '../../server/dto/bible.dart';
 import '../../ui/button.dart';
-import '../../ui/press.dart';
 import '../../veil/dossier_build.dart';
 import '../../veil/providers.dart';
 import 'dossier_body.dart';
 import 'veil_section.dart';
+import 'veil_section_link.dart';
 
 /// The entity's deep-dive dossier: generated server-side from the passages
 /// around this entity's mentions, cached until a chapter that mentions it
@@ -65,7 +65,8 @@ class _EntityDossierState extends ConsumerState<EntityDossier> {
     return VeilSection(
       title: 'Dossier',
       trailing: dossier != null && !build.building
-          ? _RefreshLink(
+          ? VeilSectionLink(
+              icon: LucideIcons.refreshCw,
               label: dossier.stale ? 'Update' : 'Regenerate',
               onTap: () => _start(force: !dossier.stale),
             )
@@ -129,28 +130,5 @@ class _Failed extends StatelessWidget {
               child: GkButton(label: 'Retry the dossier', variant: ButtonVariant.outline, onPressed: onRetry),
             ),
         ],
-      );
-}
-
-class _RefreshLink extends StatelessWidget {
-  const _RefreshLink({required this.label, required this.onTap});
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Press(
-        onPressed: onTap,
-        semanticLabel: label,
-        builder: (context, pressed) => Opacity(
-          opacity: pressed ? 0.7 : 1,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(LucideIcons.refreshCw, size: 12, color: Ds.low),
-              const SizedBox(width: 5),
-              Text(label, style: DsStyle.ui(DsText.ui, color: Ds.low)),
-            ],
-          ),
-        ),
       );
 }
