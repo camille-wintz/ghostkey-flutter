@@ -87,6 +87,7 @@ const Map<String, String> _messages = {
   'invalid_chapters': 'The server could not read that chapter order.',
   'plan_insufficient': 'This feature is not part of your plan.',
   'rate_limited': 'Too many attempts. Wait a moment and try again.',
+  'manuscript_too_short': 'This reads the whole book, so it opens at 500 words.',
   'job_running':
       'Something else is already running on this book. Try again in a moment.',
   'already_verified': 'This address is already verified.',

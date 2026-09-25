@@ -33,6 +33,7 @@ class ContinuityPage extends ConsumerWidget {
     final projectId = ProjectScope.of(context);
     final project = ref.watch(projectProvider(projectId)).value;
     final hasChapters = project != null && chaptersInTree(project.chapters).isNotEmpty;
+    final tooShort = tooShortForWholeBook(project);
     final report = ref.watch(continuityProvider(projectId));
     final questions = ref.watch(continuityQuestionsProvider(projectId));
     final runKey = continuityRunKey(projectId);
@@ -66,7 +67,13 @@ class ContinuityPage extends ConsumerWidget {
               'Extraction failed for ${r.extractionFailures.join(', ')} — these chapters were not checked. Re-run to try again.',
             ),
           ContinuityReportView(report: r),
-          RunAgain(label: 'Re-run', onRun: () => start(force: true), locked: !gate.granted, quota: quota),
+          RunAgain(
+            label: 'Re-run',
+            onRun: () => start(force: true),
+            locked: !gate.granted,
+            disabled: tooShort,
+            quota: quota,
+          ),
         ],
       );
     } else {
@@ -76,8 +83,9 @@ class ContinuityPage extends ConsumerWidget {
         action: 'Run continuity check',
         onRun: () => start(force: false),
         locked: !gate.granted,
-        disabled: project == null,
+        disabled: project == null || tooShort,
         quota: quota,
+        footnote: tooShort ? wholeBookTooShort : null,
       );
     }
 

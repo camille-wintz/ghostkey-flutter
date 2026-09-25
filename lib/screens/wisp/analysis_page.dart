@@ -58,6 +58,7 @@ class AnalysisPage extends ConsumerWidget {
     final copy = _copyFor(analysis);
     final project = ref.watch(projectProvider(projectId)).value;
     final hasChapters = project != null && chaptersInTree(project.chapters).isNotEmpty;
+    final tooShort = tooShortForWholeBook(project);
     final readKey = (projectId: projectId, analysis: analysis);
     final report = ref.watch(analysisProvider(readKey));
     final runKey = analysisRunKey(projectId, analysis);
@@ -94,7 +95,7 @@ class AnalysisPage extends ConsumerWidget {
             AnalysisId.pacing => PacingReport(report: r),
             AnalysisId.genre => GenreReport(report: r),
           },
-          RunAgain(label: 'Run again', onRun: start, locked: !gate.granted, quota: quota),
+          RunAgain(label: 'Run again', onRun: start, locked: !gate.granted, disabled: tooShort, quota: quota),
         ],
       );
     } else {
@@ -104,8 +105,9 @@ class AnalysisPage extends ConsumerWidget {
         action: copy.action,
         onRun: start,
         locked: !gate.granted,
-        disabled: project == null,
+        disabled: project == null || tooShort,
         quota: quota,
+        footnote: tooShort ? wholeBookTooShort : null,
       );
     }
 

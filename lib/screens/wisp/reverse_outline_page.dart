@@ -62,6 +62,7 @@ class _ReverseOutlinePageState extends ConsumerState<ReverseOutlinePage> {
     final projectId = ProjectScope.of(context);
     final project = ref.watch(projectProvider(projectId)).value;
     final hasChapters = project != null && chaptersInTree(project.chapters).isNotEmpty;
+    final tooShort = tooShortForWholeBook(project);
     final outline = ref.watch(outlineProvider(projectId));
     final runKey = outlineRunKey(projectId);
     final run = ref.watch(wispRunProvider(runKey));
@@ -114,6 +115,7 @@ class _ReverseOutlinePageState extends ConsumerState<ReverseOutlinePage> {
             label: 'Read the book again',
             onRun: runningElsewhere ? () {} : () => start(force: true),
             locked: !gate.granted,
+            disabled: tooShort || runningElsewhere,
             quota: quota,
           ),
         ],
@@ -125,9 +127,13 @@ class _ReverseOutlinePageState extends ConsumerState<ReverseOutlinePage> {
         action: copy.action,
         onRun: () => start(force: false),
         locked: !gate.granted,
-        disabled: project == null || runningElsewhere,
+        disabled: project == null || tooShort || runningElsewhere,
         quota: quota,
-        footnote: runningElsewhere ? "Another length is being written — this one can start when it's done." : null,
+        footnote: runningElsewhere
+            ? "Another length is being written — this one can start when it's done."
+            : tooShort
+                ? wholeBookTooShort
+                : null,
       );
     }
 

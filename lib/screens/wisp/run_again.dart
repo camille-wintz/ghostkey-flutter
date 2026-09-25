@@ -7,10 +7,18 @@ import '../../ui/button.dart';
 /// Under a finished report: the way to read the book again, and what it
 /// costs this week.
 class RunAgain extends StatelessWidget {
-  const RunAgain({super.key, required this.label, required this.onRun, this.locked = false, this.quota});
+  const RunAgain({
+    super.key,
+    required this.label,
+    required this.onRun,
+    this.locked = false,
+    this.disabled = false,
+    this.quota,
+  });
   final String label;
   final VoidCallback onRun;
   final bool locked;
+  final bool disabled;
   final String? quota;
 
   @override
@@ -22,6 +30,7 @@ class RunAgain extends StatelessWidget {
               label: label,
               variant: ButtonVariant.outline,
               onPressed: onRun,
+              disabled: disabled,
               leading: Icon(locked ? LucideIcons.lock : LucideIcons.refreshCw, size: 14, color: Ds.mid),
             ),
             if (quota case final quota?) ...[
