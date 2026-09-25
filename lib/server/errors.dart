@@ -105,6 +105,10 @@ const Map<String, String> _messages = {
   'refusal': 'The model declined to answer that one.',
   'empty_response': 'The model returned nothing. Try again.',
   'name_taken': 'Something else already goes by that name.',
+  'unsupported_format': 'That is not a manuscript this can read. Import a .docx, an .epub, a .pdf or a .txt.',
+  'invalid_manuscript': 'That manuscript could not be read. Saving a fresh copy from the program you wrote it in usually fixes it.',
+  'no_text': 'There is no text in that file to import. A scanned PDF is pictures of pages — '
+      'export the manuscript from the program you wrote it in and import that.',
   'unknown': 'Something went wrong. Please try again.',
 };
 

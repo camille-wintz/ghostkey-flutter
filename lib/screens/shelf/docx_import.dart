@@ -8,9 +8,9 @@ import '../../server/errors.dart';
 import '../../server/jobs/run_job.dart';
 import '../../server/projects/api.dart';
 
-/// A manuscript arriving from a desk: a `.docx` or an `.epub` picked on the
-/// phone becomes a new project whose chapters are split out of the document's
-/// headings, or the book's table of contents.
+/// A manuscript arriving from a desk: a `.docx`, an `.epub`, a `.pdf` or a
+/// `.txt` picked on the phone becomes a new project whose chapters are split
+/// out of the document's headings, or the book's table of contents.
 ///
 /// The desktop offers this beside Create, and so does the shelf, but the two
 /// are not the same call. The server route is additive — it imports into a
@@ -19,6 +19,16 @@ import '../../server/projects/api.dart';
 /// written a row. That is the whole reason this is a module rather than a
 /// handler: the empty project has to be cleaned up, and a half-imported book
 /// left on someone's shelf is worse than an import that plainly failed.
+
+/// What the picker offers, and the content type each is sent under. The server
+/// reads the bytes, not the type.
+const Map<String, String> _mimeTypes = {
+  'docx': docxMime,
+  'epub': epubMime,
+  'pdf': 'application/pdf',
+  'txt': 'text/plain',
+};
+final List<String> _extensions = _mimeTypes.keys.toList();
 
 /// The size the server refuses at (`IMPORT_MAX_BYTES`). Checked here as well
 /// so a 40 MB file is a sentence rather than a long upload ending in a 413.
@@ -51,8 +61,8 @@ class DocxImportDone extends DocxImport {
 /// but a hundred-chapter book is minutes, so it is generous.
 const Duration _watchTimeout = Duration(minutes: 10);
 
-/// Pick a `.docx` or an `.epub`, make a project of it, and follow the import
-/// to the end.
+/// Pick a manuscript file, make a project of it, and follow the import to the
+/// end.
 ///
 /// [onProgress] is called with a line to put under the button. [isAlive] lets
 /// the caller stop the watch when the screen goes away; the import itself is
@@ -71,7 +81,7 @@ Future<DocxImport> importDocxAsProject({
       // document picker takes the extension, and a .docx offered by Drive or
       // by a mail attachment arrives under half a dozen different mime types.
       type: FileType.custom,
-      allowedExtensions: const ['docx', 'epub'],
+      allowedExtensions: _extensions,
     );
   } catch (e) {
     return DocxImportFailed('The file picker would not open. $e');
@@ -80,10 +90,10 @@ Future<DocxImport> importDocxAsProject({
 
   final name = file.name;
   final extension = file.extension?.toLowerCase();
-  if (extension != 'docx' && extension != 'epub') {
+  if (!_extensions.contains(extension)) {
     return const DocxImportFailed(
       'That is not a manuscript this can read. Ghostkey imports .docx files — the format '
-      'Word, Pages and Google Docs all export — and .epub books.',
+      'Word, Pages and Google Docs all export — .epub books, .pdf and .txt files.',
     );
   }
 
@@ -128,7 +138,7 @@ Future<DocxImport> importDocxAsProject({
       project.id,
       bytes,
       name,
-      mimeType: extension == 'epub' ? epubMime : docxMime,
+      mimeType: _mimeTypes[extension]!,
     );
     onProgress(_lineFor(started.job) ?? 'Reading the document…');
 
@@ -205,7 +215,7 @@ String? _lineFor(JobSnapshot job) {
 
 /// "The Hollow Crown - final draft (2).docx" → "The Hollow Crown - final draft".
 String _titleFrom(String filename) {
-  final stem = filename.replaceAll(RegExp(r'\.(docx|epub)$', caseSensitive: false), '').trim();
+  final stem = filename.replaceAll(RegExp(r'\.(docx|epub|pdf|txt)$', caseSensitive: false), '').trim();
   return stem.isEmpty ? 'Imported manuscript' : stem;
 }
 

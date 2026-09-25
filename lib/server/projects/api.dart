@@ -219,8 +219,8 @@ class DocxImportStart {
 }
 
 /// POST /api/projects/{id}/import-manuscript — start a bulk chapter import.
-/// The route also takes a zipped Scrivener project; the phone offers a .docx
-/// or an .epub. The chapters are written by a `manuscript_import` job; follow
+/// The route also takes a zipped Scrivener project; the phone offers a .docx,
+/// an .epub, a .pdf or a .txt. The chapters are written by a `manuscript_import` job; follow
 /// the returned job.
 Future<DocxImportStart> importProjectDocx(
   String projectId,
