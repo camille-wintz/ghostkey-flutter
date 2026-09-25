@@ -7,8 +7,8 @@ import 'chapter_chips.dart';
 import 'report_card.dart';
 import 'report_section.dart';
 
-/// The themes, each as what the book says, the machinery that says it, and
-/// how it moves from the opening to the close.
+/// The themes, each as what the book says, the machinery that says it, how it
+/// moves from the opening to the close, and ways to take it further.
 class ThemeReport extends StatelessWidget {
   const ThemeReport({super.key, required this.report});
   final AnalysisReport report;
@@ -40,6 +40,23 @@ class ThemeReport extends StatelessWidget {
                     ],
                     ReportSection(title: 'How it works', text: theme.howItWorks),
                     ReportSection(title: 'How it develops', text: theme.development),
+                    if (theme.further.isNotEmpty)
+                      Container(
+                        margin: const EdgeInsets.only(top: 14),
+                        padding: const EdgeInsets.only(left: 12),
+                        decoration: BoxDecoration(border: Border(left: BorderSide(color: Ds.accent, width: 2))),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Taking it further', style: DsStyle.ui(DsText.ui, color: Ds.ink, weight: FontWeight.w600)),
+                            for (final t in theme.further)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Text(t, style: DsStyle.prose(DsText.body, color: Ds.soft)),
+                              ),
+                          ],
+                        ),
+                      ),
                     if (theme.chapters.isNotEmpty) ChapterChips(labels: theme.chapters.map(chapterLabel).toList()),
                   ],
                 ),

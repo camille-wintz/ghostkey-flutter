@@ -19,12 +19,16 @@ class ThemeEntry {
     required this.statement,
     required this.howItWorks,
     required this.development,
+    required this.further,
     required this.chapters,
   });
   final String name;
   final String statement;
   final String howItWorks;
   final String development;
+
+  /// Ways to take the theme further; empty on reports written before 2026-09-26.
+  final List<String> further;
   final List<String> chapters;
 
   static ThemeEntry fromJson(Json json) => ThemeEntry(
@@ -32,6 +36,7 @@ class ThemeEntry {
         statement: asString(json['statement']),
         howItWorks: asString(json['how_it_works']),
         development: asString(json['development']),
+        further: asStringList(json['further']),
         chapters: asStringList(json['chapters']),
       );
 }
