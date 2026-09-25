@@ -168,8 +168,9 @@ enum QuotaCadence {
 }
 
 /// What a feature's numbers count. Every counter counts runs except
-/// dictation, which counts audio-seconds (an hour a week on Free, since
-/// 2026-09-22). Anything shown to an author goes through [formatQuantity].
+/// dictation, which counts audio-seconds (fifteen minutes a week on Free since
+/// 2026-09-25, an hour from 2026-09-22). Anything shown to an author goes
+/// through [formatQuantity].
 enum QuotaUnit {
   runs,
   seconds;
