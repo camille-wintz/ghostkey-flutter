@@ -169,7 +169,8 @@ class ChatSessionSummary {
 
 /// What a turn opened for the author to look at: a chapter (`id` is the
 /// document id), one of their boards (`id` is the StoryMap id), the Outline
-/// page or the Chapters page (neither carries an id). The desk seats it beside
+/// page or the Chapters page (neither carries an id), or a picture (`id` is
+/// the media item id). The desk seats it beside
 /// the conversation; the phone reviews it behind a button. `title` is a
 /// courtesy for a header; the id is the address.
 class ChatView {
@@ -189,7 +190,7 @@ class ChatView {
   Json toJson() => {'kind': kind.name, 'id': ?id, 'title': ?title};
 }
 
-enum ChatViewKind { chapter, board, outline, chapters }
+enum ChatViewKind { chapter, board, outline, chapters, image }
 
 class ChatSession extends ChatSessionSummary {
   const ChatSession({
@@ -327,6 +328,8 @@ class ChatTurnResult {
     this.chapterEdits = const [],
     this.bibleEdits = const [],
     this.questions = const [],
+    this.model,
+    this.switchedFrom,
   });
   final String answer;
   final List<ChatQuestion> questions;
@@ -335,6 +338,13 @@ class ChatTurnResult {
   final ChatSession? session;
   final List<ChatChapterEdit> chapterEdits;
   final List<ChatBibleEdit> bibleEdits;
+
+  /// The registry model that answered. Null from a server that predates it.
+  final String? model;
+
+  /// The model the author picked, when the turn had to look at a picture that
+  /// model can't see and [model] answered instead. Null when nothing switched.
+  final String? switchedFrom;
 
   ChatTurnEdits get edits => ChatTurnEdits(chapterEdits: chapterEdits, bibleEdits: bibleEdits);
 
@@ -346,8 +356,12 @@ class ChatTurnResult {
         chapterEdits: asJsonList(json['chapterEdits']).map(ChatChapterEdit.fromJson).toList(),
         bibleEdits: asJsonList(json['bibleEdits']).map(ChatBibleEdit.fromJson).toList(),
         questions: ChatQuestion.listFromJson(json['plan'] is Map ? json['plan']['questions'] : null),
+        model: _nonEmptyString(json['model']),
+        switchedFrom: _nonEmptyString(json['switched_from']),
       );
 }
+
+String? _nonEmptyString(Object? value) => value is String && value.isNotEmpty ? value : null;
 
 /// One `data:` line of the turn stream, decoded.
 sealed class ChatTurnFrame {

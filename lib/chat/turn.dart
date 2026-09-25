@@ -60,6 +60,10 @@ class SendRefused extends SendOutcome {
   final List<ChatAttachment> attachments;
 }
 
+/// A turn that looked at a picture the picked model can't see: [model]
+/// answered instead of [from].
+typedef ModelSwitch = ({String model, String from});
+
 class ChatTurnState {
   const ChatTurnState({
     this.messages = const [],
@@ -70,6 +74,7 @@ class ChatTurnState {
     this.stepsByIndex = const {},
     this.notesByIndex = const {},
     this.editsByIndex = const {},
+    this.switchesByIndex = const {},
     this.view,
   });
 
@@ -88,6 +93,10 @@ class ChatTurnState {
   /// shape as the notes.
   final Map<int, ChatTurnEdits> editsByIndex;
 
+  /// Turns another model answered, by assistant message index. Live
+  /// transcript only, like the receipts.
+  final Map<int, ModelSwitch> switchesByIndex;
+
   /// What this conversation's tools last opened — the session row's `view`,
   /// and what the Review button shows.
   final ChatView? view;
@@ -104,6 +113,7 @@ class ChatTurnState {
     Map<int, List<ChatToolStep>>? stepsByIndex,
     Map<int, List<ChatSavedNote>>? notesByIndex,
     Map<int, ChatTurnEdits>? editsByIndex,
+    Map<int, ModelSwitch>? switchesByIndex,
     ChatView? view,
   }) =>
       ChatTurnState(
@@ -115,6 +125,7 @@ class ChatTurnState {
         stepsByIndex: stepsByIndex ?? this.stepsByIndex,
         notesByIndex: notesByIndex ?? this.notesByIndex,
         editsByIndex: editsByIndex ?? this.editsByIndex,
+        switchesByIndex: switchesByIndex ?? this.switchesByIndex,
         view: view ?? this.view,
       );
 }
@@ -220,6 +231,10 @@ class ChatTurnNotifier extends Notifier<ChatTurnState> with WidgetsBindingObserv
               ? null
               : {...state.notesByIndex, assistantIndex: result.savedNotes},
           editsByIndex: result.edits.isEmpty ? null : {...state.editsByIndex, assistantIndex: result.edits},
+          switchesByIndex: switch ((result.model, result.switchedFrom)) {
+            (final model?, final from?) => {...state.switchesByIndex, assistantIndex: (model: model, from: from)},
+            _ => null,
+          },
           view: result.session?.view,
         );
       }

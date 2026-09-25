@@ -104,6 +104,51 @@ class BibleEntityBook {
 /// The wire sends an empty string for "none"; null is the honest reading.
 String? _nonEmpty(dynamic value) => value is String && value.isNotEmpty ? value : null;
 
+/// One picture in a card's gallery — a library picture, by reference. Bytes
+/// render from the bible's `series_id`: [thumbAssetId] for a strip, [assetId]
+/// at full size. Mirrors `EntityImage`.
+class EntityImage {
+  const EntityImage({
+    required this.id,
+    required this.itemId,
+    required this.assetId,
+    this.previewAssetId,
+    this.width,
+    this.height,
+    this.title = '',
+    this.caption = '',
+  });
+  final String id;
+  final String itemId;
+  final String assetId;
+
+  /// A bounded webp copy; null when the original is small enough to show.
+  final String? previewAssetId;
+  final int? width;
+  final int? height;
+  final String title;
+  final String caption;
+
+  String get thumbAssetId => previewAssetId ?? assetId;
+
+  /// Width over height, or null when the server does not know the size.
+  double? get aspectRatio => switch ((width, height)) {
+        (final w?, final h?) when w > 0 && h > 0 => w / h,
+        _ => null,
+      };
+
+  static EntityImage fromJson(Json json) => EntityImage(
+        id: asString(json['id']),
+        itemId: asString(json['item_id']),
+        assetId: asString(json['asset_id']),
+        previewAssetId: _nonEmpty(json['preview_asset_id']),
+        width: json['width'] is num ? (json['width'] as num).toInt() : null,
+        height: json['height'] is num ? (json['height'] as num).toInt() : null,
+        title: asString(json['title']),
+        caption: asString(json['caption']),
+      );
+}
+
 /// One card of the roster. The extraction and author layers are merged
 /// server-side; every field here is what the read model returns.
 class BibleEntity {
@@ -128,7 +173,8 @@ class BibleEntity {
     this.notedChapters = const [],
     this.origin = BibleEntityOrigin.extracted,
     this.imageAssetId,
-    this.imageFilename,
+    this.imageItemId,
+    this.images = const [],
   });
 
   final String id;
@@ -166,10 +212,15 @@ class BibleEntity {
   final List<String> notedChapters;
   final BibleEntityOrigin origin;
 
-  /// SERIES asset id of the attached portrait, rendered through
+  /// SERIES asset id of the portrait, rendered through
   /// `/api/series/{series_id}/assets/{id}`. Null when none.
   final String? imageAssetId;
-  final String? imageFilename;
+
+  /// The media-library item the portrait is. Null when none.
+  final String? imageItemId;
+
+  /// The card's gallery, in the author's order; shown above the dossier.
+  final List<EntityImage> images;
 
   bool get isUser => origin == BibleEntityOrigin.user;
 
@@ -201,7 +252,8 @@ class BibleEntity {
         notedChapters: asStringList(json['noted_chapters']),
         origin: BibleEntityOrigin.fromWire(json['origin'] as String?),
         imageAssetId: _nonEmpty(json['image_asset_id']),
-        imageFilename: _nonEmpty(json['image_filename']),
+        imageItemId: _nonEmpty(json['image_item_id']),
+        images: asJsonList(json['images']).map(EntityImage.fromJson).where((i) => i.assetId.isNotEmpty).toList(),
       );
 }
 

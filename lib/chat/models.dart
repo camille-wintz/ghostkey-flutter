@@ -36,3 +36,13 @@ CatalogModel? chatModelRow(ModelSurface? surface, String? picked) =>
 /// when nothing is picked and the catalog has not landed.
 String? chatModelLabel(ModelSurface? surface, String? picked) =>
     chatModelRow(surface, picked)?.name ?? picked;
+
+/// A model's name wherever the catalog lists it — the chat surface first —
+/// else its raw id.
+String modelName(ModelCatalog? catalog, String id) {
+  final surfaces = [?catalog?.surface(chatSurfaceId), ...?catalog?.surfaces];
+  for (final surface in surfaces) {
+    if (surface.model(id) case final row?) return row.name;
+  }
+  return id;
+}

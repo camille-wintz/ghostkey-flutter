@@ -79,4 +79,13 @@ void main() {
       expect(modelAccess(null, chat.model('fable-5')!).granted, isTrue);
     });
   });
+
+  group('modelName', () {
+    test('names a row from any surface, the raw id when none lists it', () {
+      expect(modelName(catalog, 'opus-5-5'), 'Claude Opus 5.5');
+      expect(modelName(catalog, 'gemini-flash'), 'Gemini Flash');
+      expect(modelName(catalog, 'retired-1'), 'retired-1');
+      expect(modelName(null, 'opus-5-5'), 'opus-5-5');
+    });
+  });
 }

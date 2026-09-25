@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../server/dto/jobs.dart';
+import '../../server/dto/media.dart';
 import '../../server/jobs/api.dart';
+import '../../server/media/api.dart';
 
-// The chat Review's own server reads — the edit pass on a subject. The
+// The chat Review's own server reads — the edit pass on a subject, and a
+// picture a tool opened. The
 // plan's reads (boards, the outline row) are Mara's (`mara/providers.dart`).
 // All autoDispose — the review is a page the author opens and leaves.
 
@@ -26,3 +29,12 @@ final editPassJobProvider = FutureProvider.autoDispose.family<JobSnapshot?, Subj
   }
   return job;
 });
+
+/// A media item's address: the book it was opened from and the item id.
+typedef MediaItemKey = ({String projectId, String itemId});
+
+/// One library item, for a picture view — its bytes' series, asset and
+/// caption, none of which the view itself carries.
+final mediaItemProvider = FutureProvider.autoDispose.family<MediaItem, MediaItemKey>(
+  (ref, key) => getMediaItem(key.projectId, key.itemId),
+);

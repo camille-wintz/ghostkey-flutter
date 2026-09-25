@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../chat/turn.dart';
 import '../../ds/tokens.dart';
 import '../../server/dto/chat.dart';
 import 'attachment_chip.dart';
 import 'chat_markdown.dart';
 import 'recall_rail.dart';
 import 'edit_receipt.dart';
+import 'model_switch_note.dart';
 import 'question_card.dart';
 import 'saved_note_receipt.dart';
 
@@ -19,6 +21,7 @@ class ChatMessageView extends StatelessWidget {
     this.steps,
     this.savedNotes,
     this.edits,
+    this.modelSwitch,
     this.onAnswer,
   });
 
@@ -30,6 +33,10 @@ class ChatMessageView extends StatelessWidget {
 
   /// Chapters and world-bible cards the turn changed. Same receipt shape.
   final ChatTurnEdits? edits;
+
+  /// Set when another model answered because the picked one can't see a
+  /// picture the turn looked at. Live transcript only.
+  final ModelSwitch? modelSwitch;
 
   /// Set only when this turn's questions are still open to answer — the last
   /// message, nothing in flight. Null draws them read-only.
@@ -46,6 +53,7 @@ class ChatMessageView extends StatelessWidget {
         children: [
           if (steps case final s? when s.isNotEmpty) RecallRail(steps: s, live: false),
           ChatMarkdown(message.text),
+          if (modelSwitch case final s?) ModelSwitchNote(modelSwitch: s),
           if (savedNotes case final n?) SavedNoteReceipt(notes: n),
           if (edits case final e?) EditReceipt(edits: e),
           if (message.questions.isNotEmpty) QuestionCard(questions: message.questions, onAnswer: onAnswer),

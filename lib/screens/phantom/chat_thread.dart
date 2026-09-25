@@ -19,6 +19,7 @@ class ChatThread extends StatelessWidget {
     required this.stepsByIndex,
     required this.notesByIndex,
     required this.editsByIndex,
+    this.switchesByIndex = const {},
     required this.pending,
     required this.controller,
     required this.intro,
@@ -29,6 +30,7 @@ class ChatThread extends StatelessWidget {
   final Map<int, List<ChatToolStep>> stepsByIndex;
   final Map<int, List<ChatSavedNote>> notesByIndex;
   final Map<int, ChatTurnEdits> editsByIndex;
+  final Map<int, ModelSwitch> switchesByIndex;
   final PendingTurn? pending;
   final ScrollController controller;
 
@@ -64,6 +66,7 @@ class ChatThread extends StatelessWidget {
           steps: stepsByIndex[index],
           savedNotes: notesByIndex[index],
           edits: editsByIndex[index],
+          modelSwitch: switchesByIndex[index],
           onAnswer: index == messages.length - 1 && pending == null ? onAnswer : null,
         );
       },

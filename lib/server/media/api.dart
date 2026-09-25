@@ -44,3 +44,10 @@ Future<MediaItem> uploadMedia(
   );
   return MediaItem.fromJson(asJson(res.jsonObject()['item']));
 }
+
+/// One item, whole body — what the chat's Review reads for a picture a tool
+/// opened, since the view names only the item.
+Future<MediaItem> getMediaItem(String projectId, String itemId) async {
+  final res = await apiFetch('/api/projects/$projectId/media/$itemId');
+  return MediaItem.fromJson(asJson(res.jsonObject()['item']));
+}

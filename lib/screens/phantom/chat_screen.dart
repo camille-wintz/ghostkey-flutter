@@ -234,6 +234,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 stepsByIndex: chat.stepsByIndex,
                 notesByIndex: chat.notesByIndex,
                 editsByIndex: chat.editsByIndex,
+                switchesByIndex: chat.switchesByIndex,
                 pending: chat.pending,
                 controller: _scroll,
                 intro: ChatIntro(planning: planning, onPick: _send, disabled: chat.sending),

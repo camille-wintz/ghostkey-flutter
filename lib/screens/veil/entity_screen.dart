@@ -20,6 +20,7 @@ import 'entity_appearance.dart';
 import 'entity_books.dart';
 import 'entity_dossier.dart';
 import 'entity_facts.dart';
+import 'entity_gallery.dart';
 import 'entity_gmc.dart';
 import 'entity_header.dart';
 import 'entity_hero_portrait.dart';
@@ -31,8 +32,8 @@ import 'veil_header.dart';
 
 /// One entity as a page, pushed on the project navigator: the desktop's
 /// right column under its left column, in the desktop's order — header,
-/// portrait, facts, presence, glance, appearance, dossier, ties, books,
-/// notes. Everything is derived from the two cached reads; the dossier is
+/// portrait, facts, presence, glance, appearance, pictures, dossier, ties,
+/// books, notes. Everything is derived from the two cached reads; the dossier is
 /// the one thing the page will build, and the author's own fields — the
 /// name, the GMC, the appearance, the notes, hidden — the ones it writes.
 ///
@@ -103,6 +104,7 @@ class _EntityScreenState extends ConsumerState<EntityScreen> {
         onEdit: () => _editAppearance(projectId, entity, dossier),
         onKeep: () => _write(projectId, entity, description: dossier?.appearance.trim()),
       ),
+      if (entity.images.isNotEmpty) EntityGallery(images: entity.images, seriesId: seriesId),
       EntityDossier(projectId: projectId, entity: entity, dossier: dossier, hasChapters: chapters.isNotEmpty),
       if (dossier != null && dossier.ties.isNotEmpty)
         EntityTies(ties: dossier.ties, entities: bible.value!.entities, seriesId: seriesId),

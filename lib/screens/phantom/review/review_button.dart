@@ -55,6 +55,7 @@ class ReviewButton extends StatelessWidget {
         ChatViewKind.chapter => LucideIcons.fileText,
         ChatViewKind.board => LucideIcons.layoutGrid,
         ChatViewKind.outline || ChatViewKind.chapters => LucideIcons.listTree,
+        ChatViewKind.image => LucideIcons.image,
       };
 }
 
@@ -66,12 +67,14 @@ String reviewTitle(ChatView view) => switch (view.title?.trim()) {
           ChatViewKind.board => 'Board',
           ChatViewKind.outline => 'Outline',
           ChatViewKind.chapters => 'Chapters',
+          ChatViewKind.image => 'Picture',
         },
     };
 
-/// Whether the phone can open what a view names: a chapter and a board need
-/// their id; the outline and the chapters are the book's one of each.
+/// Whether the phone can open what a view names: a chapter, a board and a
+/// picture need their id; the outline and the chapters are the book's one of
+/// each.
 bool canReview(ChatView view) => switch (view.kind) {
-      ChatViewKind.chapter || ChatViewKind.board => view.id != null,
+      ChatViewKind.chapter || ChatViewKind.board || ChatViewKind.image => view.id != null,
       ChatViewKind.outline || ChatViewKind.chapters => true,
     };
