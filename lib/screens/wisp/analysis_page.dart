@@ -34,7 +34,7 @@ import '../../ui/job_running.dart';
         ),
       AnalysisId.pacing => (
           intro:
-              "Reads the whole book's outline and charts every chapter's intensity as a wave, then describes the stretches it falls into and how the rhythm serves the story.",
+              "Reads the whole book's outline and charts how hard each chapter pulls the reader forward with a tension tied to the main plot. Then it reads the book, and each of its acts, for how soon the reader is caught, how soon the tension climbs, whether the ending grows out of the main plot, and how to keep the reader engaged.",
           action: 'Analyze pacing',
           icon: LucideIcons.activity,
         ),

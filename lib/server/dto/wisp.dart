@@ -50,19 +50,125 @@ class PacingBeat {
       );
 }
 
-class PacingStretch {
-  const PacingStretch({required this.from, required this.to, required this.shape, required this.description});
+/// One of a pacing report's three to five acts, read like the book.
+class PacingAct {
+  const PacingAct({
+    required this.name,
+    required this.from,
+    required this.to,
+    required this.summary,
+    required this.reading,
+  });
+  final String name;
   final String from;
   final String to;
-  final String shape;
-  final String description;
 
-  static PacingStretch fromJson(Json json) => PacingStretch(
+  /// How the act holds the reader.
+  final String summary;
+  final PacingReading reading;
+
+  static PacingAct fromJson(Json json) => PacingAct(
+        name: asString(json['name']),
         from: asString(json['from']),
         to: asString(json['to']),
-        shape: asString(json['shape']),
-        description: asString(json['description']),
+        summary: asString(json['summary']),
+        reading: PacingReading.fromJson(json),
       );
+}
+
+/// What the book (or the chapters picked) and each act are read for: how
+/// soon the reader is caught, how soon the tension climbs, whether the ending
+/// grows out of the main plot, and how to keep the reader engaged.
+class PacingReading {
+  const PacingReading({required this.hook, required this.rise, required this.resolution, required this.tips});
+  final PacingMilestone? hook;
+  final PacingMilestone? rise;
+  final PacingResolution? resolution;
+  final List<String> tips;
+
+  bool get isEmpty => hook == null && rise == null && resolution == null && tips.isEmpty;
+
+  static PacingReading fromJson(Json json) => PacingReading(
+        hook: PacingMilestone.fromJson(json['hook']),
+        rise: PacingMilestone.fromJson(json['rise']),
+        resolution: PacingResolution.fromJson(json['resolution']),
+        tips: asStringList(json['tips']),
+      );
+}
+
+enum PacingPace {
+  quick,
+  steady,
+  slow;
+
+  static PacingPace fromWire(String value) => switch (value) {
+        'quick' => quick,
+        'slow' => slow,
+        _ => steady,
+      };
+}
+
+/// Where the reader is caught (`hook`) or the tension starts climbing
+/// (`rise`), and how far into its scope (the book, or one act) that is.
+class PacingMilestone {
+  const PacingMilestone({
+    required this.chapter,
+    required this.wordsIn,
+    required this.share,
+    required this.pace,
+    required this.reading,
+  });
+  final String chapter;
+
+  /// Words read by the end of [chapter]; null when a count was missing.
+  final int? wordsIn;
+
+  /// The same as a share of the chapters read, 0–1.
+  final double? share;
+  final PacingPace pace;
+  final String reading;
+
+  static PacingMilestone? fromJson(dynamic value) {
+    if (value is! Map) return null;
+    final json = asJson(value);
+    return PacingMilestone(
+      chapter: asString(json['chapter']),
+      wordsIn: json['words_in'] is num ? asInt(json['words_in']) : null,
+      share: json['share'] is num ? asDouble(json['share']) : null,
+      pace: PacingPace.fromWire(asString(json['pace'])),
+      reading: asString(json['reading']),
+    );
+  }
+}
+
+enum PacingConnection {
+  tight,
+  partial,
+  loose;
+
+  static PacingConnection fromWire(String value) => switch (value) {
+        'tight' => tight,
+        'loose' => loose,
+        _ => partial,
+      };
+}
+
+/// Whether the ending is tightly connected to the main plot.
+class PacingResolution {
+  const PacingResolution({required this.connection, required this.reading, required this.looseEnds});
+  final PacingConnection connection;
+  final String reading;
+  final List<String> looseEnds;
+
+  static PacingResolution? fromJson(dynamic value) {
+    if (value is! Map) return null;
+    final json = asJson(value);
+    return PacingResolution(
+      connection: PacingConnection.fromWire(asString(json['connection'])),
+      reading: asString(json['reading']),
+      looseEnds: asStringList(json['loose_ends']),
+    );
+  }
 }
 
 enum ExpectationStatus {
@@ -105,36 +211,48 @@ class GenreEntry {
       );
 }
 
-/// One book analysis. Which of `themes`, `beats`/`stretches` or `genres` is
-/// filled is `analysis`; the others come back empty.
+/// One book analysis. Which of `themes`, the pacing fields (`beats`,
+/// `reading`, `acts`) or `genres` is filled is `analysis`; the others come
+/// back empty.
 class AnalysisReport {
   const AnalysisReport({
     required this.analysis,
     required this.generatedAt,
     required this.chapterCount,
+    required this.ranged,
     required this.overview,
     required this.themes,
     required this.beats,
-    required this.stretches,
+    required this.reading,
+    required this.acts,
     required this.genres,
   });
   final String analysis;
   final String generatedAt;
   final int chapterCount;
+
+  /// Read over a range of chapters rather than the whole book.
+  final bool ranged;
   final String overview;
   final List<ThemeEntry> themes;
   final List<PacingBeat> beats;
-  final List<PacingStretch> stretches;
+  /// Pacing: the book (or the chapters picked) read for engagement.
+  final PacingReading reading;
+
+  /// Pacing: each act read the same way; empty on a range.
+  final List<PacingAct> acts;
   final List<GenreEntry> genres;
 
   static AnalysisReport fromJson(Json json) => AnalysisReport(
         analysis: asString(json['analysis']),
         generatedAt: asString(json['generated_at']),
         chapterCount: asInt(json['chapter_count']),
+        ranged: json['range'] is Map,
         overview: asString(json['overview']),
         themes: asJsonList(json['themes']).map(ThemeEntry.fromJson).toList(),
         beats: asJsonList(json['beats']).map(PacingBeat.fromJson).toList(),
-        stretches: asJsonList(json['stretches']).map(PacingStretch.fromJson).toList(),
+        reading: PacingReading.fromJson(json),
+        acts: asJsonList(json['acts']).map(PacingAct.fromJson).toList(),
         genres: asJsonList(json['genres']).map(GenreEntry.fromJson).toList(),
       );
 }

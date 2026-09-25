@@ -6,8 +6,8 @@ import '../../ds/tokens.dart';
 import '../../server/dto/wisp.dart';
 import 'report_card.dart';
 
-/// The book's pacing as a wave: one point per chapter, high for tension or
-/// action, low for a lull. The chapter list under it names each point.
+/// The book's pacing as a wave: one point per chapter, high where a tension
+/// tied to the main plot pulls the reader forward, low where it slackens.
 class PacingWave extends StatelessWidget {
   const PacingWave({super.key, required this.beats});
   final List<PacingBeat> beats;
@@ -20,7 +20,7 @@ class PacingWave extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Peak', style: DsStyle.ui(DsText.eyebrow, color: Ds.low)),
+                Text('Pulled forward', style: DsStyle.ui(DsText.eyebrow, color: Ds.low)),
                 Text('${beats.length} chapters', style: DsStyle.ui(DsText.eyebrow, color: Ds.low)),
               ],
             ),
@@ -43,7 +43,7 @@ class PacingWave extends StatelessWidget {
             ),
             Align(
               alignment: Alignment.centerLeft,
-              child: Text('Lull at the baseline', style: DsStyle.ui(DsText.eyebrow, color: Ds.low)),
+              child: Text('Slack at the baseline', style: DsStyle.ui(DsText.eyebrow, color: Ds.low)),
             ),
           ],
         ),
