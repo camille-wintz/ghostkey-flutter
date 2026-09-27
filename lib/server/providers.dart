@@ -48,6 +48,16 @@ final seriesByIdProvider = FutureProvider<Map<String, Series>>((ref) async {
   return {for (final s in series) s.id: s};
 });
 
+/// Re-read the shelf. These reads live for the whole process, and Android
+/// keeps a backgrounded app alive for days, so a book made on the desk only
+/// shows up when something asks again. The old shelf stays drawn meanwhile.
+Future<void> refreshShelf(WidgetRef ref) {
+  ref.invalidate(foldersProvider);
+  ref.invalidate(seriesByIdProvider);
+  ref.invalidate(projectsProvider);
+  return ref.read(projectsProvider(null).future).then((_) {}, onError: (_) {});
+}
+
 /// The name to print under a book, or null for an unnamed (implicit) series
 /// and for one that has not loaded — both mean "draw a bare book".
 String? seriesLabel(Map<String, Series>? series, String seriesId) {
