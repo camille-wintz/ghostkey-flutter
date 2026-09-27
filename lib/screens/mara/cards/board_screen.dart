@@ -141,7 +141,6 @@ class BoardScreen extends ConsumerWidget {
               count: outline.changeset?.ops.length ?? proposalChapters(outline.chapters).length,
               changeset: outline.changeset != null,
               madeFrom: outline.brokenFrom.mapId == board.id ? 'this board' : null,
-              consequence: outline.brokenFrom.mapId == board.id ? 'Editing this board lets the proposal go.' : null,
               dismissing: dismissing,
               onReview: () => openMaraPage(context, MaraPage.chapters),
               onDismiss: () => dismissProposal(context, ref, projectId, changeset: outline.changeset != null),

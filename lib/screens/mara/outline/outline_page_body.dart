@@ -108,8 +108,7 @@ class _OutlinePageBodyState extends ConsumerState<OutlinePageBody> {
     final dismissing = ref.watch(chapterPlanWritesProvider(_projectId).select((s) => s.dismissing));
     final run = ref.watch(outlineSketchRunProvider(_projectId));
     final pending = outline?.pending ?? false;
-    // A proposal read from this prose would be voided by editing it, so the
-    // prose holds still until it is reviewed or dismissed.
+    // Said on the ledge; editing the outline keeps the proposal.
     final madeHere = pending && (outline?.brokenFrom.isProse ?? false);
 
     return MaraPageFrame(
@@ -127,7 +126,6 @@ class _OutlinePageBodyState extends ConsumerState<OutlinePageBody> {
               count: outline.changeset?.ops.length ?? proposalChapters(outline.chapters).length,
               changeset: outline.changeset != null,
               madeFrom: madeHere ? 'this outline' : null,
-              consequence: madeHere ? 'The outline is read-only until you review or dismiss them.' : null,
               dismissing: dismissing,
               onReview: () => openMaraPage(context, MaraPage.chapters),
               onDismiss: () => dismissProposal(context, ref, _projectId, changeset: outline.changeset != null),
@@ -137,8 +135,8 @@ class _OutlinePageBodyState extends ConsumerState<OutlinePageBody> {
           Expanded(
             child: OutlineEditor(
               autosave: _autosave,
-              readOnly: madeHere || run.running,
-              readOnlyNote: run.running ? 'Being written from the book…' : 'Read-only while chapters are proposed',
+              readOnly: run.running,
+              readOnlyNote: 'Being written from the book…',
             ),
           ),
           PageFooter(

@@ -22,8 +22,8 @@ class BoardEditState {
 /// The board's structural writes — add, move, relink, duplicate, delete —
 /// one at a time. Each is the server's route, then a re-read of the board:
 /// the server owns what a move does to the chains, so the client never
-/// guesses at the result. Also re-reads the Outline row, since a change to a
-/// board voids a proposal made from it.
+/// guesses at the result. A proposal made from the board stays through
+/// these, so the Outline row is not re-read.
 class BoardEdits extends Notifier<BoardEditState> {
   BoardEdits(this.board);
   final BoardKey board;
@@ -73,7 +73,6 @@ class BoardEdits extends Notifier<BoardEditState> {
 
   Future<void> _reread() async {
     if (!ref.mounted) return;
-    ref.invalidate(authoredOutlineProvider(board.projectId));
     ref.invalidate(storyMapsProvider(board.projectId));
     try {
       await ref.read(storyMapsProvider(board.projectId).future);
@@ -98,5 +97,4 @@ Future<void> saveCardText(
 }) async {
   await patchStoryCard(board.projectId, board.mapId, cardId, title: title, description: description);
   container.invalidate(storyMapsProvider(board.projectId));
-  container.invalidate(authoredOutlineProvider(board.projectId));
 }

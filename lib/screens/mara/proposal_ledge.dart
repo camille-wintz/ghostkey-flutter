@@ -14,7 +14,6 @@ class ProposalLedge extends StatelessWidget {
     required this.onDismiss,
     required this.dismissing,
     this.madeFrom,
-    this.consequence,
   });
 
   /// Chapters in a proposal, or ops in a changeset.
@@ -25,8 +24,6 @@ class ProposalLedge extends StatelessWidget {
   /// on screen.
   final String? madeFrom;
 
-  /// What that means for editing the plan, when it was.
-  final String? consequence;
   final VoidCallback onReview;
   final VoidCallback onDismiss;
   final bool dismissing;
@@ -57,10 +54,6 @@ class ProposalLedge extends StatelessWidget {
             ),
             style: DsStyle.ui(DsText.ui, color: Ds.soft),
           ),
-          if (consequence case final consequence?) ...[
-            const SizedBox(height: 4),
-            Text(consequence, style: DsStyle.ui(DsText.ui, color: Ds.low)),
-          ],
           const SizedBox(height: 8),
           Row(
             children: [
