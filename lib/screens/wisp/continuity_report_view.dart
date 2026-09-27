@@ -7,10 +7,13 @@ import 'finding_card.dart';
 import 'report_card.dart';
 
 /// The finished report: hard errors first, then arc-drift craft notes — two
-/// visibly separate sections so the error list stays trustworthy.
+/// visibly separate sections so the error list stays trustworthy. A hard
+/// error still waiting on the author carries its question, answerable right
+/// on the finding through [onAnswer].
 class ContinuityReportView extends StatelessWidget {
-  const ContinuityReportView({super.key, required this.report});
+  const ContinuityReportView({super.key, required this.report, this.onAnswer});
   final ContinuityReport report;
+  final ReportAnswer? onAnswer;
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +62,7 @@ class ContinuityReportView extends StatelessWidget {
           note:
               'Contradictions of established facts, timeline, knowledge, geography, world rules, or possessions — each survived an adversarial verification pass.',
           findings: report.hardErrors,
+          onAnswer: onAnswer,
         ),
         const SizedBox(height: 26),
         _Section(
@@ -78,10 +82,11 @@ class ContinuityReportView extends StatelessWidget {
 }
 
 class _Section extends StatelessWidget {
-  const _Section({required this.heading, required this.note, required this.findings});
+  const _Section({required this.heading, required this.note, required this.findings, this.onAnswer});
   final String heading;
   final String note;
   final List<ContinuityFinding> findings;
+  final ReportAnswer? onAnswer;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -103,7 +108,7 @@ class _Section extends StatelessWidget {
             Text('None found.', style: DsStyle.ui(DsText.ui, color: Ds.low))
           else
             for (final finding in findings)
-              Padding(padding: const EdgeInsets.only(bottom: 10), child: FindingCard(finding: finding)),
+              Padding(padding: const EdgeInsets.only(bottom: 10), child: FindingCard(finding: finding, onAnswer: onAnswer)),
         ],
       );
 }

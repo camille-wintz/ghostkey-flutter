@@ -1,3 +1,4 @@
+import 'jobs.dart';
 import 'json.dart';
 
 // What Wisp reads: the three book analyses, the reverse outline at its three
@@ -334,6 +335,11 @@ class ContinuityResolution {
 
 /// One finding. Every field but `chapter` is advisory on the wire, so each
 /// is read defensively.
+///
+/// `question` is the "which is the story?" still waiting on the author — set
+/// on a hard error with no resolution, absent once it is answered (or when
+/// the finding was never verified). The report is where it can always be
+/// answered: closing its job panel card only stops the job feed carrying it.
 class ContinuityFinding {
   const ContinuityFinding({
     required this.hardError,
@@ -347,6 +353,7 @@ class ContinuityFinding {
     required this.explanation,
     required this.verified,
     required this.resolution,
+    this.question,
   });
   final bool hardError;
   final String category;
@@ -359,6 +366,7 @@ class ContinuityFinding {
   final String? explanation;
   final bool verified;
   final ContinuityResolution? resolution;
+  final JobQuestion? question;
 
   static String? _text(dynamic value) => value is String && value.trim().isNotEmpty ? value : null;
 
@@ -374,6 +382,7 @@ class ContinuityFinding {
         explanation: _text(json['explanation']) ?? _text(json['why_not_development']),
         verified: asBool(json['verified'], true),
         resolution: json['resolution'] is Map ? ContinuityResolution.fromJson(asJson(json['resolution'])) : null,
+        question: json['question'] is Map ? JobQuestion.fromJson(asJson(json['question'])) : null,
       );
 }
 

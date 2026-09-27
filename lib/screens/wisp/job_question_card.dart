@@ -1,29 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../ds/tokens.dart';
 import '../../server/dto/jobs.dart';
 import '../../server/errors.dart';
-import '../../server/jobs/api.dart';
 import '../../ui/button.dart';
 import '../../ui/field.dart';
-import '../../wisp/providers.dart';
+
+/// Answers [question] with the picked option and the typed text (trimmed,
+/// null when the option has no input). Throws to show the card's error line.
+typedef QuestionAnswer = Future<void> Function(JobQuestionOption option, String? text);
 
 /// One question a continuity run asks — "which is the story?". An option
 /// with an input opens a free-text field first; the text is what teaches the
-/// agent. Answered, it leaves the feed and the card with it.
-class JobQuestionCard extends ConsumerStatefulWidget {
-  const JobQuestionCard({super.key, required this.projectId, required this.jobId, required this.question});
-  final String projectId;
-  final String jobId;
+/// agent. Where the answer goes is the caller's: the job feed's row, or the
+/// report's finding. Answered, the caller's refetch drops the question and
+/// the card with it.
+class JobQuestionCard extends StatefulWidget {
+  const JobQuestionCard({super.key, required this.question, required this.onAnswer});
   final JobQuestion question;
+  final QuestionAnswer onAnswer;
 
   @override
-  ConsumerState<JobQuestionCard> createState() => _JobQuestionCardState();
+  State<JobQuestionCard> createState() => _JobQuestionCardState();
 }
 
-class _JobQuestionCardState extends ConsumerState<JobQuestionCard> {
+class _JobQuestionCardState extends State<JobQuestionCard> {
   final _text = TextEditingController();
   JobQuestionOption? _inputFor;
   bool _busy = false;
@@ -41,15 +43,7 @@ class _JobQuestionCardState extends ConsumerState<JobQuestionCard> {
       _error = null;
     });
     try {
-      await answerJobQuestion(
-        widget.projectId,
-        widget.jobId,
-        questionId: widget.question.id,
-        optionId: option.id,
-        text: text?.trim(),
-      );
-      ref.invalidate(wispJobsProvider(widget.projectId));
-      ref.invalidate(continuityProvider(widget.projectId));
+      await widget.onAnswer(option, text?.trim());
     } catch (e) {
       if (mounted) setState(() => _error = "Couldn't save that answer (${messageFor(e)}) — try again.");
     } finally {

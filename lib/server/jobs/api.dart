@@ -24,14 +24,18 @@ Future<List<JobSnapshot>> listJobs(String projectId) async {
 }
 
 /// DELETE /api/projects/{id}/jobs/{jobId} — cancel a running job, or dismiss
-/// a finished one (its row, and whatever result it held, is deleted).
+/// a finished one (its row, and whatever result it held, is deleted). Closing
+/// a card holding continuity questions (a finished continuity row, or the
+/// synthetic `cq-<projectId>`) sticks: the feed stops carrying them until the
+/// next run, and they stay answerable from the report.
 Future<void> dismissJob(String projectId, String jobId) async {
   await apiFetch('/api/projects/$projectId/jobs/$jobId', method: 'DELETE');
 }
 
 /// POST /api/projects/{id}/jobs/{jobId}/answer — the author's answer to a
 /// job's question. `jobId` may be the synthetic `cq-<projectId>` the list
-/// carries for continuity questions that outlived their run.
+/// carries for continuity questions that outlived their run (until that card
+/// is closed — then the report's `answerContinuityQuestion` is the door).
 Future<void> answerJobQuestion(
   String projectId,
   String jobId, {

@@ -3,15 +3,19 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../core/chapter_title.dart';
 import '../../ds/tokens.dart';
+import '../../server/dto/jobs.dart';
 import '../../server/dto/wisp.dart';
+import 'job_question_card.dart';
 import 'report_card.dart';
 
 /// One finding: category, entity and chapters, the two verbatim quotes, and
 /// the explanation. An unverified finding — kept after a failed verify call —
-/// is badged so the author reads it with caution.
+/// is badged so the author reads it with caution. A finding still waiting on
+/// the author carries its question, answered here through [onAnswer].
 class FindingCard extends StatelessWidget {
-  const FindingCard({super.key, required this.finding});
+  const FindingCard({super.key, required this.finding, this.onAnswer});
   final ContinuityFinding finding;
+  final ReportAnswer? onAnswer;
 
   static String _resolution(ContinuityResolution r) => switch (r.choice) {
         'prior' => 'Resolved — the earlier chapter is right',
@@ -64,11 +68,22 @@ class FindingCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text('“$note”', style: DsStyle.ui(DsText.ui, color: Ds.mid).copyWith(fontStyle: FontStyle.italic)),
           ],
+          if ((f.question, onAnswer) case (final question?, final answer?) when f.resolution == null) ...[
+            const SizedBox(height: 12),
+            JobQuestionCard(
+              key: ValueKey(question.id),
+              question: question,
+              onAnswer: (option, text) => answer(question, option, text),
+            ),
+          ],
         ],
       ),
     );
   }
 }
+
+/// Answers a finding's question from the report.
+typedef ReportAnswer = Future<void> Function(JobQuestion question, JobQuestionOption option, String? text);
 
 class _Badge extends StatelessWidget {
   const _Badge({required this.label, required this.color, this.icon});

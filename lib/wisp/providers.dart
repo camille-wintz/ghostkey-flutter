@@ -44,8 +44,10 @@ final wispJobsProvider = FutureProvider.autoDispose.family<List<JobSnapshot>, St
 /// answer is posted against.
 typedef OpenQuestion = ({String jobId, JobQuestion question});
 
-/// Every unanswered continuity question — raised by a run in flight, or
-/// outliving it on the cached report.
+/// Every unanswered continuity question the job feed carries — raised by a
+/// run in flight, or outliving it on the cached report until its job panel
+/// card is closed. Closed or not, a waiting question stays on its finding in
+/// the report (`ContinuityFinding.question`).
 final continuityQuestionsProvider = Provider.autoDispose.family<List<OpenQuestion>, String>((ref, projectId) {
   final jobs = ref.watch(wispJobsProvider(projectId)).value ?? const [];
   return [

@@ -6,9 +6,11 @@ import '../../access/capability.dart';
 import '../../chat/quota_feature.dart';
 import '../../ds/tokens.dart';
 import '../../server/dto/projects.dart';
+import '../../server/dto/wisp.dart';
 import '../../server/errors.dart';
 import '../../server/providers.dart';
 import '../../wisp/access.dart';
+import '../../wisp/continuity_answer.dart';
 import '../../wisp/providers.dart';
 import '../../wisp/wisp_run.dart';
 import '../project/project_root.dart';
@@ -23,8 +25,10 @@ import '../../ui/job_running.dart';
 
 /// Plot holes and continuity errors. The check is long (extract → walk →
 /// verify), and the contradictions it confirms become questions — which
-/// version is the story — asked at the top of this page while it runs and
-/// after, until answered.
+/// version is the story — asked at the top of this page while it runs. Once
+/// the report is written each waiting question also sits on its finding, and
+/// that is where it is asked then: the report keeps it answerable after its
+/// job panel card is closed (closing sticks until the next run).
 class ContinuityPage extends ConsumerWidget {
   const ContinuityPage({super.key});
 
@@ -35,7 +39,7 @@ class ContinuityPage extends ConsumerWidget {
     final hasChapters = project != null && chaptersInTree(project.chapters).isNotEmpty;
     final tooShort = tooShortForWholeBook(project);
     final report = ref.watch(continuityProvider(projectId));
-    final questions = ref.watch(continuityQuestionsProvider(projectId));
+    final feed = ref.watch(continuityQuestionsProvider(projectId));
     final runKey = continuityRunKey(projectId);
     final run = ref.watch(wispRunProvider(runKey));
     final gate = ref.watch(capabilityProvider(continuityCapability));
@@ -45,6 +49,16 @@ class ContinuityPage extends ConsumerWidget {
       if (!gate.granted) return explainLock(context, gate, 'Continuity check');
       ref.read(wispRunProvider(runKey).notifier).start({if (force) 'force': true});
     }
+
+    // A question the shown report carries on a finding is asked there, not
+    // twice. During a run the report is not shown, so the feed asks them all.
+    final onReport = run.running
+        ? const <String>{}
+        : {
+            for (final f in report.value?.hardErrors ?? const <ContinuityFinding>[])
+              if (f.question case final q? when f.resolution == null) q.id,
+          };
+    final questions = [for (final open in feed) if (!onReport.contains(open.question.id)) open];
 
     final Widget body;
     if (project != null && !hasChapters) {
@@ -66,7 +80,10 @@ class ContinuityPage extends ConsumerWidget {
             PageNotice(
               'Extraction failed for ${r.extractionFailures.join(', ')} — these chapters were not checked. Re-run to try again.',
             ),
-          ContinuityReportView(report: r),
+          ContinuityReportView(
+            report: r,
+            onAnswer: (question, option, text) => answerReportQuestion(ref, projectId, question, option, text),
+          ),
           RunAgain(
             label: 'Re-run',
             onRun: () => start(force: true),
@@ -103,7 +120,11 @@ class ContinuityPage extends ConsumerWidget {
           for (final open in questions)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: JobQuestionCard(projectId: projectId, jobId: open.jobId, question: open.question),
+              child: JobQuestionCard(
+                key: ValueKey(open.question.id),
+                question: open.question,
+                onAnswer: (option, text) => answerFeedQuestion(ref, projectId, open, option, text),
+              ),
             ),
           body,
         ],
