@@ -5,19 +5,32 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../ds/tokens.dart';
 
-// THE markdown renderer for assistant prose: package:markdown does the
-// parsing, this file owns the AST → span/widget mapping so it speaks the
-// design system's faces. Nothing else in the app parses markdown for
-// display. Re-parsed on every build — a streaming answer is a few KB, and
+// THE markdown renderer for assistant prose — and for a world-bible card's
+// dossier text, which Veil and Apparition's dossier sheet draw with it:
+// package:markdown does the parsing, this file owns the AST → span/widget
+// mapping so it speaks the design system's faces. Nothing else in the app
+// parses markdown for display. Re-parsed on every build — a streaming answer is a few KB, and
 // the parse is far cheaper than the layout that follows it.
 
 final md.Document _document = md.Document(extensionSet: md.ExtensionSet.gitHubFlavored, encodeHtml: false);
 
 const Set<String> _blockTags = {'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'blockquote', 'pre', 'hr', 'table'};
 
+/// How big a text's headings are drawn.
+enum MarkdownHeadings {
+  /// A chat reply's: close to the text they head.
+  compact,
+
+  /// A document read as one — a dossier, whose ## sections are its chapters:
+  /// the first two levels at the title step with room above them, the third
+  /// at the prose step.
+  large,
+}
+
 class ChatMarkdown extends StatefulWidget {
-  const ChatMarkdown(this.text, {super.key});
+  const ChatMarkdown(this.text, {super.key, this.headings = MarkdownHeadings.compact});
   final String text;
+  final MarkdownHeadings headings;
 
   @override
   State<ChatMarkdown> createState() => _ChatMarkdownState();
@@ -74,7 +87,7 @@ class _ChatMarkdownState extends State<ChatMarkdown> {
     return switch (node.tag) {
       'p' => _paragraph(children, gap: gap),
       'h1' || 'h2' || 'h3' || 'h4' || 'h5' || 'h6' => Padding(
-          padding: EdgeInsets.only(top: first ? 0 : 6, bottom: last ? 0 : 8),
+          padding: EdgeInsets.only(top: first ? 0 : _headingAbove(node.tag), bottom: last ? 0 : _headingBelow(node.tag)),
           child: Text.rich(TextSpan(children: _inlines(children, _heading(node.tag))), style: _heading(node.tag)),
         ),
       'ul' || 'ol' => _list(node, gap: gap),
@@ -245,9 +258,26 @@ class _ChatMarkdownState extends State<ChatMarkdown> {
     color: Ds.soft,
   );
 
-  static TextStyle _heading(String tag) => switch (tag) {
+  bool get _large => widget.headings == MarkdownHeadings.large;
+
+  TextStyle _heading(String tag) => switch (tag) {
         'h1' => DsStyle.prose(DsText.title, weight: FontWeight.w600),
-        'h2' => DsStyle.prose(DsText.prose, weight: FontWeight.w600),
+        'h2' => DsStyle.prose(_large ? DsText.title : DsText.prose, weight: FontWeight.w600),
+        'h3' when _large => DsStyle.prose(DsText.prose, color: Ds.hi, weight: FontWeight.w600),
         _ => DsStyle.ui(DsText.body, color: Ds.hi, weight: FontWeight.w600),
+      };
+
+  // Large headings want 28px above them (20 for a third level), as the web
+  // sets it; the block before already leaves its 10px gap below, which the
+  // web's collapsing margins would absorb, so only the rest is added here.
+  double _headingAbove(String tag) => switch (tag) {
+        'h1' || 'h2' when _large => 18,
+        'h3' when _large => 10,
+        _ => 6,
+      };
+
+  double _headingBelow(String tag) => switch (tag) {
+        'h1' || 'h2' when _large => 12,
+        _ => 8,
       };
 }

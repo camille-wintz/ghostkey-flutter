@@ -2,19 +2,24 @@ import 'package:flutter/material.dart';
 
 import '../../ds/tokens.dart';
 import '../../server/dto/bible.dart';
+import '../phantom/chat_markdown.dart';
 import '../veil/gmc_grid.dart';
 
-/// A written dossier, as the sheet reads it: the glance grid, the overview,
-/// what the entity looks like, its sections, its ties, and the
-/// chapter-by-chapter timeline — in that order, widest answer first.
+/// A written dossier, as the sheet reads it: the glance grid, the card's
+/// dossier text ([BibleEntity.notes] — markdown the author and the job both
+/// write), what the entity looks like, its ties, and the chapter-by-chapter
+/// timeline — in that order, widest answer first.
 ///
-/// Nothing here switches on a label or a section title. Both are
-/// model-chosen to fit the entity (a character is asked what it Wants, a
-/// place what it Runs on), so a client that recognised particular ones would
-/// be re-imposing the fixed field list the pipeline deliberately doesn't have.
+/// Nothing here switches on a label or a section title. Both are chosen to
+/// fit the entity (a character is asked what it Wants, a place what it Runs
+/// on), so a client that recognised particular ones would be re-imposing the
+/// fixed field list the pipeline deliberately doesn't have.
 class DossierBody extends StatelessWidget {
-  const DossierBody({super.key, required this.dossier});
+  const DossierBody({super.key, required this.dossier, required this.notes});
   final Dossier dossier;
+
+  /// The card's dossier text.
+  final String notes;
 
   @override
   Widget build(BuildContext context) {
@@ -26,16 +31,12 @@ class DossierBody extends StatelessWidget {
           _GlanceGrid(cells: dossier.glance),
           const SizedBox(height: 22),
         ],
-        if (dossier.overview.isNotEmpty) ...[
-          Text(dossier.overview, style: DsStyle.prose(DsText.prose, color: Ds.ink)),
+        if (notes.trim().isNotEmpty) ...[
+          ChatMarkdown(notes.trim()),
           const SizedBox(height: 22),
         ],
         if (dossier.appearance.isNotEmpty) ...[
           _Band(title: 'Appearance', child: _Prose(dossier.appearance)),
-          const SizedBox(height: 22),
-        ],
-        for (final section in dossier.sections) ...[
-          _Band(title: section.title, child: _Prose(section.body)),
           const SizedBox(height: 22),
         ],
         if (dossier.ties.isNotEmpty) ...[

@@ -93,7 +93,12 @@ class DossierBuild extends Notifier<DossierBuildState> {
   /// Build this entity's dossier: the retry after a failure, the update for
   /// a stale one, and — with `force` — a re-read of the manuscript rather
   /// than trusting the cache's own verdict.
-  Future<void> start({bool force = false}) async {
+  ///
+  /// The job files its prose into the card's dossier text (`notes`) when that
+  /// is empty; `fill` is the author asking it to replace what is there — the
+  /// Refresh, after the page's warning. Either way the card may have changed
+  /// server-side, so a landing re-reads the bible as well as the dossiers.
+  Future<void> start({bool force = false, bool fill = false}) async {
     if (state.building) return;
     state = const DossierBuildState(building: true);
     try {
@@ -101,7 +106,7 @@ class DossierBuild extends Notifier<DossierBuildState> {
         final outcome = await runJobToCompletion(
           target.projectId,
           'entity_dossier',
-          {'key': target.key, if (force) 'force': true},
+          {'key': target.key, if (force) 'force': true, if (fill) 'fill': true},
           JobWatch(
             timeout: _wait,
             isAlive: () => ref.mounted,
@@ -133,6 +138,7 @@ class DossierBuild extends Notifier<DossierBuildState> {
             }
         }
 
+        ref.invalidate(bibleProvider(target.projectId));
         final fresh = await ref.refresh(dossiersProvider(target.projectId).future);
         if (!ref.mounted) return;
         if (fresh.containsKey(target.key)) {

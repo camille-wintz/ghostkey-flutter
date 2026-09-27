@@ -166,15 +166,32 @@ String titleCase(String name) => name.replaceAllMapped(
     );
 
 /// The dossier's one-line answer to "who is this": the opening sentence of
-/// its overview. The 30-character floor before the terminator stops
-/// "Dr. Kellas is…" cutting the line to two words; when nothing matches the
-/// whole overview stands in and the caller's truncation handles it. No
-/// dossier, no summary — the surfaces show nothing rather than invent one.
-String dossierSummary(Dossier? dossier) {
-  final overview = dossier?.overview.trim() ?? '';
-  if (overview.isEmpty) return '';
-  final match = RegExp(r'^.{30,}?[.!?](?=\s|$)').firstMatch(overview);
-  return (match?.group(0) ?? overview).trim();
+/// the card's dossier text ([BibleEntity.notes]), markdown stripped. The
+/// 30-character floor before the terminator stops "Dr. Kellas is…" cutting
+/// the line to two words; when nothing matches the whole text stands in and
+/// the caller's truncation handles it. No dossier text, no summary — the
+/// surfaces show nothing rather than invent one.
+String dossierSummary(String notes) {
+  final plain = stripMarkdown(notes);
+  if (plain.isEmpty) return '';
+  final match = RegExp(r'^.{30,}?[.!?](?=\s|$)').firstMatch(plain);
+  return (match?.group(0) ?? plain).trim();
+}
+
+/// Markdown as one line of plain text: heading lines dropped (a section's
+/// title is not its content), list and quote markers, emphasis marks and
+/// link targets removed, whitespace collapsed.
+String stripMarkdown(String markdown) {
+  final lines = markdown
+      .split('\n')
+      .where((l) => !RegExp(r'^\s{0,3}#{1,6}(\s|$)').hasMatch(l))
+      .map((l) => l.replaceFirst(RegExp(r'^\s*(>\s*)*([-*+]|\d+[.)])\s+'), '').replaceFirst(RegExp(r'^\s*>\s*'), ''));
+  return lines
+      .join(' ')
+      .replaceAllMapped(RegExp(r'\[([^\]]*)\]\([^)]*\)'), (m) => m[1]!)
+      .replaceAll(RegExp(r'\*+|_+|`'), '')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
 }
 
 /// The card that already answers to [name], by its name or an alias — asked

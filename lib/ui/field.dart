@@ -22,6 +22,8 @@ class GkField extends StatelessWidget {
     this.minLines = 1,
     this.maxLines = 1,
     this.maxLength,
+    this.expands = false,
+    this.focusNode,
   });
 
   final TextEditingController controller;
@@ -44,7 +46,14 @@ class GkField extends StatelessWidget {
   /// A hard cap on the characters the field takes, uncounted on screen.
   final int? maxLength;
 
-  bool get _multiline => maxLines != 1;
+  /// The field fills the height its parent gives it — a page that IS the
+  /// field — and scrolls inside it. Multiline; [minLines] and [maxLines] are
+  /// ignored.
+  final bool expands;
+
+  final FocusNode? focusNode;
+
+  bool get _multiline => expands || maxLines != 1;
 
   @override
   Widget build(BuildContext context) {
@@ -55,13 +64,16 @@ class GkField extends StatelessWidget {
         border: Border.all(color: Ds.edge),
         borderRadius: BorderRadius.circular(DsGeom.radius),
       ),
-      alignment: Alignment.centerLeft,
+      alignment: expands ? Alignment.topLeft : Alignment.centerLeft,
       child: TextField(
         controller: controller,
+        focusNode: focusNode,
         enabled: enabled,
         keyboardType: _multiline ? TextInputType.multiline : keyboardType,
-        minLines: minLines,
-        maxLines: maxLines,
+        minLines: expands ? null : minLines,
+        maxLines: expands ? null : maxLines,
+        expands: expands,
+        textAlignVertical: expands ? TextAlignVertical.top : null,
         obscureText: obscure,
         autocorrect: autocorrect,
         enableSuggestions: autocorrect,

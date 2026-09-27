@@ -7,10 +7,11 @@ import '../../ui/field.dart';
 import '../../ui/sheet.dart';
 import '../../ui/text.dart';
 
-/// One of the author's fields on a card, written in a sheet: the name, the
-/// notes, the appearance, one GMC answer. A sheet rather than a field on the
-/// page, because a box that saves on blur inside a scrolling page is a save
-/// the author never sees happen — here Save is the save, and the sheet stays
+/// One of the author's short fields on a card, written in a sheet: the name,
+/// the appearance. (The dossier and the GMC are longer, and have screens of
+/// their own.) A sheet rather than a field on the page, because a box that
+/// saves on blur inside a scrolling page is a save the author never sees
+/// happen — here Save is the save, and the sheet stays
 /// up with the error when it fails.
 ///
 /// [onSave] gets the trimmed text and throws to refuse it. Saving what was
@@ -25,6 +26,9 @@ Future<void> showEntityTextSheet(
   String? hint,
   bool multiline = true,
   bool allowEmpty = true,
+  int minLines = 4,
+  int maxLines = 10,
+  int? maxLength,
 }) =>
     showGkSheet<void>(
       context,
@@ -36,6 +40,9 @@ Future<void> showEntityTextSheet(
         hint: hint,
         multiline: multiline,
         allowEmpty: allowEmpty,
+        minLines: minLines,
+        maxLines: maxLines,
+        maxLength: maxLength,
         onSave: onSave,
       ),
     );
@@ -49,6 +56,9 @@ class _EntityTextSheet extends StatefulWidget {
     required this.hint,
     required this.multiline,
     required this.allowEmpty,
+    required this.minLines,
+    required this.maxLines,
+    required this.maxLength,
     required this.onSave,
   });
 
@@ -59,6 +69,9 @@ class _EntityTextSheet extends StatefulWidget {
   final String? hint;
   final bool multiline;
   final bool allowEmpty;
+  final int minLines;
+  final int maxLines;
+  final int? maxLength;
   final Future<void> Function(String value) onSave;
 
   @override
@@ -126,8 +139,9 @@ class _EntityTextSheetState extends State<_EntityTextSheet> {
                         placeholder: widget.placeholder,
                         autofocus: true,
                         enabled: !_saving,
-                        minLines: widget.multiline ? 4 : 1,
-                        maxLines: widget.multiline ? 10 : 1,
+                        minLines: widget.multiline ? widget.minLines : 1,
+                        maxLines: widget.multiline ? widget.maxLines : 1,
+                        maxLength: widget.maxLength,
                         textInputAction: widget.multiline ? null : TextInputAction.done,
                         onSubmitted: widget.multiline ? null : (_) => _save(),
                       ),

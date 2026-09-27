@@ -20,7 +20,8 @@ class VeilWritable extends StatelessWidget {
 
   final String text;
   final String placeholder;
-  final VoidCallback onTap;
+  /// Null holds the field still (something else is writing it).
+  final VoidCallback? onTap;
   final String semanticLabel;
 
   /// [text] is the dossier's, not the author's.

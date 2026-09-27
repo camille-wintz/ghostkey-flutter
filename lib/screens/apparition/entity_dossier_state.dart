@@ -53,7 +53,8 @@ class EntityDossierState extends ChangeNotifier {
   /// snapshot landing late is still honoured.
   final bool Function() canBuild;
 
-  /// A build produced a fresh map — the caller drops its cached read.
+  /// A build landed — the caller drops its cached dossier map and its bible
+  /// (the card's dossier text may have changed server-side).
   final void Function() onFresh;
 
   Dossier? dossier;
@@ -91,8 +92,9 @@ class EntityDossierState extends ChangeNotifier {
 
   /// Build this entity's dossier: the retry after a failure, and the update
   /// for a stale one (`force` re-reads the manuscript rather than trusting
-  /// the cache's own verdict).
-  Future<void> build({bool force = false}) async {
+  /// the cache's own verdict). The job files its prose into the card's
+  /// dossier text when that is empty; `fill` replaces what is there.
+  Future<void> build({bool force = false, bool fill = false}) async {
     building = true;
     progress = null;
     error = null;
@@ -102,7 +104,7 @@ class EntityDossierState extends ChangeNotifier {
         final outcome = await runJobToCompletion(
           projectId,
           'entity_dossier',
-          {'key': entityKey, 'force': force},
+          {'key': entityKey, 'force': force, if (fill) 'fill': true},
           JobWatch(
             timeout: _wait,
             isAlive: () => _alive,

@@ -7,6 +7,7 @@ import '../../access/plans.dart';
 import '../../ds/tokens.dart';
 import '../../server/dto/bible.dart';
 import '../../ui/button.dart';
+import '../../ui/confirm_sheet.dart';
 import '../../ui/press.dart';
 import 'dossier_body.dart';
 import 'entity_dossier_state.dart';
@@ -36,7 +37,9 @@ class _EntityDossierPaneState extends ConsumerState<EntityDossierPane> {
     // A dossier already written stays readable on any plan; the capability
     // governs writing a new one.
     canBuild: () => ref.read(capabilityProvider('mara.entity_dossier')).granted,
-    onFresh: () => ref.invalidate(dossiersProvider(widget.projectId)),
+    onFresh: () => ref
+      ..invalidate(dossiersProvider(widget.projectId))
+      ..invalidate(bibleProvider(widget.projectId)),
   );
 
   @override
@@ -51,10 +54,35 @@ class _EntityDossierPaneState extends ConsumerState<EntityDossierPane> {
     super.dispose();
   }
 
+  /// Rewriting over text the card already holds replaces the author's own
+  /// words, so it asks first and sends `fill`; an empty text is filled by any
+  /// run.
+  Future<void> _rewrite(String notes) async {
+    if (notes.trim().isEmpty) return _state.build(force: true);
+    final ok = await showConfirmSheet(
+      context,
+      eyebrow: 'Dossier',
+      title: 'Replace the dossier?',
+      message: 'This writes a fresh dossier from the book. Your own changes to it will be lost.',
+      confirmLabel: 'Replace',
+      destructive: true,
+    );
+    if (ok && mounted) await _state.build(force: true, fill: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final capability = ref.watch(capabilityProvider('mara.entity_dossier'));
-    final chapters = widget.entity.chapters.length;
+    // The card as the bible holds it now: a run that lands rewrites its
+    // dossier text, and the entity this pane was opened with is a snapshot.
+    final entity = ref
+            .watch(bibleProvider(widget.projectId))
+            .value
+            ?.entities
+            .where((e) => e.id == widget.entity.id)
+            .firstOrNull ??
+        widget.entity;
+    final chapters = entity.chapters.length;
     return ListenableBuilder(
       listenable: _state,
       builder: (context, _) {
@@ -66,7 +94,7 @@ class _EntityDossierPaneState extends ConsumerState<EntityDossierPane> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(widget.entity.name, style: DsStyle.prose(DsText.title, weight: FontWeight.w600)),
+              Text(entity.name, style: DsStyle.prose(DsText.title, weight: FontWeight.w600)),
               const SizedBox(height: 4),
               Text(
                 chapters == 0
@@ -136,11 +164,11 @@ class _EntityDossierPaneState extends ConsumerState<EntityDossierPane> {
                 ),
                 const SizedBox(height: 20),
               ],
-              if (dossier != null) DossierBody(dossier: dossier),
+              if (dossier != null) DossierBody(dossier: dossier, notes: entity.notes),
               if (dossier != null && capability.granted && !building && !dossier.stale) ...[
                 const SizedBox(height: 20),
                 Press(
-                  onPressed: () => _state.build(force: true),
+                  onPressed: () => _rewrite(entity.notes),
                   semanticLabel: 'Rewrite this dossier from the current manuscript',
                   builder: (context, pressed) => Opacity(
                     opacity: pressed ? 0.6 : 1,

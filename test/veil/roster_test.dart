@@ -173,15 +173,30 @@ void main() {
     });
 
     test('dossierSummary takes the first sentence past the 30-char floor', () {
-      Dossier dossier(String overview) => Dossier.fromJson({'overview': overview});
-      expect(dossierSummary(null), '');
-      expect(dossierSummary(dossier('')), '');
+      expect(dossierSummary(''), '');
+      expect(dossierSummary('   '), '');
       expect(
-        dossierSummary(dossier('Dr. Kellas is the village physician and its only sceptic. He arrives late.')),
+        dossierSummary('Dr. Kellas is the village physician and its only sceptic. He arrives late.'),
         'Dr. Kellas is the village physician and its only sceptic.',
       );
-      expect(dossierSummary(dossier('Short one. No terminator past thirty chars')), 'Short one. No terminator past thirty chars');
-      expect(dossierSummary(dossier('  A place where the marsh meets the sea!  ')), 'A place where the marsh meets the sea!');
+      expect(dossierSummary('Short one. No terminator past thirty chars'), 'Short one. No terminator past thirty chars');
+      expect(dossierSummary('  A place where the marsh meets the sea!  '), 'A place where the marsh meets the sea!');
+    });
+
+    test('dossierSummary reads through the markdown', () {
+      expect(
+        dossierSummary('## Overview\n\n**Dr. Kellas** is the _village_ physician and its *only* sceptic. He arrives late.'),
+        'Dr. Kellas is the village physician and its only sceptic.',
+      );
+      expect(
+        dossierSummary('# Kellas\n- Village physician, and the only sceptic in Marrow.\n- Arrives late.'),
+        'Village physician, and the only sceptic in Marrow.',
+      );
+      expect(dossierSummary('## Overview\n\n## Ties'), '');
+    });
+
+    test('stripMarkdown keeps the words and drops the marks', () {
+      expect(stripMarkdown('> quoted **bold**\n1. first\n* [a link](https://x.y) and `code`'), 'quoted bold first a link and code');
     });
 
     test('chapterLabel strips the extension, chapterCount agrees in number', () {
@@ -198,7 +213,7 @@ void main() {
       });
       final stats = bibleStats(
         [withPortrait, _entity('Keep', type: BibleEntityType.place), _entity('Ghost', hidden: true)],
-        {'ada': Dossier.fromJson({'overview': 'x'})},
+        {'ada': Dossier.fromJson({'key': 'ada'})},
       );
       expect(stats.entities, 2);
       expect(stats.characters, 1);

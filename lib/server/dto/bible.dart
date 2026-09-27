@@ -175,6 +175,7 @@ class BibleEntity {
     this.imageAssetId,
     this.imageItemId,
     this.images = const [],
+    this.ties,
   });
 
   final String id;
@@ -191,6 +192,10 @@ class BibleEntity {
   final String? firstAppearance;
   final List<String> aliases;
   final List<String> facts;
+
+  /// The card's dossier: one markdown text (`## ` headings for sections) the
+  /// author and the `entity_dossier` job both write, series-wide. At most
+  /// [maxEntityNotes] characters.
   final String notes;
   final String description;
 
@@ -221,6 +226,11 @@ class BibleEntity {
 
   /// The card's gallery, in the author's order; shown above the dossier.
   final List<EntityImage> images;
+
+  /// Who this card is bound to, as the author set it, in order. Null while
+  /// the author has never edited the list — the page then shows the
+  /// dossier's [Dossier.ties], which the next dossier run rewrites.
+  final List<BibleEntityTie>? ties;
 
   bool get isUser => origin == BibleEntityOrigin.user;
 
@@ -254,7 +264,21 @@ class BibleEntity {
         imageAssetId: _nonEmpty(json['image_asset_id']),
         imageItemId: _nonEmpty(json['image_item_id']),
         images: asJsonList(json['images']).map(EntityImage.fromJson).where((i) => i.assetId.isNotEmpty).toList(),
+        ties: json['ties'] is List ? asJsonList(json['ties']).map(BibleEntityTie.fromJson).toList() : null,
       );
+}
+
+/// One tie the author set on a card: the tied card, and what it is to this
+/// one ("Bonded witch"). The relation may be empty — the tie is the point.
+class BibleEntityTie {
+  const BibleEntityTie({required this.entityId, required this.relation});
+  final String entityId;
+  final String relation;
+
+  static BibleEntityTie fromJson(Json json) =>
+      BibleEntityTie(entityId: asString(json['entity_id']), relation: asString(json['relation']));
+
+  Json toJson() => {'entity_id': entityId, 'relation': relation};
 }
 
 class BibleResponse {
@@ -315,15 +339,6 @@ class BibleEntityWriteResponse {
 
 // ── Dossiers ─────────────────────────────────────────────────────────────
 
-class DossierSection {
-  const DossierSection({required this.title, required this.body});
-  final String title;
-  final String body;
-
-  static DossierSection fromJson(Json json) =>
-      DossierSection(title: asString(json['title']), body: asString(json['body']));
-}
-
 class DossierTimelineEntry {
   const DossierTimelineEntry({required this.chapter, required this.events});
   final String chapter;
@@ -343,12 +358,12 @@ class DossierGlanceItem {
 }
 
 /// A CHARACTER's glance questions, in the order the server sends them: the
-/// story's GMC plus the arc the conflict demands, each answered externally and
-/// internally. A cell's label is `"<Side> <question>"` ("External goal",
+/// story's GMC, the wound under it and the arc the conflict demands, each
+/// answered externally and internally. A cell's label is `"<Side> <question>"` ("External goal",
 /// "Internal arc"). Fixed and server-enforced, so these are the one dossier
 /// labels a client may switch on. Places and terms have no GMC and keep
 /// model-chosen labels.
-const glanceGmcQuestions = ['Goal', 'Motivation', 'Conflict', 'Arc'];
+const glanceGmcQuestions = ['Goal', 'Motivation', 'Conflict', 'Wound', 'Arc'];
 const glanceGmcSides = ['External', 'Internal'];
 
 String gmcLabel(String side, String question) => '$side ${question.toLowerCase()}';
@@ -359,6 +374,7 @@ const glanceGmcMeaning = {
   'Goal': 'What they want',
   'Motivation': 'Why they want it',
   'Conflict': 'What stands in their way',
+  'Wound': 'The old hurt they still carry',
   'Arc': 'How they have to change to overcome it',
 };
 
@@ -398,6 +414,12 @@ class DossierTie {
       );
 }
 
+/// The server's cap on [BibleEntity.notes], the dossier text.
+const int maxEntityNotes = 20000;
+
+/// The generated side of a dossier: the glance, appearance, timeline and ties.
+/// Its prose lives on the card as [BibleEntity.notes] — the wire object's
+/// `overview` and `sections` are always empty and are not read.
 class Dossier {
   const Dossier({
     required this.key,
@@ -406,10 +428,8 @@ class Dossier {
     required this.generatedAt,
     required this.chaptersUsed,
     required this.truncated,
-    required this.overview,
     required this.appearance,
     required this.glance,
-    required this.sections,
     required this.timeline,
     required this.ties,
     required this.stale,
@@ -421,10 +441,8 @@ class Dossier {
   final String generatedAt;
   final List<String> chaptersUsed;
   final bool truncated;
-  final String overview;
   final String appearance;
   final List<DossierGlanceItem> glance;
-  final List<DossierSection> sections;
   final List<DossierTimelineEntry> timeline;
   final List<DossierTie> ties;
   final bool stale;
@@ -436,12 +454,27 @@ class Dossier {
         generatedAt: asString(json['generated_at']),
         chaptersUsed: asStringList(json['chapters_used']),
         truncated: asBool(json['truncated']),
-        overview: asString(json['overview']),
         appearance: asString(json['appearance']),
         glance: asJsonList(json['glance']).map(DossierGlanceItem.fromJson).toList(),
-        sections: asJsonList(json['sections']).map(DossierSection.fromJson).toList(),
         timeline: asJsonList(json['timeline']).map(DossierTimelineEntry.fromJson).toList(),
         ties: asJsonList(json['ties']).map(DossierTie.fromJson).toList(),
         stale: asBool(json['stale']),
+      );
+}
+
+/// One question of the dossier interview (`POST …/interview`). [label] names
+/// the topic and heads the answer in the dossier; [heading] is the `## `
+/// section it is filed under.
+class InterviewQuestion {
+  const InterviewQuestion({required this.question, required this.label, required this.heading});
+
+  final String question;
+  final String label;
+  final String heading;
+
+  static InterviewQuestion fromJson(Json json) => InterviewQuestion(
+        question: asString(json['question']),
+        label: asString(json['label']),
+        heading: asString(json['heading']),
       );
 }
