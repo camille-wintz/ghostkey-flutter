@@ -33,6 +33,19 @@ DockNotice autoStopNotice(AutoStopReason reason) => DockNotice(
 DockNotice lostChunkNotice(String why) =>
     DockNotice(NoticeKind.error, "A passage couldn't be transcribed and was lost. $why");
 
+/// The last upload failed for want of a network and its retries are still
+/// running: said now, while the writer can still stop talking, rather than
+/// only once a passage is gone. Cleared by the next chunk that lands.
+const DockNotice connectionDownNotice = DockNotice(
+  NoticeKind.warning,
+  'Your internet connection seems to be down. Still trying to send what you just said — '
+  "if it doesn't come back shortly, that passage will be lost.",
+);
+
+/// A chunk lost because the network never came back within its retries.
+const DockNotice lostToConnectionNotice =
+    DockNotice(NoticeKind.error, "Your internet connection dropped, so a passage couldn't be sent and was lost.");
+
 const DockNotice microphoneDeniedNotice =
     DockNotice(NoticeKind.error, 'Ghostkey needs the microphone to dictate. Allow it in Settings and tap play.');
 

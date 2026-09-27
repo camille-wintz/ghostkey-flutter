@@ -473,12 +473,16 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
             previous: previous,
             turns: List.of(_turns),
           );
+          _setReachable(true);
           return (
             turn: TranscriptTurn(cleaned: res.text, verbatim: res.verbatim),
             answered: res.quotaRead,
             quotaRemaining: res.quotaRemaining,
           );
         } catch (e) {
+          // Said on the first failed attempt, not after the last: the writer
+          // is still talking, and what they say next is what the retries decide.
+          if (_isConnectionFailure(e)) _setReachable(false);
           if (attempt >= DictationPolicy.retryDelaysMs.length || !_isRetryable(e)) rethrow;
           debugPrint('[dictation] transcribe failed (attempt ${attempt + 1}) — retrying: $e');
           await Future<void>.delayed(Duration(milliseconds: DictationPolicy.retryDelaysMs[attempt]));
@@ -494,6 +498,21 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
     return e.status >= 500 || e.code == 'network_error' || e.code == 'rate_limited';
   }
 
+  static bool _isConnectionFailure(Object e) => e is ServerError && e.code == 'network_error';
+
+  /// Raise the connection warning when an upload finds no network, and take
+  /// it down when one lands again — only that warning: a loss that happened
+  /// meanwhile stays said.
+  void _setReachable(bool reachable) {
+    if (_disposed) return;
+    if (!reachable) {
+      if (!identical(notice, connectionDownNotice)) _setNotice(connectionDownNotice);
+    } else if (identical(notice, connectionDownNotice)) {
+      notice = null;
+      notifyListeners();
+    }
+  }
+
   void _onChunkLost(Object e) {
     debugPrint('[dictation] chunk lost: $e');
     if (_disposed) return;
@@ -504,7 +523,7 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
       onRefused?.call(e);
       return;
     }
-    _setNotice(lostChunkNotice(messageFor(e)));
+    _setNotice(_isConnectionFailure(e) ? lostToConnectionNotice : lostChunkNotice(messageFor(e)));
   }
 
   Future<void> _delete(String path) async {
