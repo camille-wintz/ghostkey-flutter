@@ -22,6 +22,19 @@ String nextNoteFilename(Iterable<String> existing) {
   }
 }
 
+/// The tree with [doc] last in the folder [folderId] — a folder's own +.
+/// A folder no longer in the tree puts it last in the book instead.
+List<ChaptersListEntry> appendChapterToFolder(List<ChaptersListEntry> tree, String folderId, DocumentSummary doc) {
+  if (!tree.any((e) => e is ChapterGroup && e.id == folderId)) return [...tree, doc];
+  return [
+    for (final entry in tree)
+      switch (entry) {
+        ChapterGroup(:final id) when id == folderId => entry.withChapters([...entry.chapters, doc]),
+        _ => entry,
+      },
+  ];
+}
+
 /// The tree with one document gone. A folder emptied by it stays: the
 /// author made it, and a delete is not a request to lose it. The server
 /// soft-deletes the document and leaves the tree to the client.

@@ -136,12 +136,18 @@ class ChapterNavState extends ChangeNotifier {
 
   /// Chapter ordering lives on the active draft, not the project: append the
   /// freshly created document to the existing order and persist it via the
-  /// drafts PATCH. Returns the new chapter's filename.
-  Future<String> createChapter(ProjectFull data) async {
+  /// drafts PATCH. With [inFolder] — a folder's own + — it goes last in that
+  /// folder, which is opened if it was folded. Returns the new chapter's
+  /// filename.
+  Future<String> createChapter(ProjectFull data, {String? inFolder}) async {
     final chapters = chaptersOf(data);
     final filename = nextChapterFilename(chapterFilenamesInTree(chapters));
     final document = await createDocument(projectId, kind: DocumentKind.chapter, filename: filename);
-    await patchDraftChapters(projectId, data.project.activeDraftId, [...chapters, document.summary]);
+    final next = inFolder == null
+        ? [...chapters, document.summary]
+        : appendChapterToFolder(chapters, inFolder, document.summary);
+    await patchDraftChapters(projectId, data.project.activeDraftId, next);
+    if (inFolder != null && _collapsed.remove(inFolder)) notifyListeners();
     refreshProject();
     return filename;
   }

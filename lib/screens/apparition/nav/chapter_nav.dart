@@ -109,8 +109,8 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
     }
   }
 
-  Future<void> _createChapter(ProjectFull data) => _guard(() async {
-        final filename = await widget.state.createChapter(data);
+  Future<void> _createChapter(ProjectFull data, {String? inFolder}) => _guard(() async {
+        final filename = await widget.state.createChapter(data, inFolder: inFolder);
         if (mounted) _select(filename);
       }, 'Could not create chapter');
 
@@ -186,6 +186,7 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
                                 name: name,
                                 open: !state.isCollapsed(id),
                                 onToggle: () => state.toggleFolder(id),
+                                onAdd: data == null ? null : () => _createChapter(data, inFolder: id),
                               ),
                             ChapterRow(:final doc, :final nested) => HoldToDrag(
                                 key: ValueKey('c-${doc.id}'),
