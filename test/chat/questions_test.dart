@@ -14,6 +14,12 @@ Widget host(Widget child) => MaterialApp(
       home: Scaffold(body: SingleChildScrollView(child: SizedBox(width: 360, child: child))),
     );
 
+/// Every "Other" row makes the card taller than the default 600pt surface.
+void tall(WidgetTester tester) {
+  tester.view.physicalSize = const Size(1200, 6000);
+  addTearDown(tester.view.reset);
+}
+
 void main() {
   group('answersMessage', () {
     test('one numbered line per answered question, gaps kept', () {
@@ -27,6 +33,16 @@ void main() {
       choices = choices.toggle(1, 'A year later');
       expect(choices.isEmpty, isTrue);
       expect(answersMessage(questions, choices), '');
+    });
+    test('"Other" answers in the author\'s words, and replaces an option', () {
+      var choices = const QuestionChoices().toggle(0, 'Two leads, alternating').toggleOther(0);
+      expect(choices[0], isNull);
+      expect(choices.isEmpty, isTrue);
+      choices = choices.writeOther(0, '  Mara, then her sister  ');
+      expect(answersMessage(questions, choices), '1. Mara, then her sister');
+      choices = choices.toggle(0, 'Two leads, alternating');
+      expect(choices.otherText(0), isNull);
+      expect(answersMessage(questions, choices), '1. Two leads, alternating');
     });
   });
 
@@ -72,6 +88,7 @@ void main() {
 
   group('QuestionCard', () {
     testWidgets('picks one per question and sends the numbered lines', (tester) async {
+      tall(tester);
       String? sent;
       await tester.pumpWidget(host(QuestionCard(questions: questions, onAnswer: (text) => sent = text)));
       await tester.tap(find.text('SEND ANSWERS'));
@@ -82,11 +99,25 @@ void main() {
       await tester.tap(find.text('SEND ANSWERS'));
       expect(sent, '1. Mara carries it, start to end\n3. Grim');
     });
+    testWidgets('"Other" opens a field whose words are the answer', (tester) async {
+      tall(tester);
+      String? sent;
+      await tester.pumpWidget(host(QuestionCard(questions: questions, onAnswer: (text) => sent = text)));
+      expect(find.text('Other'), findsNWidgets(3));
+      expect(find.byType(TextField), findsNothing);
+      await tester.tap(find.text('Other').at(1));
+      await tester.pump();
+      await tester.enterText(find.byType(TextField), 'On the ferry');
+      await tester.pump();
+      await tester.tap(find.text('SEND ANSWERS'));
+      expect(sent, '2. On the ferry');
+    });
     testWidgets('read-only draws the questions with no button', (tester) async {
       await tester.pumpWidget(host(const QuestionCard(questions: questions)));
       expect(find.text('1. Whose book is it?'), findsOneWidget);
       expect(find.text('Grim'), findsOneWidget);
       expect(find.text('SEND ANSWERS'), findsNothing);
+      expect(find.text('Other'), findsNothing);
     });
   });
 }

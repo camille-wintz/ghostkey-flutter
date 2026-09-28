@@ -5,26 +5,41 @@ import '../server/dto/chat.dart';
 // ordinary user turn — the model reads the numbers against the questions it
 // asked, which ride on its own message in the transcript.
 
-/// The option picked for each question, keyed by the question's 0-based
-/// position. Immutable; the card holds one and swaps it on each tap.
+/// The answer picked for each question, keyed by the question's 0-based
+/// position: a suggested option, or "Other" with the author's own words
+/// (held in [other]). Immutable; the card holds one and swaps it on each tap
+/// or keystroke.
 class QuestionChoices {
-  const QuestionChoices([this.picked = const {}]);
+  const QuestionChoices([this.picked = const {}, this.other = const {}]);
   final Map<int, String> picked;
+  final Map<int, String> other;
 
-  bool get isEmpty => picked.isEmpty;
+  /// Nothing that would send: no option, and no "Other" with words in it.
+  bool get isEmpty => picked.isEmpty && other.values.every((text) => text.trim().isEmpty);
 
   String? operator [](int question) => picked[question];
 
+  /// The words typed under "Other", or null when "Other" isn't picked.
+  String? otherText(int question) => other[question];
+
   /// Pick `option` for `question`; picking the one already picked clears it.
   QuestionChoices toggle(int question, String option) => picked[question] == option
-      ? QuestionChoices({...picked}..remove(question))
-      : QuestionChoices({...picked, question: option});
+      ? QuestionChoices({...picked}..remove(question), other)
+      : QuestionChoices({...picked, question: option}, {...other}..remove(question));
+
+  /// Pick "Other" for `question`; picking it again closes it.
+  QuestionChoices toggleOther(int question) => other.containsKey(question)
+      ? QuestionChoices(picked, {...other}..remove(question))
+      : QuestionChoices({...picked}..remove(question), {...other, question: ''});
+
+  QuestionChoices writeOther(int question, String text) => QuestionChoices(picked, {...other, question: text});
 }
 
-/// One line per answered question, `"{n}. {option}"` with n the question's
+/// One line per answered question, `"{n}. {answer}"` with n the question's
 /// 1-based position, so a skipped question leaves a gap rather than
-/// renumbering the rest. Empty when nothing is picked.
+/// renumbering the rest. An "Other" left empty answers nothing. Empty when
+/// nothing is picked.
 String answersMessage(List<ChatQuestion> questions, QuestionChoices choices) => [
       for (var i = 0; i < questions.length; i++)
-        if (choices[i] case final option?) '${i + 1}. $option',
+        if (choices[i] ?? choices.otherText(i)?.trim() case final answer? when answer.isNotEmpty) '${i + 1}. $answer',
     ].join('\n');

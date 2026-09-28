@@ -5,12 +5,14 @@ import '../../chat/questions.dart';
 import '../../ds/tokens.dart';
 import '../../server/dto/chat.dart';
 import '../../ui/button.dart';
+import '../../ui/field.dart';
 import '../../ui/press.dart';
 import '../../ui/text.dart';
 
 /// The questions a turn stopped on, beneath its answer. Live on the last
 /// message while nothing is in flight (`onAnswer` set): one pick per
-/// question, and "Send answers" sends the picks as the author's next message.
+/// question — a suggestion, or "Other" and a field for the author's own
+/// words — and "Send answers" sends them as the author's next message.
 /// Anywhere else it is the record of what was asked — read-only, muted.
 class QuestionCard extends StatefulWidget {
   const QuestionCard({super.key, required this.questions, this.onAnswer});
@@ -25,6 +27,24 @@ class QuestionCard extends StatefulWidget {
 
 class _QuestionCardState extends State<QuestionCard> {
   QuestionChoices _choices = const QuestionChoices();
+
+  /// One per question whose "Other" has been opened, kept when it closes so
+  /// reopening finds the words still there.
+  final Map<int, TextEditingController> _other = {};
+
+  @override
+  void dispose() {
+    for (final controller in _other.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _toggleOther(int q) => setState(() {
+        _choices = _choices.toggleOther(q);
+        final controller = _other.putIfAbsent(q, TextEditingController.new);
+        if (_choices.otherText(q) != null) _choices = _choices.writeOther(q, controller.text);
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -54,12 +74,27 @@ class _QuestionCardState extends State<QuestionCard> {
                         onPressed: live ? () => setState(() => _choices = _choices.toggle(q, option)) : null,
                       ),
                     ),
+                  if (live) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: _OptionRow(option: 'Other', picked: _choices.otherText(q) != null, onPressed: () => _toggleOther(q)),
+                    ),
+                    if (_choices.otherText(q) != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: GkField(
+                          controller: _other[q]!,
+                          placeholder: 'Your answer',
+                          autofocus: true,
+                          maxLines: 4,
+                          onChanged: (text) => setState(() => _choices = _choices.writeOther(q, text)),
+                        ),
+                      ),
+                  ],
                 ],
               ),
             ),
           if (live) ...[
-            const SizedBox(height: 12),
-            UiText('Or answer in your own words below.', step: DsText.ui, color: Ds.low),
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
