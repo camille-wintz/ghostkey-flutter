@@ -262,7 +262,10 @@ class ChatTurnNotifier extends Notifier<ChatTurnState> with WidgetsBindingObserv
         state = state.copyWith(messages: before);
         return SendRefused(e as ServerError, text, attachments);
       }
-      state = state.copyWith(error: messageFor(e));
+      // Refused before it started — the conversation is still answering an
+      // earlier message — so this one goes back rather than sitting unanswered.
+      final running = e is ServerError && e.code == 'turn_running';
+      state = state.copyWith(messages: running ? before : null, error: messageFor(e));
       return const SendFailed();
     } finally {
       if (_alive && token == _token) state = state.copyWith(clearPending: true, sending: false);

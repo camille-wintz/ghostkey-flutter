@@ -109,6 +109,8 @@ const Map<String, String> _messages = {
   'invalid_manuscript': 'That manuscript could not be read. Saving a fresh copy from the program you wrote it in usually fixes it.',
   'no_text': 'There is no text in that file to import. A scanned PDF is pictures of pages — '
       'export the manuscript from the program you wrote it in and import that.',
+  'turn_running':
+      'PhantomMemory is still answering your last message here. Reopen this conversation in a minute to read the answer, then send again.',
   'unknown': 'Something went wrong. Please try again.',
 };
 
