@@ -10,15 +10,18 @@ import '../../server/dto/models.dart';
 import '../../server/providers.dart';
 import '../../ui/press.dart';
 import '../../ui/sheet.dart';
+import 'book_context_sheet.dart';
 import 'plan_notice.dart';
 
 /// The conversation's settings, the desktop's "Chat settings" modal: which
 /// model answers, and whether it may write in the manuscript. Both apply from
 /// the next message on, so each choice lands the moment it is pressed and the
-/// sheet stays open to show it. [model] is the author's pick, null for none
+/// sheet stays open to show it. The book's context — the desktop's header
+/// button beside the chat — opens from here too, in its own sheet. [model] is the author's pick, null for none
 /// yet — the catalog's default row shows as selected then.
 Future<void> showChatSettingsSheet(
   BuildContext context, {
+  required String projectId,
   required String? model,
   required bool manuscriptWrites,
   required ValueChanged<String> onModel,
@@ -28,6 +31,7 @@ Future<void> showChatSettingsSheet(
       context,
       header: SheetHeader(eyebrow: 'Chat settings', onClose: () => Navigator.of(context).pop()),
       builder: (context) => _ChatSettings(
+        projectId: projectId,
         model: model,
         manuscriptWrites: manuscriptWrites,
         onModel: onModel,
@@ -37,12 +41,14 @@ Future<void> showChatSettingsSheet(
 
 class _ChatSettings extends ConsumerStatefulWidget {
   const _ChatSettings({
+    required this.projectId,
     required this.model,
     required this.manuscriptWrites,
     required this.onModel,
     required this.onManuscriptWrites,
   });
 
+  final String projectId;
   final String? model;
   final bool manuscriptWrites;
   final ValueChanged<String> onModel;
@@ -85,10 +91,20 @@ class _ChatSettingsState extends ConsumerState<_ChatSettings> {
     final surface = ref.watch(chatModelsProvider);
     final failed = ref.watch(modelCatalogProvider).hasError;
     final selected = _model ?? surface?.defaultId;
+    final brief = ref.watch(projectProvider(widget.projectId)).value?.project.authorBrief ?? '';
     return ListView(
       shrinkWrap: true,
       padding: const EdgeInsets.only(bottom: 12),
       children: [
+        const _SectionLabel('Book'),
+        _SettingRow(
+          icon: LucideIcons.notebookPen,
+          label: brief.isEmpty ? 'Add book context' : 'Book context',
+          detail: brief.isEmpty ? 'Genre, audience, where the draft stands, what you want feedback on.' : brief,
+          detailLines: 2,
+          selected: false,
+          onPressed: () => showBookContextSheet(context, projectId: widget.projectId, current: brief),
+        ),
         const _SectionLabel('Manuscript'),
         _SettingRow(
           icon: LucideIcons.penLine,
@@ -151,12 +167,14 @@ class _SettingRow extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.detail,
+    this.detailLines,
     this.locked = false,
   });
 
   final IconData? icon;
   final String label;
   final String? detail;
+  final int? detailLines;
   final bool selected;
   final bool locked;
   final VoidCallback onPressed;
@@ -191,7 +209,12 @@ class _SettingRow extends StatelessWidget {
                   ),
                   if (detail != null) ...[
                     const SizedBox(height: 2),
-                    Text(detail!, style: DsStyle.ui(DsText.ui, color: Ds.mid)),
+                    Text(
+                      detail!,
+                      maxLines: detailLines,
+                      overflow: detailLines == null ? null : TextOverflow.ellipsis,
+                      style: DsStyle.ui(DsText.ui, color: Ds.mid),
+                    ),
                   ],
                 ],
               ),

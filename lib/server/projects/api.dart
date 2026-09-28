@@ -71,6 +71,18 @@ Future<ProjectMeta> patchProject(
   return ProjectMeta.fromJson(asJson(res.jsonObject()['project']));
 }
 
+/// Saves the book context the chat reads the manuscript by. An empty [context]
+/// clears the brief rather than storing an empty one.
+Future<ProjectMeta> saveAuthorBrief(String id, String context) async {
+  final trimmed = context.trim();
+  final res = await apiFetch('/api/projects/$id', method: 'PATCH', body: {
+    'author_brief': trimmed.isEmpty
+        ? null
+        : {'context': trimmed, 'updated_at': DateTime.now().toUtc().toIso8601String()},
+  });
+  return ProjectMeta.fromJson(asJson(res.jsonObject()['project']));
+}
+
 /// Rewrites one draft's chapter ordering. `baseVersion` makes the write
 /// conditional on the draft still being at that version: a reorder made
 /// against a tree another device has since rewritten is refused with 409

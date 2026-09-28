@@ -111,6 +111,7 @@ class ProjectMeta {
     required this.coverBackdrop,
     required this.savedPrompts,
     required this.typography,
+    required this.authorBrief,
     required this.activeDraftId,
     required this.activeDraftVersion,
     required this.createdAt,
@@ -134,6 +135,10 @@ class ProjectMeta {
   final CoverThumbnail? coverBackdrop;
   final List<SavedPrompt> savedPrompts;
   final TypographyMode typography;
+
+  /// The book context the chat reads the manuscript by — the author brief,
+  /// flattened to its text. Empty when there is none.
+  final String authorBrief;
 
   /// The draft currently being written in — the only writable manuscript.
   final String activeDraftId;
@@ -162,6 +167,7 @@ class ProjectMeta {
             : CoverThumbnail.fromJson(asJson(json['cover_backdrop'])),
         savedPrompts: asJsonList(json['saved_prompts']).map(SavedPrompt.fromJson).toList(),
         typography: TypographyMode.fromWire(json['typography'] as String?),
+        authorBrief: authorBriefText(json['author_brief'] ?? json['editing_plan']),
         activeDraftId: asString(json['active_draft_id']),
         activeDraftVersion: asInt(json['active_draft_version']),
         createdAt: asString(json['created_at']),
@@ -183,11 +189,30 @@ class ProjectMeta {
         coverBackdrop: coverBackdrop,
         savedPrompts: savedPrompts,
         typography: typography,
+        authorBrief: authorBrief,
         activeDraftId: activeDraftId,
         activeDraftVersion: activeDraftVersion ?? this.activeDraftVersion,
         createdAt: createdAt,
         updatedAt: updatedAt,
       );
+}
+
+/// An author brief as text. Briefs written before July 2026 carry the old
+/// structured shape instead of `context`; they read as labelled lines, the
+/// way the desk flattens them (`authorBriefText` in ghost-key).
+String authorBriefText(Object? brief) {
+  if (brief is! Map) return '';
+  if (brief['context'] case final String context) return context.trim();
+  String? text(Object? v) => v is String && v.trim().isNotEmpty ? v.trim() : null;
+  final focus = brief['focus'];
+  return [
+    if (text(brief['manuscript_state']) case final v?) 'Stage: $v',
+    if (focus is List && focus.isNotEmpty) 'Wants feedback on: ${focus.join(', ')}',
+    if (text(brief['genre']) case final v?) 'Genre: $v',
+    if (text(brief['audience']) case final v?) 'Audience: $v',
+    if (text(brief['comps']) case final v?) 'Comps: $v',
+    if (text(brief['notes']) case final v?) 'Notes: $v',
+  ].join('\n');
 }
 
 /// One entry of the composed `chapters` list GET /api/projects/:id returns:
