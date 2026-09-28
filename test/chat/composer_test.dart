@@ -6,6 +6,7 @@ import 'package:ghostkey/chat/refusals.dart';
 import 'package:ghostkey/chat/turn.dart';
 import 'package:ghostkey/server/dto/billing.dart';
 import 'package:ghostkey/server/dto/chat.dart';
+import 'package:ghostkey/server/dto/media.dart';
 import 'package:ghostkey/server/dto/projects.dart';
 import 'package:ghostkey/server/errors.dart';
 
@@ -43,6 +44,23 @@ class Harness {
 
 void main() {
   group('attachments', () {
+    test('a library picture attaches by item id, once, with no word count', () {
+      final h = Harness();
+      const picture = MediaItem(
+        id: 'i1',
+        kind: 'image',
+        title: 'The mill',
+        body: 'A mill at dusk.',
+        bodyChars: 15,
+        origin: 'author',
+      );
+      h.composer.attachItem(picture);
+      h.composer.attachItem(picture);
+      final attached = h.composer.attachments.single as FileAttachment;
+      expect((attached.itemId, attached.title, attached.words), ('i1', 'The mill', null));
+      expect(attached.toJson()['kind'], 'file');
+    });
+
     test('mint ids across the session, never reusing a spent handle', () {
       final h = Harness(spent: ['a1', 'a2']);
       h.composer.attachChapter(doc('d1', 'One.md'));

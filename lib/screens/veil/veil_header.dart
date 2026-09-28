@@ -27,6 +27,7 @@ class VeilHeader extends StatelessWidget {
     required this.onEdit,
     required this.onDone,
     this.onMore,
+    this.besideEdit,
   });
 
   final BibleEntity entity;
@@ -37,6 +38,9 @@ class VeilHeader extends StatelessWidget {
 
   /// The card's own actions (rename, hide), offered while editing.
   final VoidCallback? onMore;
+
+  /// A second button beside Edit — the ID card, on a character being read.
+  final Widget? besideEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -100,6 +104,7 @@ class VeilHeader extends StatelessWidget {
                         onPressed: editing ? onDone : onEdit,
                         leading: Icon(editing ? LucideIcons.check : LucideIcons.pencil, size: 15, color: Ds.accent),
                       ),
+                      if (besideEdit case final beside?) ...[const SizedBox(width: 8), beside],
                     ],
                   ),
                 ],

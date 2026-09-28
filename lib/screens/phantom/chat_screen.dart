@@ -19,6 +19,7 @@ import '../../ui/anchored_panel.dart';
 import '../../ui/room_bar_action.dart';
 import '../../ui/room_title_bar.dart';
 import '../account/quota_notice.dart';
+import '../media/library_picker_screen.dart';
 import 'attach_menu_sheet.dart';
 import 'attachment_tray.dart';
 import 'chapter_picker_sheet.dart';
@@ -152,6 +153,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         if (doc != null) _composer.attachChapter(doc);
       case AttachChoice.file:
         await _attachFile();
+      case AttachChoice.picture:
+        final picked = await openLibraryPicker(context, projectId: _projectId);
+        if (picked case [final item, ...]) _composer.attachItem(item);
     }
   }
 

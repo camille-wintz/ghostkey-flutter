@@ -119,6 +119,10 @@ lib/
   dictation/ scan/          recorder channel · session · policy + room meter · silence pass ·
                             seam ledger · anchors | camera · OCR · insert
   chat/ veil/ poltergeist/ mara/ wisp/   the logic half of those rooms (see below)
+  share/                    shareFile — the one way a file the app made leaves it (share_plus)
+  media/                    the series' media library, reached only as a picker (no room): the
+                            listing + writes + drawPicture (both gates), photo picks (always JPEG,
+                            ≤3000px — the server refuses HEIC), the picker's selection and prefs
   rooms/                    the rooms table · marks · tile
   backdrop/                 glow · motes · ambient_motion
   ui/                       the primitives
@@ -127,6 +131,8 @@ lib/
     shelf/ account/         the shelf (home, cards, the new-novel sheet, notices) · account
     project/                project_root · project_home · cover · backdrop · room_row · room_entering
     apparition/ veil/ poltergeist/ phantom/ mara/ wisp/   the rooms
+    media/                  the library picker (openLibraryPicker): Veil's portrait and gallery
+                            and the chat's picture door open it
 ```
 
 **A room is two directories.** `screens/<room>/` draws it — widgets only —

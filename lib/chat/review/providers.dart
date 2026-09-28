@@ -36,5 +36,5 @@ typedef MediaItemKey = ({String projectId, String itemId});
 /// One library item, for a picture view — its bytes' series, asset and
 /// caption, none of which the view itself carries.
 final mediaItemProvider = FutureProvider.autoDispose.family<MediaItem, MediaItemKey>(
-  (ref, key) => getMediaItem(key.projectId, key.itemId),
+  (ref, key) async => (await getMediaItem(key.projectId, key.itemId)).item,
 );

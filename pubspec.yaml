@@ -1,7 +1,7 @@
 name: ghostkey
 description: Ghostkey — the writing app, on a phone.
 publish_to: 'none'
-version: 0.1.4+10
+version: 0.1.5+12
 
 environment:
   sdk: ^3.13.0
@@ -24,6 +24,7 @@ dependencies:
   file_picker: ^12.2.0
   package_info_plus: ^10.2.1
   google_sign_in: ^7.2.0
+  share_plus: ^13.3.0
 
 dev_dependencies:
   flutter_test:

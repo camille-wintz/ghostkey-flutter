@@ -322,7 +322,12 @@ class BibleResponse {
 /// What a single-entity write answers: the refreshed bible, plus the id the
 /// write landed on.
 class BibleEntityWriteResponse {
-  const BibleEntityWriteResponse({required this.id, required this.bible, this.rejected = const []});
+  const BibleEntityWriteResponse({
+    required this.id,
+    required this.bible,
+    this.rejected = const [],
+    this.refusedImages = const [],
+  });
   final String id;
   final BibleResponse bible;
 
@@ -330,11 +335,41 @@ class BibleEntityWriteResponse {
   /// that card. Always empty on an add.
   final List<String> rejected;
 
+  /// Pictures that could not go on the card; the rest of the edit landed.
+  final List<RefusedImage> refusedImages;
+
   static BibleEntityWriteResponse fromJson(Json json) => BibleEntityWriteResponse(
         id: asString(json['id']),
         bible: BibleResponse.fromJson(json),
         rejected: asStringList(json['rejected']),
+        refusedImages: asJsonList(json['refused_images']).map(RefusedImage.fromJson).toList(),
       );
+}
+
+/// Why a picture did not go on a card.
+enum RefusedImageReason {
+  itemNotFound,
+  notAnImage,
+  galleryFull,
+
+  /// A reason this client has never heard of.
+  other;
+
+  static RefusedImageReason fromWire(String wire) => switch (wire) {
+        'item_not_found' => itemNotFound,
+        'not_an_image' => notAnImage,
+        'gallery_full' => galleryFull,
+        _ => other,
+      };
+}
+
+class RefusedImage {
+  const RefusedImage({required this.itemId, required this.reason});
+  final String itemId;
+  final RefusedImageReason reason;
+
+  static RefusedImage fromJson(Json json) =>
+      RefusedImage(itemId: asString(json['item_id']), reason: RefusedImageReason.fromWire(asString(json['reason'])));
 }
 
 // ── Dossiers ─────────────────────────────────────────────────────────────

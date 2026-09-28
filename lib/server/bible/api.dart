@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../client.dart';
 import '../dto/bible.dart';
 
@@ -38,6 +40,12 @@ Future<BibleEntityWriteResponse> createBibleEntity(
 /// an edit here cannot undo one made on the desk in between. `gmc` merges
 /// per cell — an empty answer clears that cell. `ties` replaces the card's
 /// whole list, in order. A name another card owns is `name_taken`.
+///
+/// The pictures are library items, by id: [imageItemId] makes one the
+/// portrait and [clearImage] takes the portrait off (the wire's
+/// `image_item_id: null`); [addImages] / [removeImages] put pictures on or off
+/// the gallery, and [imageOrder] orders it. A picture that cannot go on comes
+/// back in `refusedImages`, and the rest of the edit lands.
 Future<BibleEntityWriteResponse> patchBibleEntity(
   String projectId,
   String entityId, {
@@ -47,6 +55,11 @@ Future<BibleEntityWriteResponse> patchBibleEntity(
   Map<String, String>? gmc,
   List<BibleEntityTie>? ties,
   bool? hidden,
+  String? imageItemId,
+  bool clearImage = false,
+  List<String>? addImages,
+  List<String>? removeImages,
+  List<String>? imageOrder,
 }) async {
   final res = await apiFetch('/api/projects/$projectId/bible/entities/$entityId', method: 'PATCH', body: {
     'name': ?name,
@@ -55,6 +68,10 @@ Future<BibleEntityWriteResponse> patchBibleEntity(
     'gmc': ?gmc,
     'ties': ?ties?.map((t) => t.toJson()).toList(),
     'hidden': ?hidden,
+    if (imageItemId != null) 'image_item_id': imageItemId else if (clearImage) 'image_item_id': null,
+    'add_images': ?addImages,
+    'remove_images': ?removeImages,
+    'image_order': ?imageOrder,
   });
   return BibleEntityWriteResponse.fromJson(res.jsonObject());
 }
@@ -66,6 +83,24 @@ Future<BibleEntityWriteResponse> patchBibleEntity(
 Future<String> describeEntityPortrait(String projectId, String entityId) async {
   final res = await apiFetch('/api/projects/$projectId/bible/entities/$entityId/describe-portrait', method: 'POST');
   return (res.jsonObject()['description'] as String? ?? '').trim();
+}
+
+/// One funny line about one card, for the ID card an author shares. The
+/// server reads the card itself, so it asks by id alone. Stateless: each
+/// call is a fresh line, written away from the ones in [avoid] (the last 8
+/// shown). Uncounted, paced by the `llm` bucket (`rate_limited`).
+Future<String> entityTagline(String projectId, String entityId, {List<String> avoid = const []}) async {
+  final res = await apiFetch('/api/projects/$projectId/bible/entities/$entityId/tagline', method: 'POST', body: {
+    if (avoid.isNotEmpty) 'avoid': avoid,
+  });
+  return (res.jsonObject()['tagline'] as String? ?? '').trim();
+}
+
+/// A series asset's bytes — a portrait to draw into something, where
+/// [seriesAssetUrl] is the same file for an `Image.network`.
+Future<Uint8List> getSeriesAsset(String seriesId, String assetId) async {
+  final res = await apiFetch('/api/series/$seriesId/assets/$assetId');
+  return res.bodyBytes;
 }
 
 /// One step of the dossier interview. The server is stateless: [asked] is

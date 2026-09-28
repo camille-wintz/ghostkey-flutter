@@ -90,3 +90,33 @@ Future<String?> describeFromPortrait(WidgetRef ref, String projectId, String ent
   await editEntity(ref, projectId, entityId, description: text);
   return text;
 }
+
+/// Change a card's pictures — all of them library items, by id, never
+/// copies. [imageItemId] sets the portrait and [clearImage] takes it off
+/// (the picture stays in the library); [addImages] / [removeImages] put
+/// pictures on or off the gallery and [imageOrder] orders it. Answers with
+/// the pictures the server would not put on the card — the gallery's 24 are
+/// full, say — after the bible has been re-read.
+Future<List<RefusedImage>> editPictures(
+  WidgetRef ref,
+  String projectId,
+  String entityId, {
+  String? imageItemId,
+  bool clearImage = false,
+  List<String>? addImages,
+  List<String>? removeImages,
+  List<String>? imageOrder,
+}) async {
+  final written = await patchBibleEntity(
+    projectId,
+    entityId,
+    imageItemId: imageItemId,
+    clearImage: clearImage,
+    addImages: addImages,
+    removeImages: removeImages,
+    imageOrder: imageOrder,
+  );
+  ref.invalidate(bibleProvider(projectId));
+  await ref.read(bibleProvider(projectId).future);
+  return written.refusedImages;
+}

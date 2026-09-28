@@ -6,10 +6,11 @@ import '../../ui/press.dart';
 import '../../ui/sheet.dart';
 
 /// What the composer's paperclip can attach.
-enum AttachChoice { chapter, file }
+enum AttachChoice { chapter, file, picture }
 
-/// Two rows: a chapter of the manuscript, or a file from the phone (.docx,
-/// .pdf, text). Resolves with the choice, or null when dismissed.
+/// Three rows: a chapter of the manuscript, a file from the phone (.docx,
+/// .pdf, text), or a picture through the library picker. Resolves with the
+/// choice, or null when dismissed.
 Future<AttachChoice?> showAttachMenuSheet(BuildContext context) => showGkSheet<AttachChoice>(
       context,
       header: SheetHeader(eyebrow: 'Attach', onClose: () => Navigator.of(context).pop()),
@@ -27,6 +28,12 @@ Future<AttachChoice?> showAttachMenuSheet(BuildContext context) => showGkSheet<A
             title: 'A file',
             hint: 'A .docx, a .pdf or a text file — it joins the library too',
             onPressed: () => Navigator.of(context).pop(AttachChoice.file),
+          ),
+          _Row(
+            icon: LucideIcons.image,
+            title: 'A picture',
+            hint: 'From your library, your photos or the camera',
+            onPressed: () => Navigator.of(context).pop(AttachChoice.picture),
           ),
           const SizedBox(height: 8),
         ],

@@ -67,17 +67,22 @@ class ComposerController extends ChangeNotifier {
 
   /// Attach an uploaded file: `upload` (the screen's, over the library's
   /// upload call) hands back the item the server made, and the attachment
-  /// carries its id. A length on the chip only when the whole body came back.
-  Future<void> attachFile(Future<MediaItem> Function() upload) async {
-    final item = await upload();
+  /// carries its id.
+  Future<void> attachFile(Future<MediaItem> Function() upload) async => attachItem(await upload());
+
+  /// Attach an item already in the library — an upload's, or a picture the
+  /// picker handed back — by its id, the one shape the server reads. A
+  /// length on the chip only for a text whose whole body came back; a
+  /// picture's body is its caption, not words to count.
+  void attachItem(MediaItem item) {
     if (_attachments.any((a) => a is FileAttachment && a.itemId == item.id)) return;
     _set([
       ..._attachments,
       FileAttachment(
         id: _mint(),
-        title: item.title,
+        title: item.title.trim().isNotEmpty ? item.title : (item.isImage ? 'Picture' : 'File'),
         itemId: item.id,
-        words: item.bodyIsWhole ? countWords(item.body) : null,
+        words: !item.isImage && item.bodyIsWhole ? countWords(item.body) : null,
       ),
     ]);
   }

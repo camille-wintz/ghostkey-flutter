@@ -13,7 +13,9 @@ import '../../ui/button.dart';
 import '../../ui/confirm_sheet.dart';
 import '../../ui/notice_modal.dart';
 import '../../ui/state_screen.dart';
+import '../../server/bible/api.dart';
 import '../../veil/entity_writes.dart';
+import '../../veil/id_card/id_card.dart';
 import '../../veil/providers.dart';
 import '../../veil/roster.dart';
 import '../project/project_root.dart';
@@ -30,10 +32,12 @@ import 'entity_gmc_view.dart';
 import 'entity_header.dart';
 import 'entity_hero_portrait.dart';
 import 'entity_interview_sheet.dart';
+import 'entity_pictures.dart';
 import 'entity_presence.dart';
 import 'entity_text_sheet.dart';
 import 'entity_ties.dart';
 import 'gmc_editor_screen.dart';
+import 'id_card_sheet.dart';
 import 'veil_header.dart';
 import 'veil_section.dart';
 
@@ -42,7 +46,8 @@ import 'veil_section.dart';
 /// portrait, facts, presence, glance, appearance, pictures, dossier, ties,
 /// books. Everything is derived from the two cached reads; the dossier is
 /// the one thing the page will build, and the author's own fields — the
-/// name, the GMC, the appearance, the dossier text, hidden — the ones it writes.
+/// name, the GMC, the appearance, the dossier text, hidden, the portrait and
+/// the gallery — the ones it writes.
 ///
 /// Addressed by key rather than handed the card: a run that lands while the
 /// page is open re-derives the roster, and a page holding a stale card would
@@ -53,10 +58,11 @@ import 'veil_section.dart';
 /// as a dossier: the description as a lede, the GMC answers alone, the
 /// dossier text as prose, the strip through the book — nothing on it changes
 /// the card. EDITING drops what only reads (aliases, source, the strip) and
-/// puts the writable things in the same places: the GMC and the dossier as
-/// buttons onto their own screens, the description (which can be written
-/// from the portrait), the interview and the runs, the ties, and the card's
-/// own actions. Every field saves from its sheet or screen, so Done only
+/// puts the writable things in the same places: the portrait as its own
+/// door, the GMC and the dossier as buttons onto their own screens, the
+/// description (which can be written from the portrait), the gallery with
+/// its Add and its drag, the interview and the runs, the ties, and the
+/// card's own actions. Every field saves from its sheet or screen, so Done only
 /// goes back to reading. The phone web's `EntityPage.tsx`.
 class EntityScreen extends ConsumerStatefulWidget {
   const EntityScreen({super.key, required this.entityKey});
@@ -71,6 +77,18 @@ class _EntityScreenState extends ConsumerState<EntityScreen> {
   String? _entityId;
   bool _editing = false;
   bool _describing = false;
+  bool _portraitBusy = false;
+  bool _galleryBusy = false;
+
+  /// The character's ID card, made on the first open and kept for the page's
+  /// life, so a second open shows the same card rather than a new line.
+  IdCard? _idCard;
+
+  @override
+  void dispose() {
+    _idCard?.dispose();
+    super.dispose();
+  }
 
   /// The key may go stale under this page — renamed, hidden, or dropped by a
   /// rebuild. Back to the roster rather than a blank page. Safe only once the
@@ -108,7 +126,23 @@ class _EntityScreenState extends ConsumerState<EntityScreen> {
     final editing = _editing;
     final sections = <Widget>[
       if (EntityHeader.hasContent(entity, editing: editing)) EntityHeader(entity: entity, editing: editing),
-      if (entity.imageAssetId != null) EntityHeroPortrait(seriesId: seriesId, assetId: entity.imageAssetId!),
+      if (entity.imageAssetId != null || editing)
+        EntityHeroPortrait(
+          seriesId: seriesId,
+          assetId: entity.imageAssetId,
+          busy: _portraitBusy,
+          onEdit: editing
+              ? () => editPortrait(
+                    context,
+                    ref,
+                    projectId: projectId,
+                    entity: entity,
+                    name: titleCase(entity.name),
+                    prompt: entity.description.trim().isNotEmpty ? entity.description : (dossier?.appearance ?? ''),
+                    onBusy: (busy) => mounted ? setState(() => _portraitBusy = busy) : null,
+                  )
+              : null,
+        ),
       if (!editing && EntityAppearanceLede.hasContent(entity)) EntityAppearanceLede(entity: entity),
       if (EntityFacts.hasContent(entity, editing: editing)) EntityFacts(entity: entity, editing: editing),
       if (!editing && chapters.isNotEmpty) EntityPresence(entity: entity, chapters: chapters),
@@ -140,7 +174,30 @@ class _EntityScreenState extends ConsumerState<EntityScreen> {
           onDescribe: entity.imageAssetId != null ? () => _describe(projectId, entity) : null,
           describing: _describing,
         ),
-      if (entity.images.isNotEmpty) EntityGallery(images: entity.images, seriesId: seriesId),
+      if (entity.images.isNotEmpty || editing)
+        EntityGallery(
+          images: entity.images,
+          seriesId: seriesId,
+          adding: _galleryBusy,
+          onAdd: editing
+              ? () => addToGallery(
+                    context,
+                    ref,
+                    projectId: projectId,
+                    entity: entity,
+                    onBusy: (busy) => mounted ? setState(() => _galleryBusy = busy) : null,
+                  )
+              : null,
+          onReorder: editing
+              ? (ids) => orderGallery(context, ref, projectId: projectId, entityId: entity.id, itemIds: ids)
+              : null,
+          onSetPortrait: editing
+              ? (image) => setPortraitFrom(context, ref, projectId: projectId, entityId: entity.id, image: image)
+              : null,
+          onRemove: editing
+              ? (image) => removeFromCard(context, ref, projectId: projectId, entityId: entity.id, image: image)
+              : null,
+        ),
       EntityDossier(
         projectId: projectId,
         entity: entity,
@@ -184,6 +241,14 @@ class _EntityScreenState extends ConsumerState<EntityScreen> {
                 onRename: () => _rename(projectId, entity),
                 onHide: () => _write(projectId, entity, hidden: true),
               ),
+              besideEdit: entity.type == BibleEntityType.character && !editing
+                  ? GkButton(
+                      label: 'ID card',
+                      variant: ButtonVariant.outline,
+                      leading: Icon(LucideIcons.idCard, size: 15, color: Ds.soft),
+                      onPressed: () => _openIdCard(projectId, seriesId, entity),
+                    )
+                  : null,
             ),
             Expanded(
               child: ListView.separated(
@@ -197,6 +262,20 @@ class _EntityScreenState extends ConsumerState<EntityScreen> {
         ),
       ),
     );
+  }
+
+  void _openIdCard(String projectId, String? seriesId, BibleEntity entity) {
+    final assetId = entity.imageAssetId;
+    final card = _idCard ??= IdCard(
+      name: titleCase(entity.name),
+      ask: (avoid) => entityTagline(projectId, entity.id, avoid: avoid),
+      // Read when the card first opens: a portrait changed after that is
+      // not on this page's card.
+      portrait: () async =>
+          seriesId == null || seriesId.isEmpty || assetId == null ? null : await getSeriesAsset(seriesId, assetId),
+    );
+    card.name = titleCase(entity.name);
+    showIdCardSheet(context, card);
   }
 
   /// A one-tap write (Keep, Hide). A failure is said in a notice, since there
