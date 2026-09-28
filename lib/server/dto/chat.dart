@@ -325,12 +325,26 @@ class ChatBibleEdit {
       );
 }
 
+/// A change the turn handed to a task (ghostkey-server lib/tasks): the
+/// outline or the waiting chapters, written a few seconds after the answer.
+/// Its `task` job says how it went — `result` is `{ok, summary}`.
+class ChatTask {
+  const ChatTask({required this.id, required this.task, required this.label});
+  final String id;
+  final String task;
+  final String label;
+
+  static ChatTask fromJson(Json json) =>
+      ChatTask(id: asString(json['id']), task: asString(json['task']), label: asString(json['label']));
+}
+
 /// What a turn wrote into the project besides notes.
 class ChatTurnEdits {
-  const ChatTurnEdits({required this.chapterEdits, required this.bibleEdits});
+  const ChatTurnEdits({required this.chapterEdits, required this.bibleEdits, this.tasks = const []});
   final List<ChatChapterEdit> chapterEdits;
   final List<ChatBibleEdit> bibleEdits;
-  bool get isEmpty => chapterEdits.isEmpty && bibleEdits.isEmpty;
+  final List<ChatTask> tasks;
+  bool get isEmpty => chapterEdits.isEmpty && bibleEdits.isEmpty && tasks.isEmpty;
 }
 
 /// The `result` frame of a turn. `session` is the updated row when
@@ -345,6 +359,7 @@ class ChatTurnResult {
     required this.session,
     this.chapterEdits = const [],
     this.bibleEdits = const [],
+    this.tasks = const [],
     this.questions = const [],
     this.model,
     this.switchedFrom,
@@ -358,6 +373,10 @@ class ChatTurnResult {
   final List<ChatChapterEdit> chapterEdits;
   final List<ChatBibleEdit> bibleEdits;
 
+  /// Changes handed to tasks, still landing when the turn resolves. Empty
+  /// from a server that predates tasks.
+  final List<ChatTask> tasks;
+
   /// The registry model that answered. Null from a server that predates it.
   final String? model;
 
@@ -370,7 +389,7 @@ class ChatTurnResult {
   /// A plan only offered is the `view`, not this.
   final String? workPlanId;
 
-  ChatTurnEdits get edits => ChatTurnEdits(chapterEdits: chapterEdits, bibleEdits: bibleEdits);
+  ChatTurnEdits get edits => ChatTurnEdits(chapterEdits: chapterEdits, bibleEdits: bibleEdits, tasks: tasks);
 
   static ChatTurnResult fromJson(Json json) => ChatTurnResult(
         answer: asString(json['answer']),
@@ -379,6 +398,7 @@ class ChatTurnResult {
         session: json['session'] == null ? null : ChatSession.fromJson(asJson(json['session'])),
         chapterEdits: asJsonList(json['chapterEdits']).map(ChatChapterEdit.fromJson).toList(),
         bibleEdits: asJsonList(json['bibleEdits']).map(ChatBibleEdit.fromJson).toList(),
+        tasks: asJsonList(json['tasks']).map(ChatTask.fromJson).toList(),
         questions: ChatQuestion.listFromJson(json['plan'] is Map ? json['plan']['questions'] : null),
         model: _nonEmptyString(json['model']),
         switchedFrom: _nonEmptyString(json['switched_from']),

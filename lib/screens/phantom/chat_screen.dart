@@ -130,6 +130,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   void _openSettings() => showChatSettingsSheet(
         context,
+        projectId: _projectId,
         model: _model,
         manuscriptWrites: _manuscriptWrites,
         onModel: (model) => setState(() => _model = model),
