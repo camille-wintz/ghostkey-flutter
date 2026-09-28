@@ -153,24 +153,30 @@ class ChatSessionSummary {
     required this.title,
     required this.version,
     required this.updatedAt,
+    this.workPlanId,
   });
   final String id;
   final String title;
   final int version;
   final String updatedAt;
 
+  /// The work plan this conversation works under, or null.
+  final String? workPlanId;
+
   static ChatSessionSummary fromJson(Json json) => ChatSessionSummary(
         id: asString(json['id']),
         title: asString(json['title']),
         version: asInt(json['version']),
         updatedAt: asString(json['updated_at']),
+        workPlanId: _nonEmptyString(json['work_plan_id']),
       );
 }
 
 /// What a turn opened for the author to look at: a chapter (`id` is the
 /// document id), one of their boards (`id` is the StoryMap id), the Outline
 /// page or the Chapters page (neither carries an id), or a picture (`id` is
-/// the media item id). The desk seats it beside
+/// the media item id), or a work plan (`id` is the plan id). The desk seats
+/// it beside
 /// the conversation; the phone reviews it behind a button. `title` is a
 /// courtesy for a header; the id is the address.
 class ChatView {
@@ -182,15 +188,25 @@ class ChatView {
   /// Null for a shape this client does not know — read as nothing open.
   static ChatView? fromJson(Object? json) {
     if (json is! Map) return null;
-    final kind = ChatViewKind.values.where((k) => k.name == json['kind']).firstOrNull;
+    final kind = ChatViewKind.values.where((k) => k.wire == json['kind']).firstOrNull;
     if (kind == null) return null;
     return ChatView(kind: kind, id: json['id'] as String?, title: json['title'] as String?);
   }
 
-  Json toJson() => {'kind': kind.name, 'id': ?id, 'title': ?title};
+  Json toJson() => {'kind': kind.wire, 'id': ?id, 'title': ?title};
 }
 
-enum ChatViewKind { chapter, board, outline, chapters, image }
+enum ChatViewKind {
+  chapter('chapter'),
+  board('board'),
+  outline('outline'),
+  chapters('chapters'),
+  image('image'),
+  workPlan('work_plan');
+
+  const ChatViewKind(this.wire);
+  final String wire;
+}
 
 class ChatSession extends ChatSessionSummary {
   const ChatSession({
@@ -201,6 +217,7 @@ class ChatSession extends ChatSessionSummary {
     required this.projectId,
     required this.messages,
     required this.createdAt,
+    super.workPlanId,
     this.view,
   });
   final String projectId;
@@ -216,6 +233,7 @@ class ChatSession extends ChatSessionSummary {
         projectId: asString(json['project_id']),
         messages: asJsonList(json['messages']).map(ChatMessage.fromJson).toList(),
         createdAt: asString(json['created_at']),
+        workPlanId: _nonEmptyString(json['work_plan_id']),
         view: ChatView.fromJson(json['view']),
       );
 }
@@ -330,6 +348,7 @@ class ChatTurnResult {
     this.questions = const [],
     this.model,
     this.switchedFrom,
+    this.workPlanId,
   });
   final String answer;
   final List<ChatQuestion> questions;
@@ -346,6 +365,11 @@ class ChatTurnResult {
   /// model can't see and [model] answered instead. Null when nothing switched.
   final String? switchedFrom;
 
+  /// The work plan this turn worked under — started, taken up, or the one
+  /// the conversation already had. Null for none, and from an older server.
+  /// A plan only offered is the `view`, not this.
+  final String? workPlanId;
+
   ChatTurnEdits get edits => ChatTurnEdits(chapterEdits: chapterEdits, bibleEdits: bibleEdits);
 
   static ChatTurnResult fromJson(Json json) => ChatTurnResult(
@@ -358,6 +382,7 @@ class ChatTurnResult {
         questions: ChatQuestion.listFromJson(json['plan'] is Map ? json['plan']['questions'] : null),
         model: _nonEmptyString(json['model']),
         switchedFrom: _nonEmptyString(json['switched_from']),
+        workPlanId: _nonEmptyString(json['workPlanId']),
       );
 }
 

@@ -9,10 +9,11 @@ import 'chapter_review.dart';
 import 'image_review.dart';
 import 'outline_review.dart';
 import 'review_button.dart';
+import 'work_plan_review.dart';
 
 /// What a conversation's tools opened, as a page pushed over the chat: a
 /// board, the outline, the chapters — Mara's own pages — a chapter's line
-/// edits to rule on, or a picture from the library.
+/// edits to rule on, a picture from the library, or a work plan.
 class ReviewScreen extends StatelessWidget {
   const ReviewScreen({super.key, required this.projectId, required this.view});
   final String projectId;
@@ -33,6 +34,7 @@ class ReviewScreen extends StatelessWidget {
                   ChatViewKind.chapter => ChapterReview(projectId: projectId, documentId: view.id!),
                   ChatViewKind.chapters => ChaptersView(projectId: projectId),
                   ChatViewKind.image => ImageReview(projectId: projectId, itemId: view.id!, headerTitle: reviewTitle(view)),
+                  ChatViewKind.workPlan => WorkPlanReview(projectId: projectId, planId: view.id!),
                 },
               ),
             ],

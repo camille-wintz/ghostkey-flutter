@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../chat/drawer_entries.dart';
 import '../../chat/models.dart';
 import '../../chat/providers.dart';
 import '../../chat/quota_feature.dart';
@@ -10,12 +11,15 @@ import '../../server/providers.dart';
 import '../../ui/press.dart';
 import '../../ui/text.dart';
 import '../../ui/panel_head.dart';
+import 'plan_row.dart';
 import 'session_actions.dart';
 import 'session_row.dart';
 
 /// The room's chats, unfolded from the title above them: which book they
-/// belong to, new chat, the saved sessions newest first (long-press to rename
-/// or delete), and the weekly quota line.
+/// belong to, new chat, the work plans with their conversations set in under
+/// each (tap a plan for a new chat under it), the saved sessions under no
+/// plan newest first (long-press either to rename or delete), and the weekly
+/// quota line.
 ///
 /// The head is Apparition's — the same [PanelHead] the chapter list wears —
 /// and like it, it is a label and not a door: the way out of the room is the
@@ -27,7 +31,10 @@ class ChatSessionsPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sessions = ref.watch(chatSessionsProvider(projectId));
+    // A plans listing that fails leaves the chats as they were: flat.
+    final plans = ref.watch(workPlansProvider(projectId)).value ?? const [];
     final activeId = ref.watch(chatTurnProvider(projectId).select((s) => s.activeSessionId));
+    final activePlanId = ref.watch(chatTurnProvider(projectId).select((s) => s.workPlanId));
     final quota = quotaLine(ref.watch(quotaProvider).value?.feature(chatQuotaFeature));
     final turn = ref.read(chatTurnProvider(projectId).notifier);
     final title = ref.watch(projectProvider(projectId)).value?.project.displayTitle ?? 'Project';
@@ -70,26 +77,43 @@ class ChatSessionsPanel extends ConsumerWidget {
           ),
           Expanded(
             child: switch (sessions) {
-              AsyncValue(value: final list?) =>
-                list.isEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: UiText('No saved chats yet.', step: DsText.ui, color: Ds.mid),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
-                        itemCount: list.length,
-                        itemBuilder: (context, i) => SessionRow(
-                          key: ValueKey(list[i].id),
-                          session: list[i],
-                          active: list[i].id == activeId,
-                          onPressed: () {
-                            turn.selectSession(list[i].id);
-                            close();
-                          },
-                          onLongPress: () => showSessionActions(context, ref, projectId: projectId, session: list[i]),
-                        ),
-                      ),
+              AsyncValue(value: final list?) => switch (drawerEntries(plans, list)) {
+                  final entries when entries.isEmpty => Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: UiText('No saved chats yet.', step: DsText.ui, color: Ds.mid),
+                    ),
+                  final entries => ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+                      itemCount: entries.length,
+                      itemBuilder: (context, i) => switch (entries[i]) {
+                        DrawerHeading(:final label) => Padding(
+                            padding: EdgeInsets.only(left: 14, right: 14, top: i == 0 ? 4 : 14, bottom: 6),
+                            child: Eyebrow(label, color: Ds.faint),
+                          ),
+                        DrawerPlan(:final plan) => PlanRow(
+                            key: ValueKey('plan:${plan.id}'),
+                            plan: plan,
+                            active: plan.id == activePlanId,
+                            onPressed: () {
+                              turn.newChat(plan: (id: plan.id, name: plan.name));
+                              close();
+                            },
+                            onLongPress: () => showPlanActions(context, ref, projectId: projectId, plan: plan),
+                          ),
+                        DrawerSession(:final session, :final nested) => SessionRow(
+                            key: ValueKey(session.id),
+                            session: session,
+                            nested: nested,
+                            active: session.id == activeId,
+                            onPressed: () {
+                              turn.selectSession(session.id);
+                              close();
+                            },
+                            onLongPress: () => showSessionActions(context, ref, projectId: projectId, session: session),
+                          ),
+                      },
+                    ),
+                },
               AsyncValue(hasError: true) => Padding(
                 padding: const EdgeInsets.all(14),
                 child: UiText('Could not load your chats.', step: DsText.ui, color: Ds.mid),

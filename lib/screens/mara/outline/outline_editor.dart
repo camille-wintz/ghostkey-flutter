@@ -7,9 +7,18 @@ import '../../../ui/save_line.dart';
 /// The author's outline, a full page of prose saving as it is typed. Whoever
 /// mounts it owns the save and says when it is held still, and why.
 class OutlineEditor extends StatelessWidget {
-  const OutlineEditor({super.key, required this.autosave, this.readOnly = false, this.readOnlyNote});
+  const OutlineEditor({
+    super.key,
+    required this.autosave,
+    this.readOnly = false,
+    this.readOnlyNote,
+    this.hint = 'Write the outline — the story as you plan it.',
+  });
   final FieldAutosave autosave;
   final bool readOnly;
+
+  /// What an empty page says. The chat's work plan wears this editor too.
+  final String hint;
 
   /// Why it is read-only, said where the save line goes.
   final String? readOnlyNote;
@@ -32,7 +41,7 @@ class OutlineEditor extends StatelessWidget {
                 isDense: true,
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-                hintText: 'Write the outline — the story as you plan it.',
+                hintText: hint,
                 hintStyle: DsStyle.ui(DsText.body, color: Ds.faint),
               ),
             ),

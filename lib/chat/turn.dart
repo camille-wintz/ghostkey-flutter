@@ -76,6 +76,7 @@ class ChatTurnState {
     this.editsByIndex = const {},
     this.switchesByIndex = const {},
     this.view,
+    this.workPlanId,
   });
 
   final List<ChatMessage> messages;
@@ -101,6 +102,11 @@ class ChatTurnState {
   /// and what the Review button shows.
   final ChatView? view;
 
+  /// The work plan this conversation works under: the session row's, the one
+  /// a turn started or took up, or the one the author started a fresh chat
+  /// from. A fresh conversation's create carries it.
+  final String? workPlanId;
+
   ChatTurnState copyWith({
     List<ChatMessage>? messages,
     String? activeSessionId,
@@ -115,6 +121,9 @@ class ChatTurnState {
     Map<int, ChatTurnEdits>? editsByIndex,
     Map<int, ModelSwitch>? switchesByIndex,
     ChatView? view,
+    bool clearView = false,
+    String? workPlanId,
+    bool clearWorkPlan = false,
   }) =>
       ChatTurnState(
         messages: messages ?? this.messages,
@@ -126,7 +135,8 @@ class ChatTurnState {
         notesByIndex: notesByIndex ?? this.notesByIndex,
         editsByIndex: editsByIndex ?? this.editsByIndex,
         switchesByIndex: switchesByIndex ?? this.switchesByIndex,
-        view: view ?? this.view,
+        view: clearView ? null : (view ?? this.view),
+        workPlanId: clearWorkPlan ? null : (workPlanId ?? this.workPlanId),
       );
 }
 
@@ -201,6 +211,7 @@ class ChatTurnNotifier extends Notifier<ChatTurnState> with WidgetsBindingObserv
         model: model,
         manuscript: manuscript,
         sessionId: sessionId,
+        view: sessionId == null ? state.view : null,
         onStep: (step) => pending.steps.value = upsertStep(pending.steps.value, step),
         onText: (chunk) => pending.text.value = pending.text.value + chunk,
         onDiscard: () => pending.text.value = '',
@@ -236,8 +247,10 @@ class ChatTurnNotifier extends Notifier<ChatTurnState> with WidgetsBindingObserv
             _ => null,
           },
           view: result.session?.view,
+          workPlanId: result.workPlanId,
         );
       }
+      if (result.workPlanId != null) _invalidatePlans();
       _persist = _persistTurn(finalMessages, result.session, sessionId, token);
       return const SendDone();
     } catch (e) {
@@ -289,9 +302,17 @@ class ChatTurnNotifier extends Notifier<ChatTurnState> with WidgetsBindingObserv
         final placeholder = placeholderTitle(firstUser);
         // A first turn names no session, so the server had no row to write
         // what its tools opened into; the stream told us instead.
-        final created = await createSession(projectId, title: placeholder, messages: finalMessages, view: token == _token ? state.view : null);
+        final current = token == _token;
+        final created = await createSession(
+          projectId,
+          title: placeholder,
+          messages: finalMessages,
+          view: current ? state.view : null,
+          workPlanId: current ? state.workPlanId : null,
+        );
         if (token == _token && _alive) state = state.copyWith(activeSessionId: created.id);
         _invalidateSessions();
+        if (created.workPlanId != null) _invalidatePlans();
         // After the transcript is safe, never before: naming is a model
         // call, and nothing the author typed may wait on one.
         await _nameSession(created.id, placeholder, finalMessages);
@@ -311,6 +332,10 @@ class ChatTurnNotifier extends Notifier<ChatTurnState> with WidgetsBindingObserv
     if (_alive) ref.invalidate(chatSessionsProvider(projectId));
   }
 
+  void _invalidatePlans() {
+    if (_alive) ref.invalidate(workPlansProvider(projectId));
+  }
+
   Future<void> selectSession(String id) async {
     if (id == state.activeSessionId) return;
     _abort();
@@ -318,18 +343,40 @@ class ChatTurnNotifier extends Notifier<ChatTurnState> with WidgetsBindingObserv
     try {
       final session = await getSession(projectId, id);
       if (token != _token || !_alive) return;
-      state = ChatTurnState(activeSessionId: id, messages: session.messages, view: session.view);
+      state = ChatTurnState(
+        activeSessionId: id,
+        messages: session.messages,
+        view: session.view,
+        workPlanId: session.workPlanId,
+      );
       _awaiting = null;
     } catch (e) {
       if (_alive) state = state.copyWith(error: messageFor(e));
     }
   }
 
-  void newChat() {
+  /// A fresh conversation — under [plan] when the author started it from
+  /// one: the plan is open beside it from the first turn, and the session the
+  /// first turn creates is filed under it.
+  void newChat({({String id, String name})? plan}) {
     _abort();
     _token++;
     _awaiting = null;
-    state = const ChatTurnState();
+    state = plan == null
+        ? const ChatTurnState()
+        : ChatTurnState(
+            view: ChatView(kind: ChatViewKind.workPlan, id: plan.id, title: plan.name),
+            workPlanId: plan.id,
+          );
+  }
+
+  /// A plan was deleted: this conversation is no longer under it, and a
+  /// fresh one must not name it in its create (the server would 404).
+  void forgetPlan(String planId) {
+    final view = state.view;
+    final showing = view?.kind == ChatViewKind.workPlan && view?.id == planId;
+    if (state.workPlanId != planId && !showing) return;
+    state = state.copyWith(clearWorkPlan: state.workPlanId == planId, clearView: showing);
   }
 
   /// Abort the stream. The server still finishes and persists the turn.

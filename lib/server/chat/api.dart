@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../client.dart';
 import '../dto/chat.dart';
 import '../dto/json.dart';
+import '../dto/work_plan.dart';
 import '../errors.dart';
 import '../sse.dart';
 
@@ -23,30 +24,82 @@ Future<ChatSession> getSession(String projectId, String sessionId) async {
   return ChatSession.fromJson(asJson(res.jsonObject()['session']));
 }
 
+/// The create's body. `workPlanId` is the plan the first turn started or
+/// took up — this app creates the session after that turn, so the server had
+/// no row to attach it to.
+Json sessionCreateBody({required String title, List<ChatMessage>? messages, ChatView? view, String? workPlanId}) => {
+      'title': title,
+      'messages': ?messages?.map((m) => m.toJson()).toList(),
+      'view': ?view?.toJson(),
+      'work_plan_id': ?workPlanId,
+    };
+
 Future<ChatSession> createSession(
   String projectId, {
   required String title,
   List<ChatMessage>? messages,
   ChatView? view,
+  String? workPlanId,
 }) async {
-  final res = await apiFetch('${_base(projectId)}/sessions', method: 'POST', body: {
-    'title': title,
-    'messages': ?messages?.map((m) => m.toJson()).toList(),
-    'view': ?view?.toJson(),
-  });
+  final res = await apiFetch('${_base(projectId)}/sessions',
+      method: 'POST', body: sessionCreateBody(title: title, messages: messages, view: view, workPlanId: workPlanId));
   return ChatSession.fromJson(asJson(res.jsonObject()['session']));
 }
 
-Future<ChatSession> patchSession(String projectId, String sessionId, {List<ChatMessage>? messages, String? title}) async {
+/// `workPlanId` moves the conversation under a plan; this app never moves one
+/// out, so null means "leave it".
+Future<ChatSession> patchSession(
+  String projectId,
+  String sessionId, {
+  List<ChatMessage>? messages,
+  String? title,
+  String? workPlanId,
+}) async {
   final res = await apiFetch('${_base(projectId)}/sessions/${Uri.encodeComponent(sessionId)}', method: 'PATCH', body: {
     'messages': ?messages?.map((m) => m.toJson()).toList(),
     'title': ?title,
+    'work_plan_id': ?workPlanId,
   });
   return ChatSession.fromJson(asJson(res.jsonObject()['session']));
 }
 
 Future<void> deleteSession(String projectId, String sessionId) async {
   await apiFetch('${_base(projectId)}/sessions/${Uri.encodeComponent(sessionId)}', method: 'DELETE');
+}
+
+String _plans(String projectId) => '/api/projects/${Uri.encodeComponent(projectId)}/work-plans';
+
+/// The project's work plans, most recently changed first.
+Future<List<WorkPlanSummary>> listWorkPlans(String projectId) async {
+  final res = await apiFetch(_plans(projectId));
+  return asJsonList(res.jsonObject()['work_plans']).map(WorkPlanSummary.fromJson).toList();
+}
+
+Future<WorkPlan> getWorkPlan(String projectId, String planId) async {
+  final res = await apiFetch('${_plans(projectId)}/${Uri.encodeComponent(planId)}');
+  return WorkPlan.fromJson(asJson(res.jsonObject()['work_plan']));
+}
+
+/// `text` omitted, the plan starts with its empty headings.
+Future<WorkPlan> createWorkPlan(String projectId, {required String name, String? text}) async {
+  final res = await apiFetch(_plans(projectId), method: 'POST', body: {'name': name, 'text': ?text});
+  return WorkPlan.fromJson(asJson(res.jsonObject()['work_plan']));
+}
+
+/// Rename and/or save the text. `baseVersion` makes a text save conditional:
+/// a miss is 409 `version_conflict` (the chat wrote the plan meanwhile).
+Future<WorkPlan> patchWorkPlan(String projectId, String planId, {String? name, String? text, int? baseVersion}) async {
+  final res = await apiFetch('${_plans(projectId)}/${Uri.encodeComponent(planId)}', method: 'PATCH', body: {
+    'name': ?name,
+    'text': ?text,
+    'base_version': ?baseVersion,
+  });
+  return WorkPlan.fromJson(asJson(res.jsonObject()['work_plan']));
+}
+
+/// For good. Its conversations stay, under no plan.
+Future<void> deleteWorkPlan(String projectId, String planId) async {
+  await apiFetch('${_plans(projectId)}/${Uri.encodeComponent(planId)}', method: 'DELETE');
 }
 
 /// A short title for a conversation from its opening turns; "" when the model
@@ -88,6 +141,10 @@ Future<TurnHandle> streamTurn(
   /// every turn: the server's default is read-only, the app's is write.
   String? manuscript,
   String? sessionId,
+  /// What is open beside a conversation that has no session yet — a work
+  /// plan the author started it from. With a session the server reads the
+  /// row's own view and ignores this.
+  ChatView? view,
   required void Function(ChatToolStep step) onStep,
   required void Function(String chunk) onText,
   required void Function() onDiscard,
@@ -102,6 +159,7 @@ Future<TurnHandle> streamTurn(
       'model': ?model,
       'manuscript': ?manuscript,
       'session_id': ?sessionId,
+      if (sessionId == null) 'view': ?view?.toJson(),
       // The phone has no desk beside the chat, but what a tool opens is
       // still where its work landed: the Review button seats it on demand.
       'views': 'beside',
