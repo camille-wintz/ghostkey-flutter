@@ -21,8 +21,8 @@ import 'veil_section_link.dart';
 /// which the author edits and the `entity_dossier` job writes, plus the
 /// generated half (stale notice, timeline, provenance) cached until a chapter
 /// that mentions it changes. Cards carry no facts — this IS the entity's info
-/// surface — so opening the page builds a missing dossier on its own (the job
-/// fills an empty text).
+/// surface — but opening it runs nothing, as on the desk: an empty card offers
+/// Fill from the book beside Create dossier, and the author presses one.
 ///
 /// Two modes, as on the desk. READING, the text is set as prose and nothing
 /// changes it; an empty dossier offers the two ways in — Fill from the book,
@@ -69,18 +69,13 @@ class EntityDossier extends ConsumerStatefulWidget {
 class _EntityDossierState extends ConsumerState<EntityDossier> {
   DossierTarget get _target => (projectId: widget.projectId, key: widget.entity.key);
 
-  @override
-  void initState() {
-    super.initState();
-    // After the first build, so the provider is being watched (and so kept
-    // alive) by the time its notifier starts polling.
-    Future<void>.microtask(() {
-      if (mounted) unawaited(ref.read(dossierBuildProvider(_target).notifier).buildOnOpen());
-    });
-  }
+  void _start({bool force = false, bool fill = false, bool portrait = false}) =>
+      unawaited(ref.read(dossierBuildProvider(_target).notifier).start(force: force, fill: fill, portrait: portrait));
 
-  void _start({bool force = false, bool fill = false}) =>
-      unawaited(ref.read(dossierBuildProvider(_target).notifier).start(force: force, fill: fill));
+  /// Fill an empty text from the book. Always a fresh reading — a cached one
+  /// files no prose — and, being the card's first description, it draws the
+  /// portrait too, as the desk's Fill does.
+  void _fill() => _start(force: true, fill: true, portrait: true);
 
   /// Replacing the author's text is the one run that loses their words, so
   /// it asks first.
@@ -109,11 +104,7 @@ class _EntityDossierState extends ConsumerState<EntityDossier> {
     final Widget? action = !canRun || build.building || build.error != null
         ? null
         : !hasText
-            ? (dossier == null
-                ? null // the build-on-open is already doing it
-                // A cached dossier is a cache hit without force, and a cache
-                // hit files no prose.
-                : VeilSectionLink(icon: LucideIcons.sparkles, label: 'Fill from the book', onTap: () => _start(force: true)))
+            ? VeilSectionLink(icon: LucideIcons.sparkles, label: 'Fill from the book', onTap: _fill)
             : dossier != null && dossier.stale
                 // Keeps the author's text; refreshes the timeline and the rest.
                 ? VeilSectionLink(icon: LucideIcons.refreshCw, label: 'Update', onTap: _start)
@@ -129,17 +120,10 @@ class _EntityDossierState extends ConsumerState<EntityDossier> {
             _Working(build.progress),
             if (!editing && hasText) const SizedBox(height: 16),
           ] else if (build.error case final String error) ...[
-            _Failed(error, canRun ? () => _start() : null),
+            _Failed(error, canRun ? (hasText ? () => _start() : _fill) : null),
             const SizedBox(height: 16),
-          ] else if (!editing && !hasText && dossier == null)
-            Text(
-              !probed
-                  ? 'Checking for a dossier…'
-                  : canRun
-                      ? 'Reading the mentions…'
-                      : _whyNot(capability),
-              style: DsStyle.ui(DsText.ui, color: Ds.faint),
-            ),
+          ] else if (!editing && !hasText && !canRun)
+            Text(_whyNot(capability), style: DsStyle.ui(DsText.ui, color: Ds.faint)),
           if (editing) ...[
             if (!build.building) ...[
               if (dossier != null && dossier.stale && hasText) const DossierStaleNotice(editing: true),
@@ -171,11 +155,10 @@ class _EntityDossierState extends ConsumerState<EntityDossier> {
           else if (!build.building)
             _Empty(
               name: titleCase(widget.entity.name),
-              // Filling needs a reading to file from; without one the
-              // build-on-open is the fill.
-              onFill: canRun && dossier != null && build.error == null ? () => _start(force: true) : null,
+              // Held until the probe settles, as the desk's button is.
+              onFill: canRun && probed && build.error == null ? _fill : null,
               onCreate: widget.onCreate,
-              spaced: dossier == null,
+              spaced: !canRun,
             ),
         ],
       ),
