@@ -38,13 +38,27 @@ import 'section_header.dart';
 /// than a jump: the list is built already positioned, from the same layout
 /// table it draws by, so a row it has never mounted is landed on exactly.
 class ChapterNav extends ConsumerStatefulWidget {
-  const ChapterNav({super.key, required this.state, required this.rename, required this.onBack, required this.onOpen});
+  const ChapterNav({
+    super.key,
+    required this.state,
+    required this.rename,
+    required this.onBack,
+    required this.onOpen,
+    this.head,
+    this.headHeight = 0,
+  });
   final ChapterNavState state;
   final RecentRename rename;
   final VoidCallback onBack;
 
   /// Open a document (a chapter or a note), by filename, as its own page.
   final ValueChanged<String> onOpen;
+
+  /// Drawn above the Chapters header while the list isn't searched — the
+  /// room's "Find me a scene to write". [headHeight] is its height when the
+  /// list opens, so the reveal still lands on the last chapter.
+  final Widget? head;
+  final double headHeight;
 
   @override
   ConsumerState<ChapterNav> createState() => _ChapterNavState();
@@ -67,7 +81,8 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
     final data = ref.read(projectProvider(_projectId)).value;
     final active = ref.read(activeProjectProvider).activeChapter;
     final offset = data == null ? null : _layout(data).offsetOfChapter(active);
-    _scroll = ScrollController(initialScrollOffset: offset == null ? 0 : revealOffset(offset));
+    final head = widget.head != null && widget.state.query.isEmpty ? widget.headHeight : 0.0;
+    _scroll = ScrollController(initialScrollOffset: offset == null ? 0 : revealOffset(offset + head));
   }
 
   @override
@@ -142,6 +157,7 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
                 child: CustomScrollView(
                   controller: _scroll,
                   slivers: [
+                    if (widget.head case final head? when state.query.isEmpty) SliverToBoxAdapter(child: head),
                     SliverToBoxAdapter(
                       child: SectionHeader(label: 'Chapters', onAdd: data == null ? null : () => _createChapter(data)),
                     ),

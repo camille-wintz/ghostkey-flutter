@@ -88,6 +88,8 @@ class ChapterEditor extends ConsumerStatefulWidget {
     required this.onMenu,
     this.onDictate,
     this.onScan,
+    this.pageHead,
+    this.revealEnd = false,
   });
 
   final String projectId;
@@ -101,6 +103,14 @@ class ChapterEditor extends ConsumerStatefulWidget {
   final VoidCallback onMenu;
   final CaptureLauncher? onDictate;
   final CaptureLauncher? onScan;
+
+  /// Drawn above the manuscript, scrolling with it — the prompt "Find me a
+  /// scene to write" sent the author here with.
+  final Widget? pageHead;
+
+  /// Open scrolled to the foot of the chapter, where the caret already is:
+  /// the scene to write goes at the end.
+  final bool revealEnd;
 
   @override
   ConsumerState<ChapterEditor> createState() => _ChapterEditorState();
@@ -197,7 +207,20 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
     // this build, so focus is asked for once it is in the tree. Read-only, so
     // no keyboard comes with it — and no scroll either, since Flutter only
     // chases the caret for a field that can be typed into.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _keepCaret());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _keepCaret();
+      if (widget.revealEnd) _revealEnd();
+    });
+  }
+
+  /// Land on the foot of the page at once, the way [_followFoot] would ride
+  /// down to it: the last line clear of the +, the page following it from here.
+  void _revealEnd() {
+    if (!mounted || !_scroll.hasClients) return;
+    _stickToEnd = true;
+    final end = _scroll.position.maxScrollExtent;
+    final target = (end - (_pageFoot - _tailRoom(MediaQuery.paddingOf(context).bottom))).clamp(0.0, end);
+    _scroll.jumpTo(target);
   }
 
   // Absent rather than padlocked when the plan has no sweep: an upsell parked
@@ -512,6 +535,7 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
                   ValueListenableBuilder<double>(
                     valueListenable: dictationDockHeight,
                     builder: (context, dock, _) => _Page(
+                      head: widget.pageHead,
                       editor: _editor,
                       focus: _focus,
                       scroll: _scroll,
@@ -613,6 +637,7 @@ class _ChapterEditorState extends ConsumerState<ChapterEditor> with WidgetsBindi
 /// the keyboard arrives at the place the tap just chose.
 class _Page extends StatelessWidget {
   const _Page({
+    this.head,
     required this.editor,
     required this.focus,
     required this.scroll,
@@ -620,6 +645,7 @@ class _Page extends StatelessWidget {
     required this.onWrite,
     required this.bottomPadding,
   });
+  final Widget? head;
   final EditorController editor;
   final FocusNode focus;
   final ScrollController scroll;
@@ -635,6 +661,7 @@ class _Page extends StatelessWidget {
       controller: scroll,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
       slivers: [
+        if (head case final head?) SliverToBoxAdapter(child: head),
         SliverPadding(
           padding: const EdgeInsets.only(top: 8),
           sliver: SliverToBoxAdapter(

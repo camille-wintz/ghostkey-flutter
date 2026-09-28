@@ -4,6 +4,7 @@ import '../../offline/mirror.dart';
 import '../client.dart';
 import '../dto/jobs.dart';
 import '../dto/json.dart';
+import '../dto/next_scene.dart';
 import '../dto/projects.dart';
 
 // The shelf, a project's detail and a document are the reads the offline
@@ -251,4 +252,17 @@ Future<ProjectPlan?> getProjectPlan(String projectId) async {
 Future<ProjectPlan> putProjectPlan(String projectId, ProjectPlan plan) async {
   final res = await apiFetch('/api/projects/$projectId/plan', method: 'PUT', body: {'plan': plan.toJson()});
   return ProjectPlan.fromJson(asJson(res.jsonObject()['plan']));
+}
+
+/// "Find me a scene to write": the first unwritten chapter or missing
+/// transition in reading order, else the end of the book — past every spot in
+/// [skip] and every one the author marked.
+Future<NextScene> findNextScene(String projectId, {List<String> skip = const []}) async {
+  final res = await apiFetch('/api/projects/$projectId/next-scene', method: 'POST', body: {'skip': skip});
+  return NextScene.fromJson(res.jsonObject());
+}
+
+/// Store the author's word on a spot the finder offered; null clears it.
+Future<void> markNextSceneSpot(String projectId, String spot, SpotMark? mark) async {
+  await apiFetch('/api/projects/$projectId/next-scene/marks', method: 'PUT', body: {'spot': spot, 'mark': mark?.name});
 }
