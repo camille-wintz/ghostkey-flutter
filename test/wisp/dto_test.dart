@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ghostkey/server/dto/jobs.dart';
 import 'package:ghostkey/server/dto/wisp.dart';
 import 'package:ghostkey/wisp/access.dart';
-import 'package:ghostkey/server/dto/billing.dart';
 
 void main() {
   test('an outline with no cache row reads as empty at every length', () {
@@ -79,15 +78,37 @@ void main() {
     expect(job.questions.single.options.first.inputPlaceholder, isNull);
   });
 
-  test('free counts the three analyses on one pooled counter', () {
-    QuotaSnapshot snapshot(List<String> features) => QuotaSnapshot.fromJson({
-          'plan': 'free',
-          'period_end': '2026-09-20T00:00:00Z',
-          'features': [
-            for (final f in features) {'feature': f, 'label': f, 'allowance': 1, 'used': 0, 'remaining': 1},
-          ],
-        });
-    expect(analysisQuotaFeature(snapshot(['book_analysis']), AnalysisId.theme), 'book_analysis');
-    expect(analysisQuotaFeature(snapshot(['pacing_analysis']), AnalysisId.pacing), 'pacing_analysis');
+  test('each analysis counts on its own counter', () {
+    expect(analysisQuotaFeature(AnalysisId.pacing), 'pacing_analysis');
+  });
+
+  test('a read with no preview field reads whole', () {
+    final read = AnalysisRead.fromJson({
+      'report': {'analysis': 'theme', 'generated_at': '', 'chapter_count': 1, 'overview': 'x'},
+    });
+    expect(read.report!.overview, 'x');
+    expect(read.preview, isNull);
+    expect(OutlineResult.fromJson({'outline': null, 'synopsis': null, 'extended': null}).previews, isEmpty);
+  });
+
+  test('a preview says per part how much was held back', () {
+    final read = AnalysisRead.fromJson({
+      'report': null,
+      'preview': {'hidden_words': 900, 'hidden_units': 5},
+    });
+    expect(read.preview!.hiddenWords, 900);
+    final outline = OutlineResult.fromJson({
+      'outline': <Object>[],
+      'synopsis': null,
+      'extended': null,
+      'preview': {
+        'outline': {'hidden_words': 4000, 'hidden_units': 23},
+        'synopsis': null,
+        'extended': {'hidden_words': 3000, 'hidden_units': 12},
+      },
+    });
+    expect(outline.previews[OutlineLength.detailed]!.hiddenUnits, 23);
+    expect(outline.previews[OutlineLength.synopsis], isNull);
+    expect(outline.previews[OutlineLength.extended]!.hiddenWords, 3000);
   });
 }

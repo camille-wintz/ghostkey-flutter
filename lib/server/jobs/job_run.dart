@@ -11,7 +11,7 @@ import 'run_job.dart';
 typedef JobRunKey = ({String projectId, String kind, String? subject});
 
 class JobRunState {
-  const JobRunState({this.running = false, this.progress, this.tag, this.error});
+  const JobRunState({this.running = false, this.progress, this.tag, this.error, this.denial});
   final bool running;
 
   /// What the job says it is doing, while it does it.
@@ -24,6 +24,10 @@ class JobRunState {
 
   /// Why the last run did not finish, in the author's words.
   final String? error;
+
+  /// Set with [error] when the start was a 403 `plan_insufficient`, for a
+  /// page that answers a refused plan with its padlock notice instead.
+  final PlanDenial? denial;
 }
 
 /// One server job, watched from a page: start it, attach to one already
@@ -102,7 +106,12 @@ abstract class JobRun extends Notifier<JobRunState> {
       onLanded();
     } catch (e) {
       if (!ref.mounted) return;
-      state = reportQuotaRefusal(e) ? const JobRunState() : JobRunState(error: messageFor(e));
+      state = reportQuotaRefusal(e)
+          ? const JobRunState()
+          : JobRunState(
+              error: messageFor(e),
+              denial: e is ServerError && e.code == 'plan_insufficient' ? e.denial ?? const PlanDenial() : null,
+            );
     }
   }
 

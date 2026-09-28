@@ -17,7 +17,7 @@ typedef AnalysisKey = ({String projectId, AnalysisId analysis});
 /// job socket.
 const Duration _poll = Duration(seconds: 3);
 
-final analysisProvider = FutureProvider.autoDispose.family<AnalysisReport?, AnalysisKey>(
+final analysisProvider = FutureProvider.autoDispose.family<AnalysisRead, AnalysisKey>(
   (ref, key) => getAnalysis(key.projectId, key.analysis),
 );
 

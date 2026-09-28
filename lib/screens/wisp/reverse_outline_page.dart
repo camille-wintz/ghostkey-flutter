@@ -16,6 +16,7 @@ import '../project/project_root.dart';
 import 'chapter_outline_card.dart';
 import 'condensed_outline_view.dart';
 import 'outline_length_tabs.dart';
+import 'report_preview.dart';
 import 'run_again.dart';
 import 'wisp_intro.dart';
 import '../../ui/lock_notice.dart';
@@ -67,6 +68,7 @@ class _ReverseOutlinePageState extends ConsumerState<ReverseOutlinePage> {
     final runKey = outlineRunKey(projectId);
     final run = ref.watch(wispRunProvider(runKey));
     final gate = ref.watch(capabilityProvider(outlineCapability));
+    final fullGate = ref.watch(capabilityProvider(fullReportsCapability));
     final quota = quotaLine(ref.watch(quotaProvider).value?.feature(outlineQuotaFeature));
     final copy = _copyFor(_length);
 
@@ -75,8 +77,16 @@ class _ReverseOutlinePageState extends ConsumerState<ReverseOutlinePage> {
     final runningHere = run.running && (run.tag == null || run.tag == _length);
     final runningElsewhere = run.running && !runningHere;
 
+    ref.listen(wispRunProvider(runKey), (prev, next) {
+      if (next.denial case final denial? when prev?.denial == null) {
+        ref.invalidate(accessProvider);
+        explainDenial(context, denial, fullReportsLabel);
+      }
+    });
+
     void start({required bool force}) {
       if (!gate.granted) return explainLock(context, gate, 'Reverse outline');
+      if (force && !fullGate.granted) return explainLock(context, fullGate, fullReportsLabel);
       ref.read(wispRunProvider(runKey).notifier).start({
         if (_length != OutlineLength.detailed) 'length': _length.wire,
         if (force) 'force': true,
@@ -86,6 +96,7 @@ class _ReverseOutlinePageState extends ConsumerState<ReverseOutlinePage> {
     final result = outline.value;
     final condensed = result?.condensed(_length);
     final hasDetailed = result != null && result.chapters.isNotEmpty;
+    final cut = result?.previews[_length];
 
     final Widget body;
     if (project != null && !hasChapters) {
@@ -111,10 +122,11 @@ class _ReverseOutlinePageState extends ConsumerState<ReverseOutlinePage> {
           else
             for (final (i, chapter) in result!.chapters.indexed)
               ChapterOutlineCard(chapter: chapter, index: i, isLast: i == result.chapters.length - 1),
+          if (cut != null) ReportPreview(cut: cut, subject: copy.title),
           RunAgain(
             label: 'Read the book again',
             onRun: runningElsewhere ? () {} : () => start(force: true),
-            locked: !gate.granted,
+            locked: !gate.granted || !fullGate.granted,
             disabled: tooShort || runningElsewhere,
             quota: quota,
           ),
@@ -146,7 +158,7 @@ class _ReverseOutlinePageState extends ConsumerState<ReverseOutlinePage> {
         children: [
           OutlineLengthTabs(value: _length, onChange: (length) => setState(() => _length = length)),
           const SizedBox(height: 18),
-          if (run.error case final error? when !run.running) PageNotice(error, error: true),
+          if (run.error case final error? when !run.running && run.denial == null) PageNotice(error, error: true),
           body,
         ],
       ),

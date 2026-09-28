@@ -2,6 +2,8 @@ import 'package:flutter/widgets.dart';
 
 import '../access/capability.dart';
 import '../access/plans.dart';
+import '../server/dto/billing.dart';
+import '../server/errors.dart';
 import 'notice_modal.dart';
 
 /// What a padlocked control says when tapped: which plan opens it, and
@@ -18,3 +20,15 @@ void explainLock(BuildContext context, CapabilityState state, String fallbackLab
     children: [NoticeText('${plan ?? 'A higher plan'} opens it.')],
   );
 }
+
+/// The same notice for a 403 `plan_insufficient` the server sent back — the
+/// snapshot let the call through, so the refusal's own label and plan speak.
+void explainDenial(BuildContext context, PlanDenial denial, String fallbackLabel) => explainLock(
+      context,
+      CapabilityState(
+        granted: false,
+        label: denial.label,
+        requiredPlan: denial.requiredPlan == null ? null : Plan.fromWire(denial.requiredPlan),
+      ),
+      fallbackLabel,
+    );

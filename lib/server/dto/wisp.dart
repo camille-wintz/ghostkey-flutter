@@ -263,6 +263,36 @@ class AnalysisReport {
       );
 }
 
+/// A report the plan reads as a preview: how much of it the server held back
+/// (`lib/wisp/preview.ts`), so the page can draw a blur that size without
+/// ever being sent the rest. `hiddenUnits` counts blocks — chapters for the
+/// detailed outline, paragraphs for condensed prose, paragraphs and sections
+/// for an analysis.
+class PreviewCut {
+  const PreviewCut({required this.hiddenWords, required this.hiddenUnits});
+  final int hiddenWords;
+  final int hiddenUnits;
+
+  static PreviewCut? fromJson(dynamic value) {
+    if (value is! Map) return null;
+    final json = asJson(value);
+    return PreviewCut(hiddenWords: asInt(json['hidden_words']), hiddenUnits: asInt(json['hidden_units']));
+  }
+}
+
+/// One analysis as the read returns it: the report (null before a first
+/// run) and, below `wisp.full_reports`, how much of it was held back.
+class AnalysisRead {
+  const AnalysisRead({required this.report, required this.preview});
+  final AnalysisReport? report;
+  final PreviewCut? preview;
+
+  static AnalysisRead fromJson(Json json) => AnalysisRead(
+        report: json['report'] is Map ? AnalysisReport.fromJson(asJson(json['report'])) : null,
+        preview: PreviewCut.fromJson(json['preview']),
+      );
+}
+
 enum OutlineLength {
   synopsis,
   extended,
@@ -301,11 +331,20 @@ class CondensedOutline {
 
 /// Every length of the reverse outline, from the one cache row. `chapters`
 /// is empty when the book has never been outlined.
+///
+/// `previews` is per length what a plan below `wisp.full_reports` did not
+/// get of it; empty when the whole outline was read.
 class OutlineResult {
-  const OutlineResult({required this.chapters, required this.synopsis, required this.extended});
+  const OutlineResult({
+    required this.chapters,
+    required this.synopsis,
+    required this.extended,
+    this.previews = const {},
+  });
   final List<ChapterOutline> chapters;
   final CondensedOutline? synopsis;
   final CondensedOutline? extended;
+  final Map<OutlineLength, PreviewCut> previews;
 
   static const empty = OutlineResult(chapters: [], synopsis: null, extended: null);
 
@@ -315,11 +354,22 @@ class OutlineResult {
         OutlineLength.detailed => null,
       };
 
-  static OutlineResult fromJson(Json json) => OutlineResult(
-        chapters: asJsonList(json['outline']).map(ChapterOutline.fromJson).toList(),
-        synopsis: json['synopsis'] is Map ? CondensedOutline.fromJson(asJson(json['synopsis'])) : null,
-        extended: json['extended'] is Map ? CondensedOutline.fromJson(asJson(json['extended'])) : null,
-      );
+  static OutlineResult fromJson(Json json) {
+    final preview = json['preview'] is Map ? asJson(json['preview']) : const <String, dynamic>{};
+    return OutlineResult(
+      chapters: asJsonList(json['outline']).map(ChapterOutline.fromJson).toList(),
+      synopsis: json['synopsis'] is Map ? CondensedOutline.fromJson(asJson(json['synopsis'])) : null,
+      extended: json['extended'] is Map ? CondensedOutline.fromJson(asJson(json['extended'])) : null,
+      previews: {
+        for (final (length, key) in [
+          (OutlineLength.detailed, 'outline'),
+          (OutlineLength.synopsis, 'synopsis'),
+          (OutlineLength.extended, 'extended'),
+        ])
+          length: ?PreviewCut.fromJson(preview[key]),
+      },
+    );
+  }
 }
 
 /// How the author ruled on a finding: `prior` — the earlier chapter is

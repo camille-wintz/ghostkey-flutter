@@ -2,12 +2,12 @@ import '../client.dart';
 import '../dto/json.dart';
 import '../dto/wisp.dart';
 
-/// GET /api/projects/{id}/analyses/{analysis} — the last run's report, or
-/// null when none has run (or it is from an older format).
-Future<AnalysisReport?> getAnalysis(String projectId, AnalysisId analysis) async {
+/// GET /api/projects/{id}/analyses/{analysis} — the last run's report (null
+/// when none has run, or it is from an older format), cut to a preview below
+/// `wisp.full_reports`.
+Future<AnalysisRead> getAnalysis(String projectId, AnalysisId analysis) async {
   final res = await apiFetch('/api/projects/$projectId/analyses/${analysis.wire}');
-  final report = res.jsonObject()['report'];
-  return report is Map ? AnalysisReport.fromJson(asJson(report)) : null;
+  return AnalysisRead.fromJson(res.jsonObject());
 }
 
 /// GET /api/projects/{id}/outline — every length of the reverse outline.

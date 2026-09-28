@@ -16,6 +16,7 @@ import '../../wisp/wisp_run.dart';
 import '../project/project_root.dart';
 import 'genre_report.dart';
 import 'pacing_report.dart';
+import 'report_preview.dart';
 import 'run_again.dart';
 import 'theme_report.dart';
 import 'wisp_intro.dart';
@@ -64,12 +65,20 @@ class AnalysisPage extends ConsumerWidget {
     final runKey = analysisRunKey(projectId, analysis);
     final run = ref.watch(wispRunProvider(runKey));
     final gate = ref.watch(capabilityProvider(analysisCapability));
-    final quotas = ref.watch(quotaProvider).value;
-    final quota = quotaLine(quotas?.feature(analysisQuotaFeature(quotas, analysis)));
+    final fullGate = ref.watch(capabilityProvider(fullReportsCapability));
+    final quota = quotaLine(ref.watch(quotaProvider).value?.feature(analysisQuotaFeature(analysis)));
 
-    void start() {
+    ref.listen(wispRunProvider(runKey), (prev, next) {
+      if (next.denial case final denial? when prev?.denial == null) {
+        ref.invalidate(accessProvider);
+        explainDenial(context, denial, fullReportsLabel);
+      }
+    });
+
+    void start({required bool again}) {
       if (!gate.granted) return explainLock(context, gate, 'Book analyses');
-      ref.read(wispRunProvider(runKey).notifier).start({'analysis': analysis.wire});
+      if (again && !fullGate.granted) return explainLock(context, fullGate, fullReportsLabel);
+      ref.read(wispRunProvider(runKey).notifier).start({'analysis': analysis.wire, if (again) 'force': true});
     }
 
     final Widget body;
@@ -81,7 +90,7 @@ class AnalysisPage extends ConsumerWidget {
       body = PageNotice("The saved analysis wouldn't load: ${messageFor(report.error)}", error: true);
     } else if (!report.hasValue) {
       body = const WispPageLoading('Looking for a saved analysis…');
-    } else if (report.value case final r?) {
+    } else if (report.value?.report case final r?) {
       body = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -95,7 +104,14 @@ class AnalysisPage extends ConsumerWidget {
             AnalysisId.pacing => PacingReport(report: r),
             AnalysisId.genre => GenreReport(report: r),
           },
-          RunAgain(label: 'Run again', onRun: start, locked: !gate.granted, disabled: tooShort, quota: quota),
+          if (report.value?.preview case final cut?) ReportPreview(cut: cut, subject: 'report'),
+          RunAgain(
+            label: 'Run again',
+            onRun: () => start(again: true),
+            locked: !gate.granted || !fullGate.granted,
+            disabled: tooShort,
+            quota: quota,
+          ),
         ],
       );
     } else {
@@ -103,7 +119,7 @@ class AnalysisPage extends ConsumerWidget {
         icon: copy.icon,
         blurb: copy.intro,
         action: copy.action,
-        onRun: start,
+        onRun: () => start(again: false),
         locked: !gate.granted,
         disabled: project == null || tooShort,
         quota: quota,
@@ -118,7 +134,7 @@ class AnalysisPage extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 40),
         children: [
-          if (run.error case final error? when !run.running) PageNotice(error, error: true),
+          if (run.error case final error? when !run.running && run.denial == null) PageNotice(error, error: true),
           body,
         ],
       ),

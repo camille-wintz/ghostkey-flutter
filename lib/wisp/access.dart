@@ -1,4 +1,3 @@
-import '../server/dto/billing.dart';
 import '../server/dto/projects.dart';
 import '../server/dto/wisp.dart';
 
@@ -10,15 +9,18 @@ const String analysisCapability = 'wisp.book_analysis';
 const String outlineCapability = 'phantom.reverse_outline';
 const String continuityCapability = 'phantom.continuity';
 
+/// Below it, the reports read back as previews and each is made once: a
+/// forced re-read is refused (`ghostkey-server` `lib/wisp/preview.ts`).
+const String fullReportsCapability = 'wisp.full_reports';
+const String fullReportsLabel = 'Whole Wisp reports';
+
 const String outlineQuotaFeature = 'reverse_outline';
 const String continuityQuotaFeature = 'continuity';
 const String lineEditQuotaFeature = 'edit_pass';
 
-/// The counter an analysis spends. On free the three share `book_analysis`,
-/// which only free's snapshot carries; everywhere else each counts on its own.
-/// Read off the snapshot, so the server's table stays the one that decides.
-String analysisQuotaFeature(QuotaSnapshot? snapshot, AnalysisId analysis) =>
-    snapshot?.feature('book_analysis') != null ? 'book_analysis' : '${analysis.wire}_analysis';
+/// The counter an analysis spends, each on its own. Free carries none of
+/// them: its analyses are uncounted previews since 2026-09-28.
+String analysisQuotaFeature(AnalysisId analysis) => '${analysis.wire}_analysis';
 
 /// The floor under a pass that reads the whole book: the reverse outline,
 /// continuity and the three analyses. The server refuses them under it
