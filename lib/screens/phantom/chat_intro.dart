@@ -4,14 +4,17 @@ import '../../ds/tokens.dart';
 import '../../ui/press.dart';
 import '../../ui/text.dart';
 
-// The empty thread: what the room is, and four starter prompts. Two sets,
-// the desktop's — one for a manuscript, one for a book that is still a plan.
+// The empty thread: what the room is, and the starter prompts. Two sets,
+// one for a manuscript, one for a book that is still a plan. A copy of the
+// web's list, ghost-key src/shared/data/chatStarters.ts (the desk and /m/
+// both read that one) — change the two together.
 
 const List<String> _manuscriptSuggestions = [
   'Where does the pacing sag?',
-  "Summarize chapter 3's arc",
+  'Line edit my first chapter',
   'List the unresolved threads',
   'Which characters disappear for too long?',
+  'Help me plot the rest of the book',
 ];
 
 const List<String> _planningSuggestions = [
