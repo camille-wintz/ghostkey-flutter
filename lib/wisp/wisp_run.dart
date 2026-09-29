@@ -1,16 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../server/dto/wisp.dart';
 import '../server/jobs/job_run.dart';
 import '../server/providers.dart';
+import 'access.dart';
 import 'providers.dart';
 
 /// Which of Wisp's runs: its job kind, and the subject its running slot is
 /// keyed on (the analysis, for `book_analysis`; none otherwise).
 typedef WispRunKey = JobRunKey;
 
-WispRunKey analysisRunKey(String projectId, AnalysisId analysis) =>
-    (projectId: projectId, kind: 'book_analysis', subject: analysis.wire);
+/// [analysis] is the wire id: an [AnalysisId]'s, or a beta reader's.
+WispRunKey analysisRunKey(String projectId, String analysis) =>
+    (projectId: projectId, kind: 'book_analysis', subject: analysis);
 
 WispRunKey outlineRunKey(String projectId) => (projectId: projectId, kind: 'reverse_outline', subject: null);
 
@@ -34,8 +35,15 @@ class WispRun extends JobRun {
     ref.invalidate(quotaProvider);
     switch (key.kind) {
       case 'book_analysis':
-        final analysis = AnalysisId.values.where((a) => a.wire == key.subject).firstOrNull;
-        if (analysis != null) ref.invalidate(analysisProvider((projectId: key.projectId, analysis: analysis)));
+        if (key.subject case final analysis?) {
+          ref.invalidate(analysisProvider((projectId: key.projectId, analysis: analysis)));
+          if (isBetaRead(analysis)) {
+            ref.invalidate(betaReadersProvider(key.projectId));
+            ref.invalidate(betaReaderPagesProvider(
+              (projectId: key.projectId, reader: analysis.substring('beta_'.length)),
+            ));
+          }
+        }
       case 'reverse_outline':
         ref.invalidate(outlineProvider(key.projectId));
       case 'continuity':

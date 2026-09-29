@@ -37,6 +37,8 @@ abstract final class Ds {
   static final Color edgeHi = _hex(0x333a4b);
   static const Color veil = Color.fromRGBO(206, 220, 255, 0.05);
   static const Color veilHi = Color.fromRGBO(206, 220, 255, 0.10);
+  // behind a drawn cat, in every theme (the desk's --color-cat-frame)
+  static const Color catFrame = Color(0xFFBDBDBD);
 
   // The accent: one cornflower, everywhere.
   static final Color accent = _hex(0x7aa2ff);

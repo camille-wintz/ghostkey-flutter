@@ -22,6 +22,15 @@ const String lineEditQuotaFeature = 'edit_pass';
 /// them: its analyses are uncounted previews since 2026-09-28.
 String analysisQuotaFeature(AnalysisId analysis) => '${analysis.wire}_analysis';
 
+/// The beta readers' one pooled counter: six readers, one `beta_read` line
+/// (`ghostkey-server` `billing/quota/policy.ts`). Free is uncounted — the
+/// preview is its limit.
+const String betaReadQuotaFeature = 'beta_read';
+
+/// Whether an analysis id is a beta reader's letter. The readers themselves
+/// are the server's list; only the id's shape is known here.
+bool isBetaRead(String analysis) => analysis.startsWith('beta_');
+
 /// The floor under a pass that reads the whole book: the reverse outline,
 /// continuity and the three analyses. The server refuses them under it
 /// (`manuscript_too_short`, `ghostkey-server` `lib/jobs/registry.ts`) and the

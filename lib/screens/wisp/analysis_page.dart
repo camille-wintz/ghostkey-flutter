@@ -60,9 +60,9 @@ class AnalysisPage extends ConsumerWidget {
     final project = ref.watch(projectProvider(projectId)).value;
     final hasChapters = project != null && chaptersInTree(project.chapters).isNotEmpty;
     final tooShort = tooShortForWholeBook(project);
-    final readKey = (projectId: projectId, analysis: analysis);
+    final readKey = (projectId: projectId, analysis: analysis.wire);
     final report = ref.watch(analysisProvider(readKey));
-    final runKey = analysisRunKey(projectId, analysis);
+    final runKey = analysisRunKey(projectId, analysis.wire);
     final run = ref.watch(wispRunProvider(runKey));
     final gate = ref.watch(capabilityProvider(analysisCapability));
     final fullGate = ref.watch(capabilityProvider(fullReportsCapability));

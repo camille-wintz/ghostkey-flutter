@@ -1,13 +1,29 @@
 import '../client.dart';
-import '../dto/json.dart';
 import '../dto/wisp.dart';
 
 /// GET /api/projects/{id}/analyses/{analysis} — the last run's report (null
 /// when none has run, or it is from an older format), cut to a preview below
-/// `wisp.full_reports`.
-Future<AnalysisRead> getAnalysis(String projectId, AnalysisId analysis) async {
-  final res = await apiFetch('/api/projects/$projectId/analyses/${analysis.wire}');
+/// `wisp.full_reports`. [analysis] is the wire id: an [AnalysisId]'s, or a
+/// beta reader's `beta_<cat>` from the catalogue.
+Future<AnalysisRead> getAnalysis(String projectId, String analysis) async {
+  final res = await apiFetch('/api/projects/$projectId/analyses/$analysis');
   return AnalysisRead.fromJson(res.jsonObject());
+}
+
+/// GET /api/projects/{id}/beta-readers — every beta reader in order, and
+/// whose letter is stored. The letter itself is [getAnalysis] of the card's
+/// `analysis`.
+Future<List<ReaderCard>> getBetaReaders(String projectId) async {
+  final res = await apiFetch('/api/projects/$projectId/beta-readers');
+  return ReaderCard.listFromJson(res.jsonObject());
+}
+
+/// GET /api/projects/{id}/beta-readers/{reader}/pages — the book as pages,
+/// with [reader]'s comments (the cat id, e.g. `custard`) pinned to them. The
+/// phone reads whole-book letters only, so no `from`/`to` range is sent.
+Future<BetaReaderPages> getBetaReaderPages(String projectId, String reader) async {
+  final res = await apiFetch('/api/projects/$projectId/beta-readers/${Uri.encodeComponent(reader)}/pages');
+  return BetaReaderPages.fromJson(res.jsonObject());
 }
 
 /// GET /api/projects/{id}/outline — every length of the reverse outline.
@@ -16,12 +32,12 @@ Future<OutlineResult> getOutline(String projectId) async {
   return OutlineResult.fromJson(res.jsonObject());
 }
 
-/// GET /api/projects/{id}/continuity — the cached report, or null. The cache
-/// is dropped whenever the manuscript meaningfully changes.
-Future<ContinuityReport?> getContinuity(String projectId) async {
+/// GET /api/projects/{id}/continuity — the cached plot-hole report (null
+/// when none), cut to a preview of one finding below `wisp.full_reports`. The
+/// cache is dropped whenever the manuscript meaningfully changes.
+Future<ContinuityRead> getContinuity(String projectId) async {
   final res = await apiFetch('/api/projects/$projectId/continuity');
-  final report = res.jsonObject()['report'];
-  return report is Map ? ContinuityReport.fromJson(asJson(report)) : null;
+  return ContinuityRead.fromJson(res.jsonObject());
 }
 
 /// POST /api/projects/{id}/continuity/answer — answer a finding's question

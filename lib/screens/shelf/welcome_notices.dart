@@ -12,7 +12,7 @@ import '../../ui/notice_modal.dart';
 const List<String> _opens = [
   'Dictate straight into a chapter — it lands as prose, not a transcript',
   'Photograph a handwritten page and drop the text where you left off',
-  'On the web app: continuity checks, comps, and the plotting room',
+  'On the web app: finding plot holes, comps, and the plotting room',
 ];
 
 /// The two welcome-week notices, fired at most once each from Home.

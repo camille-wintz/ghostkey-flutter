@@ -5,19 +5,48 @@ import '../../ds/tokens.dart';
 import '../../server/dto/wisp.dart';
 import 'finding_card.dart';
 import 'report_card.dart';
+import 'report_preview.dart';
 
-/// The finished report: hard errors first, then arc-drift craft notes — two
-/// visibly separate sections so the error list stays trustworthy. A hard
-/// error still waiting on the author carries its question, answerable right
-/// on the finding through [onAnswer].
+/// The finished plot-hole report: hard errors first, then arc-drift craft
+/// notes — two visibly separate sections so the error list stays trustworthy.
+/// A hard error still waiting on the author carries its question, answerable
+/// right on the finding through [onAnswer].
+///
+/// Below `wisp.full_reports` the report is a [preview]: how many issues were
+/// found, the one finding the server sent shown as usual, and the rest as a
+/// [ReportPreview] blur.
 class ContinuityReportView extends StatelessWidget {
-  const ContinuityReportView({super.key, required this.report, this.onAnswer});
+  const ContinuityReportView({super.key, required this.report, this.preview, this.onAnswer});
   final ContinuityReport report;
+  final PreviewCut? preview;
   final ReportAnswer? onAnswer;
 
   @override
   Widget build(BuildContext context) {
     final candidates = report.candidates;
+    final stats = Text(
+      '${report.chaptersAnalyzed} chapters analyzed · ${report.claimsExtracted} claims checked · '
+      '$candidates candidates, ${report.dismissed} dismissed on verification',
+      style: DsStyle.ui(DsText.eyebrow, color: Ds.faint),
+    );
+    if (preview case final cut? when report.findingCount > 0) {
+      final issues = report.findingCount + cut.hiddenUnits;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$issues ${issues == 1 ? 'issue' : 'issues'} found',
+            style: DsStyle.ui(DsText.body, color: Ds.hi, weight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+          for (final finding in [...report.hardErrors, ...report.arcDrift])
+            Padding(padding: const EdgeInsets.only(bottom: 10), child: FindingCard(finding: finding, onAnswer: onAnswer)),
+          if (cut.hiddenUnits > 0) ReportPreview(cut: cut, subject: 'report'),
+          const SizedBox(height: 18),
+          stats,
+        ],
+      );
+    }
     if (report.hardErrors.isEmpty && report.arcDrift.isEmpty) {
       // Celebratory on purpose: zero findings is the expected outcome for a
       // consistent manuscript, and should read as trustworthy, not as a
@@ -38,7 +67,7 @@ class ContinuityReportView extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'No continuity errors found',
+              'No plot holes found',
               style: DsStyle.ui(DsText.body, color: Ds.hi, weight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
@@ -71,11 +100,7 @@ class ContinuityReportView extends StatelessWidget {
           findings: report.arcDrift,
         ),
         const SizedBox(height: 18),
-        Text(
-          '${report.chaptersAnalyzed} chapters analyzed · ${report.claimsExtracted} claims checked · '
-          '$candidates candidates, ${report.dismissed} dismissed on verification',
-          style: DsStyle.ui(DsText.eyebrow, color: Ds.faint),
-        ),
+        stats,
       ],
     );
   }
