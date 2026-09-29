@@ -12,8 +12,8 @@ import 'veil_nightscape.dart';
 ///
 /// Two doors where the desk has three: importing a bible is a desk move, so
 /// the copy names it rather than the screen offering a door that goes
-/// nowhere. Writing an entry by hand needs no manuscript, so it is offered
-/// even to a book with no chapters.
+/// nowhere. One door into the cast, never both: a book with chapters is
+/// analyzed, and only a book with none is offered an entry by hand.
 class VeilEmptyState extends StatelessWidget {
   const VeilEmptyState({
     super.key,
@@ -71,14 +71,9 @@ class VeilEmptyState extends StatelessWidget {
                       label: 'Analyze your world',
                       onPressed: onGenerate,
                       busy: running,
-                    ),
-                  GkButton(
-                    label: 'Add character',
-                    variant: hasChapters
-                        ? ButtonVariant.outline
-                        : ButtonVariant.primary,
-                    onPressed: onAdd,
-                  ),
+                    )
+                  else
+                    GkButton(label: 'Add character', onPressed: onAdd),
                 ],
               ),
               if (!hasChapters) ...[
