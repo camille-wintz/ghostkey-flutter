@@ -12,8 +12,10 @@ class SectionHeader extends StatelessWidget {
   final VoidCallback? onAdd;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
+  // Opaque: the list pins it, and the rows scroll under it.
+  Widget build(BuildContext context) => Container(
         height: DsGeom.row,
+        color: Ds.void_,
         child: Padding(
           padding: const EdgeInsets.only(left: 20, right: 13),
           child: Row(
