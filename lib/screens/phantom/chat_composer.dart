@@ -5,7 +5,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../ds/tokens.dart';
 import '../../ui/press.dart';
 
-/// Multiline input · attach-chapter · send (or stop while a turn runs). Paste
+/// Multiline input · attach-chapter · send — or Stop while the conversation
+/// answers, since no message goes mid-answer. Paste
 /// interception is the formatter's business; this only hosts it. Pinned
 /// above the keyboard by the Scaffold, and above the system bar at rest by
 /// its own SafeArea.
@@ -17,7 +18,9 @@ class ChatComposerBar extends StatelessWidget {
     required this.onSend,
     required this.onStop,
     required this.onAttach,
-    required this.sending,
+    required this.answering,
+    required this.posting,
+    required this.stopping,
     required this.canSend,
   });
 
@@ -26,7 +29,15 @@ class ChatComposerBar extends StatelessWidget {
   final VoidCallback onSend;
   final VoidCallback onStop;
   final VoidCallback onAttach;
-  final bool sending;
+
+  /// The conversation is answering: Stop takes Send's place.
+  final bool answering;
+
+  /// A message is on its way; Send waits for the server's word.
+  final bool posting;
+
+  /// Stop was asked for and lands at the answer's next step.
+  final bool stopping;
 
   /// Text or an attachment to send.
   final bool canSend;
@@ -72,15 +83,21 @@ class ChatComposerBar extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 6),
-                if (sending)
-                  _RoundButton(onPressed: onStop, label: 'Stop', icon: LucideIcons.square, tone: _Tone.destructive)
+                if (answering)
+                  _RoundButton(
+                    onPressed: onStop,
+                    label: stopping ? 'Stopping' : 'Stop',
+                    icon: LucideIcons.square,
+                    tone: _Tone.destructive,
+                    disabled: stopping,
+                  )
                 else
                   _RoundButton(
                     onPressed: onSend,
                     label: 'Send',
                     icon: LucideIcons.arrowUp,
                     tone: _Tone.accent,
-                    disabled: !canSend,
+                    disabled: posting || !canSend,
                   ),
               ],
             ),

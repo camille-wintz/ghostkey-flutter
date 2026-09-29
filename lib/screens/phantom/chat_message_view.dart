@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../chat/turn.dart';
+import '../../chat/answer_end.dart';
 import '../../ds/tokens.dart';
 import '../../server/dto/chat.dart';
+import '../../server/dto/chat_conversation.dart';
+import 'answer_end_note.dart';
 import 'attachment_chip.dart';
 import 'chat_markdown.dart';
 import 'recall_rail.dart';
@@ -11,52 +13,38 @@ import 'model_switch_note.dart';
 import 'question_card.dart';
 import 'saved_note_receipt.dart';
 
-/// A user turn is a bubble on the right with its attachment chips beneath;
-/// an assistant turn is prose — the recall rail above, receipts and any
-/// questions it stopped on below.
+/// A message of the author's is a bubble on the right with its attachment
+/// chips beneath; a finished answer is prose — the recall rail above,
+/// receipts, any questions it stopped on, and a line when it did not finish.
 class ChatMessageView extends StatelessWidget {
-  const ChatMessageView({
-    super.key,
-    required this.message,
-    this.steps,
-    this.savedNotes,
-    this.edits,
-    this.modelSwitch,
-    this.onAnswer,
-  });
+  const ChatMessageView({super.key, required this.message, this.onAnswer});
 
   final ChatMessage message;
 
-  /// The recall behind an assistant turn, live transcript only.
-  final List<ChatToolStep>? steps;
-  final List<ChatSavedNote>? savedNotes;
-
-  /// Chapters and world-bible cards the turn changed. Same receipt shape.
-  final ChatTurnEdits? edits;
-
-  /// Set when another model answered because the picked one can't see a
-  /// picture the turn looked at. Live transcript only.
-  final ModelSwitch? modelSwitch;
-
-  /// Set only when this turn's questions are still open to answer — the last
-  /// message, nothing in flight. Null draws them read-only.
+  /// Set only when this answer's questions are still open to answer — the
+  /// newest answer, nothing in flight. Null draws them read-only.
   final ValueChanged<String>? onAnswer;
 
   @override
   Widget build(BuildContext context) {
     if (message.role == ChatRole.user) return _UserTurn(message: message);
+    final result = message.result;
+    final edits = result?.edits;
+    final ended = answerEndLine(message);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (steps case final s? when s.isNotEmpty) RecallRail(steps: s, live: false),
-          ChatMarkdown(message.text),
-          if (modelSwitch case final s?) ModelSwitchNote(modelSwitch: s),
-          if (savedNotes case final n?) SavedNoteReceipt(notes: n),
-          if (edits case final e?) EditReceipt(edits: e),
+          if (message.steps.isNotEmpty) RecallRail(steps: message.steps, live: false),
+          if (message.text.trim().isNotEmpty) ChatMarkdown(message.text),
+          if (result case ChatAnswerResult(:final model?, :final switchedFrom?))
+            ModelSwitchNote(modelSwitch: (model: model, from: switchedFrom)),
+          if (result != null && result.savedNotes.isNotEmpty) SavedNoteReceipt(notes: result.savedNotes),
+          if (edits != null && !edits.isEmpty) EditReceipt(edits: edits),
           if (message.questions.isNotEmpty) QuestionCard(questions: message.questions, onAnswer: onAnswer),
+          if (ended != null) AnswerEndNote(line: ended),
         ],
       ),
     );

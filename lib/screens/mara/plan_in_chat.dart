@@ -45,7 +45,7 @@ Future<void> planChaptersInChat(
   final navigator = Navigator.of(context);
   try {
     await flush?.call();
-    final session = await createSession(projectId, title: title, messages: const []);
+    final session = await createSession(projectId, title: title);
     ref.invalidate(chatSessionsProvider(projectId));
     await navigator.pushNamed(PhantomScreen.route, arguments: ChatArrival(sessionId: session.id, ask: ask));
   } catch (e) {

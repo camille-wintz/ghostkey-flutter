@@ -1,8 +1,9 @@
 import '../server/dto/chat.dart';
+import '../server/dto/chat_conversation.dart';
 
 // The answers to a turn that stopped to ask: one pick per question, by
 // question position, and the message those picks become. The message is an
-// ordinary user turn — the model reads the numbers against the questions it
+// ordinary user message — the model reads the numbers against the questions it
 // asked, which ride on its own message in the transcript.
 
 /// The answer picked for each question, keyed by the question's 0-based
@@ -43,3 +44,14 @@ String answersMessage(List<ChatQuestion> questions, QuestionChoices choices) => 
       for (var i = 0; i < questions.length; i++)
         if (choices[i] ?? choices.otherText(i)?.trim() case final answer? when answer.isNotEmpty) '${i + 1}. $answer',
     ].join('\n');
+
+/// Where the questions still open to answer are: the newest answer, when
+/// nothing but tasks came after it. Null when nothing is open.
+int? openQuestionsAt(List<ChatMessage> messages) {
+  for (var i = messages.length - 1; i >= 0; i--) {
+    final m = messages[i];
+    if (m.role == ChatRole.task) continue;
+    return m.role == ChatRole.assistant && m.questions.isNotEmpty ? i : null;
+  }
+  return null;
+}

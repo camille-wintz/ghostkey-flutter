@@ -22,7 +22,7 @@ class LineEditReviewView extends ConsumerWidget {
     final review = ref.watch(lineEditReviewProvider(key));
     // The chat may be writing this same text; the desk locks its view for
     // the length of a turn, and so does this.
-    final turnRunning = ref.watch(chatTurnProvider(projectId).select((s) => s.sending));
+    final turnRunning = ref.watch(conversationProvider(projectId).select((s) => s.busy));
 
     return review.when(
       skipLoadingOnReload: true,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../chat/models.dart';
-import '../../chat/turn.dart';
+import '../../chat/conversation.dart';
 import '../../ds/tokens.dart';
 import '../../server/providers.dart';
 

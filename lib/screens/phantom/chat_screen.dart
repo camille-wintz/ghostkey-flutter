@@ -56,7 +56,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   /// default answers.
   String? _model;
 
-  /// Whether the assistant may edit chapters — sent on every turn as the
+  /// Whether the assistant may edit chapters — sent with every message as the
   /// conversation's "Write in the manuscript" / "Read only" switch. Write by
   /// default: a fix asked for in the chat lands in the chapter.
   bool _manuscriptWrites = true;
@@ -66,14 +66,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   late final ComposerController _composer = ComposerController(
     spentIds: () => [
-      for (final m in ref.read(chatTurnProvider(_projectId)).messages)
+      for (final m in ref.read(conversationProvider(_projectId)).messages)
         for (final a in m.attachments) a.id,
     ],
     quotaFor: (model) => chatQuotaFor(ref.read(quotaProvider).value, chatModelRow(ref.read(chatModelsProvider), model)),
     sendTurn: (text, attachments, model) => ref
-        .read(chatTurnProvider(_projectId).notifier)
+        .read(conversationProvider(_projectId).notifier)
         .send(text, attachments, model, manuscript: _manuscriptWrites ? 'write' : 'read_only'),
-    isSending: () => ref.read(chatTurnProvider(_projectId)).sending,
+    isBusy: () => ref.read(conversationProvider(_projectId)).busy,
   );
   final ScrollController _scroll = ScrollController();
 
@@ -84,7 +84,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Future<void> _arrive(ChatArrival arrival) async {
-    await ref.read(chatTurnProvider(_projectId).notifier).selectSession(arrival.sessionId);
+    await ref.read(conversationProvider(_projectId).notifier).selectSession(arrival.sessionId);
     if (!mounted) return;
     if (arrival.ask case final ask?) await _send(ask);
   }
@@ -197,21 +197,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final chat = ref.watch(chatTurnProvider(_projectId));
+    final chat = ref.watch(conversationProvider(_projectId));
     // Watched here too so the catalog is fetching before the settings open.
     final modelLabel = chatModelLabel(ref.watch(chatModelsProvider), _model);
-    final turn = ref.read(chatTurnProvider(_projectId).notifier);
+    final conversation = ref.read(conversationProvider(_projectId).notifier);
     final chapters = ref.watch(projectProvider(_projectId)).value?.chapters;
     final planning = chapters != null && chaptersInTree(chapters).isEmpty;
     final sessions = ref.watch(chatSessionsProvider(_projectId)).value;
-    final activeId = chat.activeSessionId;
+    final activeId = chat.sessionId;
     final title = activeId == null
         ? 'New chat'
         : (sessions?.where((s) => s.id == activeId).firstOrNull?.title ?? 'Chat');
 
-    // A turn starting or a session opening is the one time the thread must
-    // show its end regardless of where the author had scrolled.
-    ref.listen(chatTurnProvider(_projectId).select((s) => (s.messages.length, s.activeSessionId)), (_, _) => _scrollToEnd());
+    // A message landing or a conversation opening is the one time the
+    // thread must show its end regardless of where the author had scrolled.
+    ref.listen(conversationProvider(_projectId).select((s) => (s.messages.length, s.sessionId)), (_, _) => _scrollToEnd());
 
     return ColoredBox(
       color: Ds.void_,
@@ -236,17 +236,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             Expanded(
               child: ChatThread(
                 messages: chat.messages,
-                stepsByIndex: chat.stepsByIndex,
-                notesByIndex: chat.notesByIndex,
-                editsByIndex: chat.editsByIndex,
-                switchesByIndex: chat.switchesByIndex,
-                pending: chat.pending,
+                live: chat.live,
+                busy: chat.busy,
+                loading: chat.loading,
                 controller: _scroll,
-                intro: ChatIntro(planning: planning, onPick: _send, disabled: chat.sending),
+                intro: ChatIntro(planning: planning, onPick: _send, disabled: chat.busy),
                 onAnswer: _send,
               ),
             ),
-            if (chat.error case final error?) ErrorBar(message: error, onDismiss: turn.clearError),
+            if (chat.error case final error?) ErrorBar(message: error, onDismiss: conversation.clearError),
             if (_attachError case final error?) ErrorBar(message: error, onDismiss: () => setState(() => _attachError = null)),
             if (chat.messages.length > longThread) const LongThreadNote(),
             ListenableBuilder(
@@ -261,9 +259,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     controller: _composer.text,
                     pasteInterceptor: _composer.pasteInterceptor,
                     onSend: _send,
-                    onStop: turn.stop,
+                    onStop: conversation.stop,
                     onAttach: _attach,
-                    sending: chat.sending,
+                    answering: chat.answering,
+                    posting: chat.posting,
+                    stopping: chat.stopping,
                     canSend: _composer.canSend,
                   ),
                 ],

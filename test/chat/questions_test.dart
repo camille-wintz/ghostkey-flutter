@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ghostkey/chat/questions.dart';
 import 'package:ghostkey/screens/phantom/question_card.dart';
 import 'package:ghostkey/server/dto/chat.dart';
+import 'package:ghostkey/server/dto/chat_conversation.dart';
 
 const questions = [
   ChatQuestion(question: 'Whose book is it?', options: ['Mara carries it, start to end', 'Two leads, alternating']),
@@ -47,42 +48,36 @@ void main() {
   });
 
   group('wire', () {
-    test('a saved assistant message keeps its questions both ways', () {
-      final json = {
+    test('an answer reads its questions', () {
+      final message = ChatMessage.fromJson({
+        'id': 'm2',
         'role': 'assistant',
+        'status': 'done',
         'text': 'Three things only you can settle:',
         'questions': [
           {'question': 'Whose book is it?', 'options': ['Mara', 'Both']},
           {'question': 'Anything else?', 'options': <String>[]},
         ],
-      };
-      final message = ChatMessage.fromJson(json);
+      });
       expect(message.questions.map((q) => q.question), ['Whose book is it?', 'Anything else?']);
       expect(message.questions.first.options, ['Mara', 'Both']);
-      expect(message.toJson(), json);
+      expect(ChatMessage.fromJson({'role': 'assistant', 'text': 'Hi'}).questions, isEmpty);
     });
-    test('a message without questions sends no key', () {
-      final message = ChatMessage.fromJson({'role': 'assistant', 'text': 'Hi'});
-      expect(message.questions, isEmpty);
-      expect(message.toJson().containsKey('questions'), isFalse);
-    });
-    test("the result frame's plan carries the questions", () {
-      final result = ChatTurnResult.fromJson({
-        'answer': 'Settle these:',
-        'plan': {
-          'say': 'Settle these:',
-          'steps': <Object>[],
-          'questions': [
-            {'question': 'How dark?', 'options': ['Cosy', 'Grim']},
-          ],
-          'needsYes': false,
-        },
-        'steps': <Object>[],
-        'savedNotes': <Object>[],
-        'session': null,
-      });
-      expect(result.questions.single.options, ['Cosy', 'Grim']);
-      expect(ChatTurnResult.fromJson({'answer': 'x', 'session': null}).questions, isEmpty);
+    test('the open questions are the newest answer\'s, past any tasks', () {
+      ChatMessage m(String id, ChatRole role, {bool asks = false}) => ChatMessage(
+            id: id,
+            sessionId: 's',
+            seq: 0,
+            role: role,
+            status: ChatMessageStatus.done,
+            text: '',
+            questions: asks ? questions : const [],
+          );
+      expect(openQuestionsAt([m('1', ChatRole.user), m('2', ChatRole.assistant, asks: true)]), 1);
+      expect(openQuestionsAt([m('2', ChatRole.assistant, asks: true), m('3', ChatRole.task)]), 0);
+      expect(openQuestionsAt([m('2', ChatRole.assistant, asks: true), m('3', ChatRole.user)]), isNull);
+      expect(openQuestionsAt([m('2', ChatRole.assistant)]), isNull);
+      expect(openQuestionsAt(const []), isNull);
     });
   });
 

@@ -33,10 +33,10 @@ class ChatSessionsPanel extends ConsumerWidget {
     final sessions = ref.watch(chatSessionsProvider(projectId));
     // A plans listing that fails leaves the chats as they were: flat.
     final plans = ref.watch(workPlansProvider(projectId)).value ?? const [];
-    final activeId = ref.watch(chatTurnProvider(projectId).select((s) => s.activeSessionId));
-    final activePlanId = ref.watch(chatTurnProvider(projectId).select((s) => s.workPlanId));
+    final activeId = ref.watch(conversationProvider(projectId).select((s) => s.sessionId));
+    final activePlanId = ref.watch(conversationProvider(projectId).select((s) => s.workPlanId));
     final quota = quotaLine(ref.watch(quotaProvider).value?.feature(chatQuotaFeature));
-    final turn = ref.read(chatTurnProvider(projectId).notifier);
+    final conversation = ref.read(conversationProvider(projectId).notifier);
     final title = ref.watch(projectProvider(projectId)).value?.project.displayTitle ?? 'Project';
     final count = sessions.value?.length;
 
@@ -52,7 +52,7 @@ class ChatSessionsPanel extends ConsumerWidget {
             padding: const EdgeInsets.only(left: 14, right: 14, top: 14, bottom: 6),
             child: Press(
               onPressed: () {
-                turn.newChat();
+                conversation.newChat();
                 close();
               },
               semanticLabel: 'New chat',
@@ -95,7 +95,7 @@ class ChatSessionsPanel extends ConsumerWidget {
                             plan: plan,
                             active: plan.id == activePlanId,
                             onPressed: () {
-                              turn.newChat(plan: (id: plan.id, name: plan.name));
+                              conversation.newChat(plan: (id: plan.id, name: plan.name));
                               close();
                             },
                             onLongPress: () => showPlanActions(context, ref, projectId: projectId, plan: plan),
@@ -106,7 +106,7 @@ class ChatSessionsPanel extends ConsumerWidget {
                             nested: nested,
                             active: session.id == activeId,
                             onPressed: () {
-                              turn.selectSession(session.id);
+                              conversation.selectSession(session.id);
                               close();
                             },
                             onLongPress: () => showSessionActions(context, ref, projectId: projectId, session: session),

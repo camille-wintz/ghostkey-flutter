@@ -40,7 +40,7 @@ a board's writes are the server's one-card routes, never a whole-map PUT.
   in [lib/server/providers.dart](lib/server/providers.dart); a mutation is a
   plain call to an `api.dart` function followed by `ref.invalidate(...)`.
 - **Server**: [lib/server/client.dart](lib/server/client.dart) —
-  `apiFetch` (buffered) and `apiStream` (for SSE). Mints a request id per
+  `apiFetch` (buffered) and `apiStream` (the raw response). Mints a request id per
   call, sends `x-request-id`, logs one line per request in debug builds,
   retries once after a refresh on 401. `ServerError` carries the wire code;
   `messageFor(e)` words it. DTOs are hand-written in `lib/server/dto/` with
@@ -100,7 +100,8 @@ is device state.
 lib/
   main.dart · app.dart      ProviderScope, theme, the root switch, HardwareBack
   ds/tokens.dart            the design system
-  server/                   client · config · errors · sse · tokens · secure_storage ·
+  server/                   client · config · errors · tokens · secure_storage · ws (the /ws
+                            socket: subscribe, 75 s watchdog, 10 s redial, resync) ·
                             providers · dto/ · <family>/api.dart · jobs/run_job.dart (poller)
   auth/ store/              session · active project
   core/                     pure modules (see above)

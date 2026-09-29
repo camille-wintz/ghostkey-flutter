@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../chat/turn.dart';
+import '../../chat/live_answer.dart';
 import '../../ds/tokens.dart';
 import '../../server/dto/chat.dart';
 import '../../ui/text.dart';
@@ -8,21 +8,21 @@ import 'chat_markdown.dart';
 import 'pulse.dart';
 import 'recall_rail.dart';
 
-/// The in-flight assistant turn: the live recall rail, then "Recalling…"
-/// pulsing until the first token, then the streamed markdown.
+/// The answer being written: the live recall rail, then "Recalling…"
+/// pulsing until the first word, then the streamed markdown.
 ///
-/// Listens to the turn's two ValueNotifiers directly, so a token rebuilds
+/// Listens to the answer's two ValueNotifiers directly, so a frame rebuilds
 /// this widget and nothing above it — the stream-to-paint budget (P9) is
 /// spent here alone.
 class PendingTurnView extends StatelessWidget {
-  const PendingTurnView({super.key, required this.pending});
-  final PendingTurn pending;
+  const PendingTurnView({super.key, required this.live});
+  final LiveAnswer live;
 
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: ValueListenableBuilder<List<ChatToolStep>>(
-          valueListenable: pending.steps,
+          valueListenable: live.steps,
           builder: (context, steps, _) {
             final recalling = steps.any((s) => s.status == ChatToolStepStatus.running);
             return Column(
@@ -31,7 +31,7 @@ class PendingTurnView extends StatelessWidget {
               children: [
                 RecallRail(steps: steps, live: true),
                 ValueListenableBuilder<String>(
-                  valueListenable: pending.text,
+                  valueListenable: live.text,
                   builder: (context, text, _) {
                     if (text.isEmpty) {
                       return Pulse(

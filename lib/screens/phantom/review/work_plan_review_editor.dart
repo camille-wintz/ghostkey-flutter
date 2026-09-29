@@ -33,10 +33,10 @@ class _WorkPlanReviewEditorState extends ConsumerState<WorkPlanReviewEditor> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(chatTurnProvider(widget.projectId).select((s) => s.sending), (was, now) {
+    ref.listen(conversationProvider(widget.projectId).select((s) => s.busy), (was, now) {
       if (was == true && !now) _draft.refresh();
     });
-    final turnRunning = ref.watch(chatTurnProvider(widget.projectId).select((s) => s.sending));
+    final turnRunning = ref.watch(conversationProvider(widget.projectId).select((s) => s.busy));
     return Column(
       children: [
         ValueListenableBuilder(

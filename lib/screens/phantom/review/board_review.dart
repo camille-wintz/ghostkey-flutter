@@ -18,7 +18,7 @@ class BoardReview extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final maps = ref.watch(storyMapsProvider(projectId));
     final templates = ref.watch(storyTemplatesProvider).value;
-    final turnRunning = ref.watch(chatTurnProvider(projectId).select((s) => s.sending));
+    final turnRunning = ref.watch(conversationProvider(projectId).select((s) => s.busy));
     return maps.when(
       skipLoadingOnReload: true,
       loading: () => const StateScreen(spinner: true, message: 'Opening the board…'),

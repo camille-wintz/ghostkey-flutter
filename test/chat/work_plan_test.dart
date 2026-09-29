@@ -45,10 +45,10 @@ void main() {
       expect(ChatSession.fromJson({'id': 's', 'messages': <Object>[]}).workPlanId, isNull);
     });
 
-    test('a turn result reads workPlanId in camelCase', () {
-      expect(ChatTurnResult.fromJson({'answer': '', 'workPlanId': 'p1'}).workPlanId, 'p1');
-      expect(ChatTurnResult.fromJson({'answer': '', 'workPlanId': null}).workPlanId, isNull);
-      expect(ChatTurnResult.fromJson({'answer': ''}).workPlanId, isNull);
+    test("an answer's receipts read workPlanId in camelCase", () {
+      expect(ChatAnswerResult.fromJson({'workPlanId': 'p1'})!.workPlanId, 'p1');
+      expect(ChatAnswerResult.fromJson({'workPlanId': null})!.workPlanId, isNull);
+      expect(ChatAnswerResult.fromJson(<String, dynamic>{})!.workPlanId, isNull);
     });
 
     test('a work_plan view round-trips under its wire name', () {
@@ -62,16 +62,17 @@ void main() {
       expect(ChatView.fromJson({'kind': 'séance'}), isNull);
     });
 
-    test("the session create carries the first turn's plan beside its view", () {
-      final body = sessionCreateBody(
-        title: 'Act two',
-        messages: const [],
-        view: const ChatView(kind: ChatViewKind.workPlan, id: 'p1', title: 'Act two'),
-        workPlanId: 'p1',
-      );
-      expect(body['work_plan_id'], 'p1');
-      expect(body['view'], {'kind': 'work_plan', 'id': 'p1', 'title': 'Act two'});
-      expect(sessionCreateBody(title: 'x').containsKey('work_plan_id'), isFalse);
+    test('a first message carries the plan beside its view; a later one neither', () {
+      const view = ChatView(kind: ChatViewKind.workPlan, id: 'p1', title: 'Act two');
+      final first = sendMessageBody(id: 'm1', text: 'Go', manuscript: 'write', view: view, workPlanId: 'p1');
+      expect(first['work_plan_id'], 'p1');
+      expect(first['view'], {'kind': 'work_plan', 'id': 'p1', 'title': 'Act two'});
+      expect(first.containsKey('session_id'), isFalse);
+      final later =
+          sendMessageBody(id: 'm2', sessionId: 's', text: 'Go', manuscript: 'write', view: view, workPlanId: 'p1');
+      expect(later.keys, containsAll(['id', 'session_id', 'text', 'manuscript', 'views']));
+      expect(later.containsKey('work_plan_id'), isFalse);
+      expect(later.containsKey('view'), isFalse);
     });
   });
 

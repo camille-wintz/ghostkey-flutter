@@ -9,16 +9,16 @@ import '../server/dto/media.dart';
 import 'attachments.dart';
 import 'quota_feature.dart';
 import 'refusals.dart';
-import 'turn.dart';
+import 'conversation.dart';
 
-// Everything between the keyboard and the turn owner's `send`: the text and
-// its paste rule, the attachments and their handles, and the quota gate on
-// both sides of the call — ahead of it from the cached snapshot (so a spent
-// counter explains itself without drawing a message that comes straight
-// back), and after it from the server's 402/403 (the one that must exist;
-// the snapshot can be stale). A refused message returns to the composer
-// whole. Mirrors the RN app's useChatComposer + useComposerAttachments +
-// useComposerText.
+// Everything between the keyboard and the conversation owner's `send`: the
+// text and its paste rule, the attachments and their handles, and the quota
+// gate on both sides of the call — ahead of it from the cached snapshot (so a
+// spent counter explains itself without drawing a message that comes
+// straight back), and after it from the server's 402/403 (the one that must
+// exist; the snapshot can be stale). The words leave the composer only when
+// the server has them: a refused or undelivered message is still there to
+// send again.
 //
 // Its dependencies are functions rather than providers so the gate is
 // testable without a ProviderScope.
@@ -28,7 +28,7 @@ class ComposerController extends ChangeNotifier {
     required this.spentIds,
     required this.quotaFor,
     required this.sendTurn,
-    required this.isSending,
+    required this.isBusy,
   }) {
     text.addListener(notifyListeners);
   }
@@ -40,7 +40,8 @@ class ComposerController extends ChangeNotifier {
   /// then the turn names none and the server's default answers.
   final ChatQuotaFeature Function(String? model) quotaFor;
   final Future<SendOutcome> Function(String text, List<ChatAttachment> attachments, String? model) sendTurn;
-  final bool Function() isSending;
+  /// Sending, or the conversation answering — no message goes then.
+  final bool Function() isBusy;
 
   final TextEditingController text = TextEditingController();
 
@@ -117,32 +118,29 @@ class ComposerController extends ChangeNotifier {
 
   void clear() => _set(const []);
 
-  /// Put a refused message's attachments back.
-  void restore(List<ChatAttachment> restored) => _set(restored);
-
   /// Send what the composer holds (or `override`, an intro suggestion or a
-  /// question's answers — attachments still go with it). Null
-  /// when the message went, or when there was nothing to send; a refusal
-  /// when a counter or the plan said no — the message is back in the
-  /// composer by then.
+  /// question's answers — attachments still go with it). Null when the
+  /// message went, did not get there (the conversation says why), or there
+  /// was nothing to send; a refusal when a counter or the plan said no.
   Future<ComposerRefusal?> send({String? override, String? model}) async {
-    // A second tap while a turn runs must not empty the composer for a send
-    // that never happens.
-    if (isSending()) return null;
+    if (isBusy()) return null;
     final body = (override ?? text.text).trim();
     final attached = _attachments;
     if (body.isEmpty && attached.isEmpty) return null;
     final quota = quotaFor(model);
     if (quota.exhausted) return QuotaRefusal(feature: quota.feature);
-    // An override (an intro pick, a question's answers) was never in the
-    // field, so what the author is typing there stays — and a refused
-    // override only comes back into an empty field.
-    if (override == null) text.clear();
-    clear();
     final outcome = await sendTurn(body, attached, model);
+    if (outcome is SendDone) {
+      // An override was never in the field, so what the author is typing
+      // there stays.
+      if (override == null && text.text.trim() == body) text.clear();
+      if (identical(_attachments, attached)) clear();
+      return null;
+    }
+    // Not sent: an override comes back only into an empty field, to send
+    // again from there.
+    if (override != null && text.text.trim().isEmpty) text.text = override;
     if (outcome is! SendRefused) return null;
-    if (override == null || text.text.trim().isEmpty) text.text = outcome.text;
-    restore(outcome.attachments);
     final error = outcome.error;
     if (error.code == 'quota_exceeded') {
       return QuotaRefusal(feature: error.quota?.feature ?? quota.feature, refused: error.quota);

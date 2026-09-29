@@ -1,7 +1,9 @@
 import 'json.dart';
 
-// PhantomMemory chat. Hand-written against the contract's ChatSession* /
-// ChatTurn* / ChatToolStep / ChatAttachment schemas.
+// PhantomMemory chat: sessions, attachments, views, tool steps and the
+// receipts an answer carries. Hand-written against the contract's
+// ChatSession* / ChatToolStep / ChatAttachment schemas; the messages of a
+// conversation and their live events are in chat_conversation.dart.
 
 /// `id` is a short handle (`a1`, `a2`, …) unique within the whole session.
 sealed class ChatAttachment {
@@ -92,13 +94,6 @@ class PasteAttachment extends ChatAttachment {
   Json toJson() => {'kind': 'paste', 'id': id, 'title': title, 'words': words, 'text': text};
 }
 
-enum ChatRole {
-  user,
-  assistant;
-
-  static ChatRole fromWire(String? value) => value == 'assistant' ? ChatRole.assistant : ChatRole.user;
-}
-
 /// One question a turn stopped to ask (ChatTurnPlan.questions), with the
 /// answers it suggests as taps. Never the whole answer: free text stays open.
 class ChatQuestion {
@@ -117,36 +112,6 @@ class ChatQuestion {
   Json toJson() => {'question': question, 'options': options};
 }
 
-/// One turn of a saved transcript. `questions` rides on an assistant turn
-/// that stopped to ask; it goes back with the transcript unchanged, since a
-/// save without it erases it from the session.
-class ChatMessage {
-  const ChatMessage({
-    required this.role,
-    required this.text,
-    this.attachments = const [],
-    this.questions = const [],
-  });
-  final ChatRole role;
-  final String text;
-  final List<ChatAttachment> attachments;
-  final List<ChatQuestion> questions;
-
-  static ChatMessage fromJson(Json json) => ChatMessage(
-        role: ChatRole.fromWire(json['role'] as String?),
-        text: asString(json['text']),
-        attachments: asJsonList(json['attachments']).map(ChatAttachment.fromJson).toList(),
-        questions: ChatQuestion.listFromJson(json['questions']),
-      );
-
-  Json toJson() => {
-        'role': role.name,
-        'text': text,
-        if (attachments.isNotEmpty) 'attachments': attachments.map((a) => a.toJson()).toList(),
-        if (questions.isNotEmpty) 'questions': questions.map((q) => q.toJson()).toList(),
-      };
-}
-
 class ChatSessionSummary {
   const ChatSessionSummary({
     required this.id,
@@ -154,6 +119,7 @@ class ChatSessionSummary {
     required this.version,
     required this.updatedAt,
     this.workPlanId,
+    this.status = ConversationStatus.idle,
   });
   final String id;
   final String title;
@@ -163,13 +129,32 @@ class ChatSessionSummary {
   /// The work plan this conversation works under, or null.
   final String? workPlanId;
 
+  /// Whether it is answering — the list's; a single session's read leaves
+  /// it idle (the conversation read carries its own).
+  final ConversationStatus status;
+
   static ChatSessionSummary fromJson(Json json) => ChatSessionSummary(
         id: asString(json['id']),
         title: asString(json['title']),
         version: asInt(json['version']),
         updatedAt: asString(json['updated_at']),
-        workPlanId: _nonEmptyString(json['work_plan_id']),
+        workPlanId: nonEmptyString(json['work_plan_id']),
+        status: ConversationStatus.fromWire(json['status']),
       );
+}
+
+/// A conversation's state: answering (`running`), a message waiting with
+/// nothing answering it yet (`queued`), or neither. Anything else reads idle.
+enum ConversationStatus {
+  idle,
+  running,
+  queued;
+
+  static ConversationStatus fromWire(Object? value) => switch (value) {
+        'running' => ConversationStatus.running,
+        'queued' => ConversationStatus.queued,
+        _ => ConversationStatus.idle,
+      };
 }
 
 /// What a turn opened for the author to look at: a chapter (`id` is the
@@ -215,13 +200,11 @@ class ChatSession extends ChatSessionSummary {
     required super.version,
     required super.updatedAt,
     required this.projectId,
-    required this.messages,
     required this.createdAt,
     super.workPlanId,
     this.view,
   });
   final String projectId;
-  final List<ChatMessage> messages;
   final String createdAt;
   final ChatView? view;
 
@@ -231,9 +214,8 @@ class ChatSession extends ChatSessionSummary {
         version: asInt(json['version']),
         updatedAt: asString(json['updated_at']),
         projectId: asString(json['project_id']),
-        messages: asJsonList(json['messages']).map(ChatMessage.fromJson).toList(),
         createdAt: asString(json['created_at']),
-        workPlanId: _nonEmptyString(json['work_plan_id']),
+        workPlanId: nonEmptyString(json['work_plan_id']),
         view: ChatView.fromJson(json['view']),
       );
 }
@@ -325,131 +307,59 @@ class ChatBibleEdit {
       );
 }
 
-/// A change the turn handed to a task (ghostkey-server lib/tasks): the
-/// outline or the waiting chapters, written a few seconds after the answer.
-/// Its `task` job says how it went — `result` is `{ok, summary}`.
-class ChatTask {
-  const ChatTask({required this.id, required this.task, required this.label});
-  final String id;
-  final String task;
-  final String label;
-
-  static ChatTask fromJson(Json json) =>
-      ChatTask(id: asString(json['id']), task: asString(json['task']), label: asString(json['label']));
-}
-
-/// What a turn wrote into the project besides notes.
+/// What a finished answer wrote into the project besides notes: chapters and
+/// world-bible cards. The changes it handed to tasks are messages of their
+/// own in the conversation, not receipts.
 class ChatTurnEdits {
-  const ChatTurnEdits({required this.chapterEdits, required this.bibleEdits, this.tasks = const []});
+  const ChatTurnEdits({required this.chapterEdits, required this.bibleEdits});
   final List<ChatChapterEdit> chapterEdits;
   final List<ChatBibleEdit> bibleEdits;
-  final List<ChatTask> tasks;
-  bool get isEmpty => chapterEdits.isEmpty && bibleEdits.isEmpty && tasks.isEmpty;
+  bool get isEmpty => chapterEdits.isEmpty && bibleEdits.isEmpty;
 }
 
-/// The `result` frame of a turn. `session` is the updated row when
-/// `session_id` was sent and the write landed; null otherwise. `questions`
-/// is the plan's (`plan.questions`) — non-empty exactly when the turn
-/// stopped to ask; the rest of the plan is not read here.
-class ChatTurnResult {
-  const ChatTurnResult({
-    required this.answer,
-    required this.steps,
-    required this.savedNotes,
-    required this.session,
+/// A finished answer's receipts — a ChatMessage's `result`. The fields this
+/// app draws; the rest (planEdits, editPasses, awaitingApproval, tasks) are
+/// read elsewhere or not at all.
+class ChatAnswerResult {
+  const ChatAnswerResult({
+    this.savedNotes = const [],
     this.chapterEdits = const [],
     this.bibleEdits = const [],
-    this.tasks = const [],
-    this.questions = const [],
     this.model,
     this.switchedFrom,
     this.workPlanId,
   });
-  final String answer;
-  final List<ChatQuestion> questions;
-  final List<ChatToolStep> steps;
   final List<ChatSavedNote> savedNotes;
-  final ChatSession? session;
   final List<ChatChapterEdit> chapterEdits;
   final List<ChatBibleEdit> bibleEdits;
 
-  /// Changes handed to tasks, still landing when the turn resolves. Empty
-  /// from a server that predates tasks.
-  final List<ChatTask> tasks;
-
-  /// The registry model that answered. Null from a server that predates it.
+  /// The registry model that answered.
   final String? model;
 
-  /// The model the author picked, when the turn had to look at a picture that
-  /// model can't see and [model] answered instead. Null when nothing switched.
+  /// The model the author picked, when the answer had to look at a picture
+  /// that model can't see and [model] answered instead.
   final String? switchedFrom;
 
-  /// The work plan this turn worked under — started, taken up, or the one
-  /// the conversation already had. Null for none, and from an older server.
-  /// A plan only offered is the `view`, not this.
+  /// The work plan this answer worked under — started, taken up, or the one
+  /// the conversation already had.
   final String? workPlanId;
 
-  ChatTurnEdits get edits => ChatTurnEdits(chapterEdits: chapterEdits, bibleEdits: bibleEdits, tasks: tasks);
+  ChatTurnEdits get edits => ChatTurnEdits(chapterEdits: chapterEdits, bibleEdits: bibleEdits);
 
-  static ChatTurnResult fromJson(Json json) => ChatTurnResult(
-        answer: asString(json['answer']),
-        steps: asJsonList(json['steps']).map(ChatToolStep.fromJson).toList(),
-        savedNotes: asJsonList(json['savedNotes']).map(ChatSavedNote.fromJson).toList(),
-        session: json['session'] == null ? null : ChatSession.fromJson(asJson(json['session'])),
-        chapterEdits: asJsonList(json['chapterEdits']).map(ChatChapterEdit.fromJson).toList(),
-        bibleEdits: asJsonList(json['bibleEdits']).map(ChatBibleEdit.fromJson).toList(),
-        tasks: asJsonList(json['tasks']).map(ChatTask.fromJson).toList(),
-        questions: ChatQuestion.listFromJson(json['plan'] is Map ? json['plan']['questions'] : null),
-        model: _nonEmptyString(json['model']),
-        switchedFrom: _nonEmptyString(json['switched_from']),
-        workPlanId: _nonEmptyString(json['workPlanId']),
-      );
-}
-
-String? _nonEmptyString(Object? value) => value is String && value.isNotEmpty ? value : null;
-
-/// One `data:` line of the turn stream, decoded.
-sealed class ChatTurnFrame {
-  const ChatTurnFrame();
-
-  static ChatTurnFrame fromJson(Json json) {
-    if (json['step'] is Map) return StepFrame(ChatToolStep.fromJson(asJson(json['step'])));
-    if (json['result'] is Map) return ResultFrame(ChatTurnResult.fromJson(asJson(json['result'])));
-    if (json['view'] is Map) return ViewFrame(ChatView.fromJson(json['view']));
-    if (json['error'] is String) return ErrorFrame(asString(json['error']), json['detail'] as String?);
-    if (json['discard'] == true) return const DiscardFrame();
-    return TextFrame(asString(json['text']));
+  static ChatAnswerResult? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final map = json.cast<String, dynamic>();
+    return ChatAnswerResult(
+      savedNotes: _list(map['savedNotes']).map(ChatSavedNote.fromJson).toList(),
+      chapterEdits: _list(map['chapterEdits']).map(ChatChapterEdit.fromJson).toList(),
+      bibleEdits: _list(map['bibleEdits']).map(ChatBibleEdit.fromJson).toList(),
+      model: nonEmptyString(map['model']),
+      switchedFrom: nonEmptyString(map['switched_from']),
+      workPlanId: nonEmptyString(map['workPlanId']),
+    );
   }
 }
 
-class StepFrame extends ChatTurnFrame {
-  const StepFrame(this.step);
-  final ChatToolStep step;
-}
+List<Json> _list(Object? value) => [for (final v in value is List ? value : const []) if (v is Map) v.cast<String, dynamic>()];
 
-/// A tool opened something for the author to look at.
-class ViewFrame extends ChatTurnFrame {
-  const ViewFrame(this.view);
-  final ChatView? view;
-}
-
-class TextFrame extends ChatTurnFrame {
-  const TextFrame(this.text);
-  final String text;
-}
-
-/// The prose streamed so far is not the answer — clear it.
-class DiscardFrame extends ChatTurnFrame {
-  const DiscardFrame();
-}
-
-class ResultFrame extends ChatTurnFrame {
-  const ResultFrame(this.result);
-  final ChatTurnResult result;
-}
-
-class ErrorFrame extends ChatTurnFrame {
-  const ErrorFrame(this.error, this.detail);
-  final String error;
-  final String? detail;
-}
+String? nonEmptyString(Object? value) => value is String && value.isNotEmpty ? value : null;

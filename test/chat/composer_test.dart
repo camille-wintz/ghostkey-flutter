@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ghostkey/chat/composer.dart';
 import 'package:ghostkey/chat/quota_feature.dart';
 import 'package:ghostkey/chat/refusals.dart';
-import 'package:ghostkey/chat/turn.dart';
+import 'package:ghostkey/chat/conversation.dart';
 import 'package:ghostkey/server/dto/billing.dart';
 import 'package:ghostkey/server/dto/chat.dart';
 import 'package:ghostkey/server/dto/media.dart';
@@ -24,9 +24,10 @@ String words(int n) => List.generate(n, (i) => 'w$i').join(' ');
 /// A composer over fakes: what was sent, what the gate says, what the turn
 /// owner answers.
 class Harness {
-  Harness({this.exhausted = false, this.outcome = const SendDone(), this.spent = const []});
+  Harness({this.exhausted = false, this.outcome = const SendDone(), this.spent = const [], this.busy = false});
 
   bool exhausted;
+  bool busy;
   SendOutcome outcome;
   final List<String> spent;
   final List<(String, List<ChatAttachment>, String?)> sent = [];
@@ -38,7 +39,7 @@ class Harness {
       sent.add((text, attachments, model));
       return outcome;
     },
-    isSending: () => false,
+    isBusy: () => busy,
   );
 }
 
@@ -146,12 +147,7 @@ void main() {
         upgradeAllowance: null,
       );
       final h = Harness();
-      final attachment = ChapterAttachment(id: 'a1', title: 'One', documentId: 'd1');
-      h.outcome = SendRefused(
-        ServerError('quota_exceeded', 402, null, null, null, refused),
-        'my question',
-        [attachment],
-      );
+      h.outcome = SendRefused(ServerError('quota_exceeded', 402, null, null, null, refused));
       h.composer.text.text = 'my question';
       h.composer.attachChapter(doc('d1', 'One.md'));
       final refusal = await h.composer.send(model: 'fable-5');
@@ -166,8 +162,6 @@ void main() {
       final h = Harness();
       h.outcome = SendRefused(
         ServerError('plan_insufficient', 403, null, const PlanDenial(label: 'Claude Fable 5', requiredPlan: 'pro')),
-        'q',
-        const [],
       );
       h.composer.text.text = 'q';
       final refusal = await h.composer.send(model: 'fable-5');
@@ -183,11 +177,20 @@ void main() {
       expect(await h.composer.send(), isNull);
       expect(h.sent.single.$3, isNull);
     });
-    test('a failed or stopped turn is not a refusal', () async {
+    test("a send that didn't get there is not a refusal, and keeps the words to send again", () async {
       final h = Harness(outcome: const SendFailed());
       h.composer.text.text = 'q';
+      h.composer.attachChapter(doc('d1', 'One.md'));
       expect(await h.composer.send(model: 'gpt-5-6-terra'), isNull);
-      expect(h.composer.text.text, isEmpty);
+      expect(h.composer.text.text, 'q');
+      expect(h.composer.attachments, hasLength(1));
+    });
+    test('nothing goes while the conversation answers', () async {
+      final h = Harness(busy: true);
+      h.composer.text.text = 'q';
+      expect(await h.composer.send(), isNull);
+      expect(h.sent, isEmpty);
+      expect(h.composer.text.text, 'q');
     });
   });
 
@@ -200,7 +203,7 @@ void main() {
       expect(h.composer.text.text, 'half a thought');
     });
     test('refused, it comes back only into an empty field', () async {
-      final h = Harness(outcome: SendRefused(ServerError('plan_insufficient', 403, null, null, null, null), '1. Yes', const []));
+      final h = Harness(outcome: SendRefused(ServerError('plan_insufficient', 403, null, null, null, null)));
       h.composer.text.text = 'half a thought';
       await h.composer.send(override: '1. Yes');
       expect(h.composer.text.text, 'half a thought');

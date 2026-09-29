@@ -38,7 +38,6 @@ Future<void> stuckInChat(BuildContext context, WidgetRef ref, {required String p
     final session = await createSession(
       projectId,
       title: scene.headline,
-      messages: const [],
       view: ChatView(kind: ChatViewKind.chapter, id: scene.documentId, title: scene.chapter),
     );
     ref.invalidate(chatSessionsProvider(projectId));

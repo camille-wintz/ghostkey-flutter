@@ -83,8 +83,8 @@ Future<void> _delete(
   try {
     await deleteSession(projectId, session.id);
     ref.invalidate(chatSessionsProvider(projectId));
-    final turn = ref.read(chatTurnProvider(projectId).notifier);
-    if (ref.read(chatTurnProvider(projectId)).activeSessionId == session.id) turn.newChat();
+    final conversation = ref.read(conversationProvider(projectId).notifier);
+    if (ref.read(conversationProvider(projectId)).sessionId == session.id) conversation.newChat();
   } catch (e) {
     if (context.mounted) await _failed(context, 'Could not delete chat', e);
   }
@@ -156,7 +156,7 @@ Future<void> _deletePlan(
   if (!await confirmDeletePlan(context, name: plan.name)) return;
   try {
     await deleteWorkPlan(projectId, plan.id);
-    ref.read(chatTurnProvider(projectId).notifier).forgetPlan(plan.id);
+    ref.read(conversationProvider(projectId).notifier).forgetPlan(plan.id);
     ref.invalidate(workPlansProvider(projectId));
     ref.invalidate(chatSessionsProvider(projectId));
   } catch (e) {

@@ -31,7 +31,7 @@ class _OutlineReviewEditorState extends ConsumerState<OutlineReviewEditor> {
 
   @override
   Widget build(BuildContext context) {
-    final turnRunning = ref.watch(chatTurnProvider(widget.projectId).select((s) => s.sending));
+    final turnRunning = ref.watch(conversationProvider(widget.projectId).select((s) => s.busy));
     return OutlineEditor(autosave: _autosave, readOnly: turnRunning, readOnlyNote: 'Read only while the chat answers');
   }
 }

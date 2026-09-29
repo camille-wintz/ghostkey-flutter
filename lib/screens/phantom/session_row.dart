@@ -4,10 +4,12 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/dates.dart';
 import '../../ds/tokens.dart';
 import '../../server/dto/chat.dart';
+import 'pulse.dart';
 import '../../ui/press.dart';
 
-/// One saved chat in the drawer: title and when it last moved. Long-press
-/// for rename / delete. [nested] sets it in under the work plan it belongs to.
+/// One saved chat in the drawer: title and when it last moved — or, while
+/// the server is answering in it, that it is. Long-press for rename /
+/// delete. [nested] sets it in under the work plan it belongs to.
 class SessionRow extends StatelessWidget {
   const SessionRow({
     super.key,
@@ -57,7 +59,14 @@ class SessionRow extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(formatRelativeTime(session.updatedAt), style: DsStyle.ui(DsText.eyebrow, color: Ds.faint)),
+                    switch (session.status) {
+                      ConversationStatus.idle =>
+                        Text(formatRelativeTime(session.updatedAt), style: DsStyle.ui(DsText.eyebrow, color: Ds.faint)),
+                      ConversationStatus.running || ConversationStatus.queued => Pulse(
+                          active: true,
+                          child: Text('Answering…', style: DsStyle.ui(DsText.eyebrow, color: Ds.accent)),
+                        ),
+                    },
                   ],
                 ),
               ),

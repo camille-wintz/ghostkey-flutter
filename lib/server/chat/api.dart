@@ -1,16 +1,13 @@
-import 'dart:async';
-import 'dart:convert';
-
 import '../client.dart';
 import '../dto/chat.dart';
+import '../dto/chat_conversation.dart';
 import '../dto/json.dart';
 import '../dto/work_plan.dart';
-import '../errors.dart';
-import '../sse.dart';
 
-// /api/projects/:id/chat/* — sessions, the title call and the streamed turn.
-// The chat's whole engine (prompts, tools, model protocols) is server-side;
-// this file only speaks the wire shapes in ../dto/chat.dart.
+// /api/projects/:id/chat/* — sessions, messages and the conversation read.
+// The chat's whole engine (prompts, tools, model protocols, the transcript
+// itself) is server-side; this file only speaks the wire shapes in
+// ../dto/chat.dart and ../dto/chat_conversation.dart.
 
 String _base(String projectId) => '/api/projects/${Uri.encodeComponent(projectId)}/chat';
 
@@ -19,44 +16,25 @@ Future<List<ChatSessionSummary>> listSessions(String projectId) async {
   return asJsonList(res.jsonObject()['sessions']).map(ChatSessionSummary.fromJson).toList();
 }
 
-Future<ChatSession> getSession(String projectId, String sessionId) async {
-  final res = await apiFetch('${_base(projectId)}/sessions/${Uri.encodeComponent(sessionId)}');
-  return ChatSession.fromJson(asJson(res.jsonObject()['session']));
-}
-
-/// The create's body. `workPlanId` is the plan the first turn started or
-/// took up — this app creates the session after that turn, so the server had
-/// no row to attach it to.
-Json sessionCreateBody({required String title, List<ChatMessage>? messages, ChatView? view, String? workPlanId}) => {
-      'title': title,
-      'messages': ?messages?.map((m) => m.toJson()).toList(),
-      'view': ?view?.toJson(),
-      'work_plan_id': ?workPlanId,
-    };
-
-Future<ChatSession> createSession(
-  String projectId, {
-  required String title,
-  List<ChatMessage>? messages,
-  ChatView? view,
-  String? workPlanId,
-}) async {
+/// An empty conversation, for a door that opens the chat on a subject (a
+/// scene, the chapter plan) before anything is said in it. A first message
+/// sent with no session makes its own — see [sendMessage].
+Future<ChatSession> createSession(String projectId, {required String title, ChatView? view}) async {
   final res = await apiFetch('${_base(projectId)}/sessions',
-      method: 'POST', body: sessionCreateBody(title: title, messages: messages, view: view, workPlanId: workPlanId));
+      method: 'POST', body: {'title': title, 'view': ?view?.toJson()});
   return ChatSession.fromJson(asJson(res.jsonObject()['session']));
 }
 
 /// `workPlanId` moves the conversation under a plan; this app never moves one
-/// out, so null means "leave it".
+/// out, so null means "leave it". The transcript is the server's: a PATCH
+/// never carries messages.
 Future<ChatSession> patchSession(
   String projectId,
   String sessionId, {
-  List<ChatMessage>? messages,
   String? title,
   String? workPlanId,
 }) async {
   final res = await apiFetch('${_base(projectId)}/sessions/${Uri.encodeComponent(sessionId)}', method: 'PATCH', body: {
-    'messages': ?messages?.map((m) => m.toJson()).toList(),
     'title': ?title,
     'work_plan_id': ?workPlanId,
   });
@@ -102,15 +80,6 @@ Future<void> deleteWorkPlan(String projectId, String planId) async {
   await apiFetch('${_plans(projectId)}/${Uri.encodeComponent(planId)}', method: 'DELETE');
 }
 
-/// A short title for a conversation from its opening turns; "" when the model
-/// gave nothing usable. Stateless — the caller persists it with a PATCH.
-Future<String> suggestTitle(String projectId, List<ChatMessage> turns) async {
-  final res = await apiFetch('${_base(projectId)}/title', method: 'POST', body: {
-    'turns': turns.take(4).map((t) => {'role': t.role.name, 'text': t.text}).toList(),
-  });
-  return asString(res.jsonObject()['title']);
-}
-
 /// Ask the server to reflect over sessions updated since the last pass. It
 /// gates on staleness itself, so calling it on every room open is cheap.
 Future<void> postReflect(String projectId) async {
@@ -118,100 +87,70 @@ Future<void> postReflect(String projectId) async {
       method: 'POST', body: const <String, dynamic>{});
 }
 
-/// A live turn: the subscription to cancel it, and the result when it ends.
-class TurnHandle {
-  TurnHandle._(this._subscription, this.result);
-  final StreamSubscription<String> _subscription;
-  final Future<ChatTurnResult> result;
-
-  /// Stop reading. The server keeps writing the transcript it was given;
-  /// the caller's foreground resync reads what it finished without us.
-  Future<void> cancel() => _subscription.cancel();
+/// Send a message — the author's words, recorded before any model runs and
+/// answered by the server whether or not this app stays to watch. [id] is the
+/// client's and makes a resend the same message (200 `resent`), so a send
+/// that failed on the network is retried with the id it had. No [sessionId]:
+/// the message starts a conversation, created under [workPlanId] with [view]
+/// beside it. A 402 / 403 refusal records nothing and throws the
+/// [ServerError] the client parses (`quota` / `denial`).
+Future<ChatSendResult> sendMessage(
+  String projectId, {
+  required String id,
+  String? sessionId,
+  required String text,
+  List<ChatAttachment> attachments = const [],
+  String? model,
+  required String manuscript,
+  ChatView? view,
+  String? workPlanId,
+}) async {
+  final res = await apiFetch('${_base(projectId)}/messages',
+      method: 'POST',
+      body: sendMessageBody(
+        id: id,
+        sessionId: sessionId,
+        text: text,
+        attachments: attachments,
+        model: model,
+        manuscript: manuscript,
+        view: view,
+        workPlanId: workPlanId,
+      ));
+  return ChatSendResult.fromJson(res.jsonObject());
 }
 
-/// Run one turn. Failures before the stream opens (400/402/403/429) throw
-/// the [ServerError] the client parses — the 402 carries `quota`, the 403
-/// `denial`; a failure after it opens arrives as an `error` frame and
-/// completes `result` with a status-0 ServerError carrying the frame's code.
-Future<TurnHandle> streamTurn(
-  String projectId, {
-  required List<ChatMessage> messages,
-  String? model,
-  /// Whether this turn may edit chapters — "write" or "read_only". Sent
-  /// every turn: the server's default is read-only, the app's is write.
-  String? manuscript,
+/// The send's body. [view] and [workPlanId] belong to a conversation the
+/// message starts, so they go only without a [sessionId]; `manuscript`
+/// ("write" / "read_only") goes every time — the server's default is
+/// read-only, the app's is write.
+Json sendMessageBody({
+  required String id,
   String? sessionId,
-  /// What is open beside a conversation that has no session yet — a work
-  /// plan the author started it from. With a session the server reads the
-  /// row's own view and ignores this.
+  required String text,
+  List<ChatAttachment> attachments = const [],
+  String? model,
+  required String manuscript,
   ChatView? view,
-  required void Function(ChatToolStep step) onStep,
-  required void Function(String chunk) onText,
-  required void Function() onDiscard,
-  required void Function(ChatView view) onView,
-}) async {
-  final res = await apiStream(
-    '${_base(projectId)}/turn',
-    method: 'POST',
-    headers: const {'Accept': 'text/event-stream'},
-    body: {
-      'messages': messages.map((m) => m.toJson()).toList(),
-      'model': ?model,
-      'manuscript': ?manuscript,
+  String? workPlanId,
+}) =>
+    {
+      'id': id,
       'session_id': ?sessionId,
-      if (sessionId == null) 'view': ?view?.toJson(),
-      // The phone has no desk beside the chat, but what a tool opens is
-      // still where its work landed: the Review button seats it on demand.
+      'text': text,
+      if (attachments.isNotEmpty) 'attachments': attachments.map((a) => a.toJson()).toList(),
+      'model': ?model,
+      'manuscript': manuscript,
+      // The phone has no desk beside the chat, but what a tool opens is still
+      // where its work landed: the Review button seats it on demand.
       'views': 'beside',
-    },
-  );
+      if (sessionId == null) 'view': ?view?.toJson(),
+      if (sessionId == null) 'work_plan_id': ?workPlanId,
+    };
 
-  final completer = Completer<ChatTurnResult>();
-  ChatTurnResult? result;
-  ServerError? failure;
-
-  final subscription = readSse(res.stream).listen(
-    (payload) {
-      final Json json;
-      try {
-        final decoded = jsonDecode(payload);
-        if (decoded is! Map<String, dynamic>) return;
-        json = decoded;
-      } catch (_) {
-        return;
-      }
-      switch (ChatTurnFrame.fromJson(json)) {
-        case StepFrame(:final step):
-          onStep(step);
-        case ViewFrame(:final view?):
-          onView(view);
-        case ViewFrame():
-          break;
-        case TextFrame(:final text):
-          onText(text);
-        case DiscardFrame():
-          onDiscard();
-        case ResultFrame(result: final r):
-          result = r;
-        case ErrorFrame(:final error, :final detail):
-          failure = ServerError(error, 0, detail ?? error);
-      }
-    },
-    onError: (Object e) {
-      if (!completer.isCompleted) completer.completeError(e is ServerError ? e : ServerError('network_error', 0, e.toString()));
-    },
-    onDone: () {
-      if (completer.isCompleted) return;
-      if (failure != null) {
-        completer.completeError(failure!);
-      } else if (result == null) {
-        completer.completeError(ServerError('empty_response', 0, 'The turn ended without a result frame.'));
-      } else {
-        completer.complete(result);
-      }
-    },
-    cancelOnError: true,
-  );
-
-  return TurnHandle._(subscription, completer.future);
+/// The conversation as it stands: every message in order, a running answer
+/// with its words and steps so far, each task with its job's status.
+Future<ChatConversation> readConversation(String projectId, String sessionId) async {
+  final res = await apiFetch('${_base(projectId)}/sessions/${Uri.encodeComponent(sessionId)}/messages');
+  return ChatConversation.fromJson(res.jsonObject());
 }
