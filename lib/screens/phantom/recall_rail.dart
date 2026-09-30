@@ -35,6 +35,7 @@ String shortLabel(ChatToolStep step) {
         summary.replaceFirst(_writing, '').replaceFirst(_intoTheManuscript, '').trim(),
         'a new chapter',
       ),
+    'create_chapters' => 'the new chapters',
     'write_scene' => 'a drafted scene',
     'write_chapter' => 'a drafted chapter',
     'read_library_item' => 'a library item',

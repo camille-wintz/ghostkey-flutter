@@ -170,8 +170,8 @@ class ChapterPlanWrites extends Notifier<ChapterPlanState> {
     _reread();
   }
 
-  /// Make the proposal the book: a new draft (or the empty one's place), and
-  /// the plan rows its chapters owe, through the plan's own owner.
+  /// Make the proposal the book: a new draft (or the empty one's place). The
+  /// server writes the plan rows its chapters owe in the same commit.
   Future<void> commit({String? draftName}) async {
     if (state.committing) return;
     state = state.copyWith(committing: true, clearError: true);
@@ -180,19 +180,9 @@ class ChapterPlanWrites extends Notifier<ChapterPlanState> {
       final result = await commitProposal(projectId, draftName: draftName);
       ref.invalidate(projectProvider(projectId));
       ref.invalidate(projectWordCountProvider(projectId));
-      try {
-        // The board rebuilds against the new draft's tree first, so each
-        // chapter's row is found rather than minted twice.
-        await ref.read(planBoardProvider(projectId).future);
-        ref.read(planBoardProvider(projectId).notifier).adoptCommitted([
-          for (final c in result.chapters) (documentId: c.documentId, notes: c.notes, words: c.words),
-        ]);
-      } catch (e) {
-        if (kDebugMode) debugPrint('[mara] commit plan rows failed: $e');
-        if (ref.mounted) {
-          state = state.copyWith(error: "The chapters were made, but their notes didn't reach the plan: ${messageFor(e)}");
-        }
-      }
+      // Each new chapter's row, with its notes, came from the commit itself;
+      // the board re-reads the plan against the new draft's tree.
+      ref.invalidate(planBoardProvider(projectId));
       if (ref.mounted) {
         state = state.copyWith(
           committing: false,

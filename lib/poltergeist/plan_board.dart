@@ -180,15 +180,6 @@ class PlanBoardNotifier extends AsyncNotifier<PlanBoardState> {
     _notesTimer = Timer(_notesDebounce, _flushNotes);
   }
 
-  /// The rows a commit owes its new chapters. Call once the board has been
-  /// rebuilt against the new draft's tree.
-  void adoptCommitted(List<CommittedRow> committed) {
-    final current = state.value?.plan;
-    if (current == null || committed.isEmpty) return;
-    _flushNotes();
-    _commit(withCommittedChapters(current, committed, _tree, now: nowIso(), newId: newId));
-  }
-
   void _flushNotes() {
     _notesTimer?.cancel();
     _notesTimer = null;
