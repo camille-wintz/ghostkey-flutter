@@ -98,7 +98,7 @@ const Map<String, String> _messages = {
   'upstream_error': 'The transcription service is unavailable right now.',
   'server_error': 'The server hit a problem. Try again in a moment.',
   'content_too_large': 'That capture is too large.',
-  'quota_exceeded': "You've used up this week's chat messages.",
+  'quota_exceeded': "You've used up this week's credits.",
   'chat_empty': 'Write something first.',
   'chat_not_user_turn': 'The last message has to be yours.',
   'invalid_model': 'That model is not available.',
@@ -118,14 +118,22 @@ const Map<String, String> _messages = {
 String messageFor(Object? err) {
   if (err is ServerError) {
     if (err.code == 'plan_insufficient') return _planMessage(err.denial);
-    // The canned line names chat; any other counter names itself from the 402.
+    // Most features are paid out of the weekly credits since 2026-09-30, and
+    // their 402 names `credits`; a counter of its own names itself.
     final quota = err.quota;
+    if (err.code == 'quota_exceeded' && quota != null && quota.unit == QuotaUnit.credits) {
+      final amount = quota.allowance == null ? '' : '${quota.allowance} ';
+      final back = formatBillingDate(quota.periodEnd);
+      return back.isEmpty
+          ? "You've used this week's ${amount}credits."
+          : "You've used this week's ${amount}credits. They come back on $back.";
+    }
     if (err.code == 'quota_exceeded' && quota != null && quota.unit == QuotaUnit.seconds) {
       final amount = quota.allowance == null ? '' : '${formatQuantity(quota.allowance!, quota.unit)} of ';
       return "You've used this week's $amount${quota.label.toLowerCase()}. "
           'It comes back on ${formatBillingDate(quota.periodEnd)}.';
     }
-    if (err.code == 'quota_exceeded' && quota != null && quota.feature != 'phantom_chat') {
+    if (err.code == 'quota_exceeded' && quota != null && quota.feature != 'phantom_chat' && quota.feature != 'credits') {
       return "${quota.label}: this period's allowance is used up.";
     }
     return _messages[err.code] ?? _messages['unknown']!;

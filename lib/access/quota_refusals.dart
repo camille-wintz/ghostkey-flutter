@@ -23,11 +23,13 @@ bool reportQuotaRefusal(Object? e) {
 /// Report [feature] as spent without a refusal to go with it — a room that
 /// read the counter first and did not make the call. [snapshot] is a fresh
 /// quota read, whose numbers the notice shows; without one the notice falls
-/// back to the cached read.
+/// back to the cached read. The notice names the line that gates [feature] —
+/// the weekly credits for a feature paid out of them — as the server's 402
+/// would.
 void reportQuotaSpent(String feature, {QuotaSnapshot? snapshot}) {
-  final f = snapshot?.feature(feature);
+  final f = snapshot?.lineFor(feature);
   _reports.add((
-    feature: feature,
+    feature: f?.feature ?? feature,
     refused: f == null
         ? null
         : QuotaExceeded(

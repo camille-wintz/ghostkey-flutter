@@ -49,7 +49,7 @@ class ContinuityPage extends ConsumerWidget {
     final run = ref.watch(wispRunProvider(runKey));
     final gate = ref.watch(capabilityProvider(continuityCapability));
     final fullGate = ref.watch(capabilityProvider(fullReportsCapability));
-    final quota = quotaLine(ref.watch(quotaProvider).value?.feature(continuityQuotaFeature));
+    final quota = quotaLine(ref.watch(quotaProvider).value?.lineFor(continuityQuotaFeature));
 
     ref.listen(wispRunProvider(runKey), (prev, next) {
       if (next.denial case final denial? when prev?.denial == null) {

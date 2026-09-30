@@ -66,7 +66,7 @@ class AnalysisPage extends ConsumerWidget {
     final run = ref.watch(wispRunProvider(runKey));
     final gate = ref.watch(capabilityProvider(analysisCapability));
     final fullGate = ref.watch(capabilityProvider(fullReportsCapability));
-    final quota = quotaLine(ref.watch(quotaProvider).value?.feature(analysisQuotaFeature(analysis)));
+    final quota = quotaLine(ref.watch(quotaProvider).value?.lineFor(analysisQuotaFeature(analysis)));
 
     ref.listen(wispRunProvider(runKey), (prev, next) {
       if (next.denial case final denial? when prev?.denial == null) {

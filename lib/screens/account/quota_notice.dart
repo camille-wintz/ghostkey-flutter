@@ -44,8 +44,7 @@ Future<void> showQuotaNotice(
       if (allowance != null && allowance > 0 && used != null)
         _QuotaFacts(
           label: refused?.label ?? snapshot?.label ?? 'Allowance',
-          used: formatQuantity(used, unit),
-          allowance: formatQuantity(allowance, unit),
+          usage: formatUsage(used, allowance, unit, false),
           extras: (snapshot?.extras ?? 0) > 0
               ? formatQuantity(snapshot!.extras, unit)
               : null,
@@ -61,15 +60,15 @@ Future<void> showQuotaNotice(
 class _QuotaFacts extends StatelessWidget {
   const _QuotaFacts({
     required this.label,
-    required this.used,
-    required this.allowance,
+    required this.usage,
     required this.extras,
     required this.resets,
   });
 
   final String label;
-  final String used;
-  final String allowance;
+
+  /// "12 / 15", "180 / 190 credits" — [formatUsage] as a count.
+  final String usage;
   final String? extras;
   final String? resets;
 
@@ -91,9 +90,7 @@ class _QuotaFacts extends StatelessWidget {
                 child: Text(label, style: DsStyle.ui(DsText.ui, color: Ds.hi)),
               ),
               Text(
-                extras == null
-                    ? '$used / $allowance'
-                    : '$used / $allowance · $extras bought',
+                extras == null ? usage : '$usage · $extras bought',
                 style: DsStyle.ui(
                   DsText.ui,
                   color: Ds.mid,

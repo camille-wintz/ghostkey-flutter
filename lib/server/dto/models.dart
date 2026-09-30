@@ -6,9 +6,11 @@ import 'json.dart';
 // phone keeps none of its own since 2026-09-22.
 
 /// One row of a picker. [capability] is a `Capability.id` in the access
-/// snapshot (null: needs nothing beyond the surface); [quota] is the counter
-/// this model spends on its own (null: the pooled chat allowance). Both only
-/// draw — the server decides what is refused and charged.
+/// snapshot (null: needs nothing beyond the surface). [quota] was the counter
+/// a model spent on its own (Fable's, until 2026-09-30); the server sends null
+/// for every model now that a chat call is charged to the weekly credits by
+/// its weight, and nothing here reads it — it is parsed only so an older
+/// server's body still reads. The server decides what is refused and charged.
 class CatalogModel {
   const CatalogModel({required this.id, required this.name, this.capability, this.quota});
 

@@ -69,7 +69,7 @@ class _ReverseOutlinePageState extends ConsumerState<ReverseOutlinePage> {
     final run = ref.watch(wispRunProvider(runKey));
     final gate = ref.watch(capabilityProvider(outlineCapability));
     final fullGate = ref.watch(capabilityProvider(fullReportsCapability));
-    final quota = quotaLine(ref.watch(quotaProvider).value?.feature(outlineQuotaFeature));
+    final quota = quotaLine(ref.watch(quotaProvider).value?.lineFor(outlineQuotaFeature));
     final copy = _copyFor(_length);
 
     // A run found already going does not say which length it makes, so it

@@ -168,22 +168,29 @@ enum QuotaCadence {
 }
 
 /// What a feature's numbers count. Every counter counts runs except
-/// dictation, which counts audio-seconds (fifteen minutes a week on Free since
-/// 2026-09-25, an hour from 2026-09-22). Anything shown to an author goes
+/// dictation, which counts audio-seconds, and — since 2026-09-30 — the one
+/// weekly pool most features are paid out of, which counts credits. A feature
+/// paid from the pool keeps its own unit. Anything shown to an author goes
 /// through [formatQuantity].
 enum QuotaUnit {
   runs,
-  seconds;
+  seconds,
+  credits;
 
   /// Absent (a server that predates the field) is runs.
-  static QuotaUnit fromWire(String? value) => value == 'seconds' ? QuotaUnit.seconds : QuotaUnit.runs;
+  static QuotaUnit fromWire(String? value) => switch (value) {
+        'seconds' => QuotaUnit.seconds,
+        'credits' => QuotaUnit.credits,
+        _ => QuotaUnit.runs,
+      };
 }
 
-/// One quota number in its unit: runs stay bare, seconds read as minutes,
-/// floored — "31 min", "1 h", "1 h 20 min". Mirrors the desktop's
-/// `formatQuantity`.
+/// One quota number in its unit: runs stay bare, credits say so ("140
+/// credits", "1 credit"), seconds read as minutes, floored — "31 min", "1 h",
+/// "1 h 20 min". Mirrors the desktop's `formatQuantity`.
 String formatQuantity(int n, QuotaUnit unit) {
   if (unit == QuotaUnit.runs) return '$n';
+  if (unit == QuotaUnit.credits) return n == 1 ? '1 credit' : '$n credits';
   final minutes = n ~/ 60;
   final hours = minutes ~/ 60;
   final rest = minutes % 60;
@@ -193,10 +200,12 @@ String formatQuantity(int n, QuotaUnit unit) {
 
 /// How much of an allowance is gone, as the meter says it: "3 / 5" on Free,
 /// "40% used" on a paid plan. Never rounded to a share the bar contradicts —
-/// one spent is at least 1%, and 100% only once it is all gone. Mirrors the
-/// desktop's `formatUsage`.
+/// one spent is at least 1%, and 100% only once it is all gone. Credits say
+/// their unit once, at the end — "50 / 190 credits", not "50 credits / 190
+/// credits". Mirrors the desktop's `formatUsage`.
 String formatUsage(int used, int allowance, QuotaUnit unit, bool asShare) {
   if (!asShare) {
+    if (unit == QuotaUnit.credits) return '$used / ${formatQuantity(allowance, unit)}';
     return '${formatQuantity(used, unit)} / ${formatQuantity(allowance, unit)}';
   }
   if (allowance <= 0 || used >= allowance) return '100% used';
@@ -205,6 +214,11 @@ String formatUsage(int used, int allowance, QuotaUnit unit, bool asShare) {
 }
 
 /// One counted feature's standing. Numbers are null when `unlimited`.
+///
+/// A feature paid out of a pool ([pool] set — `credits`) carries no counts of
+/// its own: `allowance` is null, `used` 0, and `remaining` is how much of it
+/// the pool's balance would pay for, in the feature's own unit. Its meter,
+/// notice and "N left" line are the pool's — [QuotaSnapshot.lineFor].
 class FeatureQuota {
   const FeatureQuota({
     required this.feature,
@@ -217,6 +231,8 @@ class FeatureQuota {
     required this.extras,
     required this.remaining,
     this.unit = QuotaUnit.runs,
+    this.pool,
+    this.price,
   });
 
   final String feature;
@@ -237,6 +253,15 @@ class FeatureQuota {
   final int extras;
   final int? remaining;
 
+  /// The counter that pays for this feature on the caller's plan (`credits`),
+  /// or null when it is counted on its own or not at all. Absent on a server
+  /// that predates the pool, which reads the same as null.
+  final String? pool;
+
+  /// What one unit of this feature costs out of [pool], in credits — may be
+  /// fractional (dictation is priced per second). Null without a pool.
+  final double? price;
+
   static FeatureQuota fromJson(Json json) => FeatureQuota(
         feature: asString(json['feature']),
         label: asString(json['label']),
@@ -248,6 +273,8 @@ class FeatureQuota {
         extras: asInt(json['extras']),
         remaining: json['remaining'] as int?,
         unit: QuotaUnit.fromWire(json['unit'] as String?),
+        pool: json['pool'] as String?,
+        price: (json['price'] as num?)?.toDouble(),
       );
 }
 
@@ -258,11 +285,23 @@ class QuotaSnapshot {
   final String periodEnd;
   final List<FeatureQuota> features;
 
+  /// The feature's own entry, exactly as listed. For what a meter, a notice or
+  /// an "N left" line should show, read [lineFor].
   FeatureQuota? feature(String id) {
     for (final f in features) {
       if (f.feature == id) return f;
     }
     return null;
+  }
+
+  /// The line that gates [id]: its pool's entry when a pool pays for it (the
+  /// weekly `credits`), else its own. Falls back to the feature's own entry if
+  /// the snapshot names a pool it does not list. Null when neither is here.
+  FeatureQuota? lineFor(String id) {
+    final own = feature(id);
+    final pool = own?.pool;
+    if (pool == null) return own;
+    return feature(pool) ?? own;
   }
 
   static QuotaSnapshot fromJson(Json json) => QuotaSnapshot(

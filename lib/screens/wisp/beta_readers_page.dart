@@ -27,7 +27,7 @@ class BetaReadersPage extends ConsumerWidget {
     final hasChapters = project != null && chaptersInTree(project.chapters).isNotEmpty;
     final tooShort = tooShortForWholeBook(project);
     final readers = ref.watch(betaReadersProvider(projectId));
-    final quota = quotaLine(ref.watch(quotaProvider).value?.feature(betaReadQuotaFeature));
+    final quota = quotaLine(ref.watch(quotaProvider).value?.lineFor(betaReadQuotaFeature));
 
     void open(ReaderCard reader) => Navigator.of(context).push(
           MaterialPageRoute<void>(

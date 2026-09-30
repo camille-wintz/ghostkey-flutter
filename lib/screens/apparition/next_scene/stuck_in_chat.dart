@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../access/capability.dart';
 import '../../../access/quota_refusals.dart';
 import '../../../chat/arrival.dart';
-import '../../../chat/models.dart';
 import '../../../chat/providers.dart';
 import '../../../chat/quota_feature.dart';
 import '../../../rooms/rooms.dart';
@@ -28,7 +27,7 @@ Future<void> stuckInChat(BuildContext context, WidgetRef ref, {required String p
   final chat = ref.read(capabilityProvider(roomFor(RoomKey.phantom).capability));
   if (!chat.granted) return explainLock(context, chat, roomFor(RoomKey.phantom).title);
   final snapshot = ref.read(quotaProvider).value;
-  final quota = chatQuotaFor(snapshot, chatModelRow(ref.read(chatModelsProvider), null));
+  final quota = chatQuotaFor(snapshot);
   if (quota.exhausted) return reportQuotaSpent(quota.feature, snapshot: snapshot);
 
   final ask = 'I\'m stuck on a scene in “${scene.chapter}”. ${scene.prompt}\n\n'

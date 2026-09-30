@@ -10,6 +10,14 @@ void main() {
     expect(formatQuantity(3, QuotaUnit.runs), '3');
   });
 
+  test('credits say their unit, once in a count', () {
+    expect(formatQuantity(140, QuotaUnit.credits), '140 credits');
+    expect(formatQuantity(1, QuotaUnit.credits), '1 credit');
+    expect(formatUsage(50, 190, QuotaUnit.credits, false), '50 / 190 credits');
+    expect(formatUsage(50, 200, QuotaUnit.credits, true), '25% used');
+    expect(QuotaUnit.fromWire('credits'), QuotaUnit.credits);
+  });
+
   test('the wire unit defaults to runs', () {
     final f = FeatureQuota.fromJson({'feature': 'edit_pass', 'label': 'x', 'used': 1});
     expect(f.unit, QuotaUnit.runs);

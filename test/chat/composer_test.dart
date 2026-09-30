@@ -34,7 +34,7 @@ class Harness {
 
   late final ComposerController composer = ComposerController(
     spentIds: () => spent,
-    quotaFor: (_) => ChatQuotaFeature(feature: 'phantom_chat', exhausted: exhausted),
+    quotaFor: () => ChatQuotaFeature(feature: 'phantom_chat', exhausted: exhausted),
     sendTurn: (text, attachments, model) async {
       sent.add((text, attachments, model));
       return outcome;
@@ -137,11 +137,11 @@ void main() {
     });
     test("after the call: the server's 402 puts the message back and names its counter", () async {
       final refused = QuotaExceeded(
-        feature: 'fable_chat',
-        label: 'Fable messages',
+        feature: 'credits',
+        label: 'Credits',
         plan: Plan.pro,
-        allowance: 5,
-        used: 5,
+        allowance: 190,
+        used: 190,
         periodEnd: '2026-09-14T00:00:00Z',
         upgradePlan: null,
         upgradeAllowance: null,
@@ -153,7 +153,7 @@ void main() {
       final refusal = await h.composer.send(model: 'fable-5');
       expect(refusal, isA<QuotaRefusal>());
       final quota = refusal! as QuotaRefusal;
-      expect(quota.feature, 'fable_chat');
+      expect(quota.feature, 'credits');
       expect(quota.refused, same(refused));
       expect(h.composer.text.text, 'my question');
       expect(h.composer.attachments.single.id, 'a1');

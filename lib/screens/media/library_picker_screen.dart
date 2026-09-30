@@ -389,7 +389,7 @@ class _LibraryPickerScreenState extends ConsumerState<LibraryPickerScreen> {
         ? ref.watch(librarySearchProvider((projectId: _projectId, query: _query, folder: folder)))
         : libraryRead.whenData((l) => picturesIn(l, folder));
     final gate = ref.watch(capabilityProvider(drawCapability));
-    final quota = quotaLine(ref.watch(quotaProvider).value?.feature(drawQuotaFeature));
+    final quota = quotaLine(ref.watch(quotaProvider).value?.lineFor(drawQuotaFeature));
     final tab = _tab;
 
     return Scaffold(

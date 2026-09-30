@@ -43,7 +43,7 @@ class BetaLetterScreen extends ConsumerWidget {
     final gate = ref.watch(capabilityProvider(analysisCapability));
     final fullGate = ref.watch(capabilityProvider(fullReportsCapability));
     final tooShort = tooShortForWholeBook(ref.watch(projectProvider(projectId)).value);
-    final quota = quotaLine(ref.watch(quotaProvider).value?.feature(betaReadQuotaFeature));
+    final quota = quotaLine(ref.watch(quotaProvider).value?.lineFor(betaReadQuotaFeature));
 
     void start({required bool again}) => startBetaRead(context, ref, projectId, reader, again: again);
 

@@ -35,7 +35,7 @@ class ChatSessionsPanel extends ConsumerWidget {
     final plans = ref.watch(workPlansProvider(projectId)).value ?? const [];
     final activeId = ref.watch(conversationProvider(projectId).select((s) => s.sessionId));
     final activePlanId = ref.watch(conversationProvider(projectId).select((s) => s.workPlanId));
-    final quota = quotaLine(ref.watch(quotaProvider).value?.feature(chatQuotaFeature));
+    final quota = quotaLine(ref.watch(quotaProvider).value?.lineFor(chatQuotaFeature));
     final conversation = ref.read(conversationProvider(projectId).notifier);
     final title = ref.watch(projectProvider(projectId)).value?.project.displayTitle ?? 'Project';
     final count = sessions.value?.length;

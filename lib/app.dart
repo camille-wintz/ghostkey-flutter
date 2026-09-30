@@ -47,7 +47,7 @@ class _GhostkeyAppState extends ConsumerState<GhostkeyApp> {
     if (_quotaNoticeOpen || context == null) return;
     _quotaNoticeOpen = true;
     final feature = report.feature;
-    final snapshot = feature == null ? null : ref.read(quotaProvider).value?.feature(feature);
+    final snapshot = feature == null ? null : ref.read(quotaProvider).value?.lineFor(feature);
     ref.invalidate(quotaProvider);
     try {
       await showQuotaNotice(context, snapshot: snapshot, refused: report.refused);

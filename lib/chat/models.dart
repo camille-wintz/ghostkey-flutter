@@ -12,7 +12,9 @@ import '../server/providers.dart';
 // and a turn then sends no `model`, so the server's default answers. The
 // surface's `default` row stands in for it on screen.
 
-/// The weekly counter every chat message draws from.
+/// The chat's feature id in the quota snapshot. On a plan that counts the
+/// chat it is paid out of the weekly credits — read its line with
+/// `QuotaSnapshot.lineFor`.
 const String chatQuotaFeature = 'phantom_chat';
 
 /// The catalog surface this app's chat picker draws.

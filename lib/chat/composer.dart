@@ -36,9 +36,10 @@ class ComposerController extends ChangeNotifier {
   /// Handles the conversation has already spent, so a new one is unique
   /// across the whole session and the model never sees two "a2"s.
   final List<String> Function() spentIds;
+  /// The chat's line, read at the send. Every model draws on the same one.
+  final ChatQuotaFeature Function() quotaFor;
   /// `model` is the author's pick — null when they have not picked, and
   /// then the turn names none and the server's default answers.
-  final ChatQuotaFeature Function(String? model) quotaFor;
   final Future<SendOutcome> Function(String text, List<ChatAttachment> attachments, String? model) sendTurn;
   /// Sending, or the conversation answering — no message goes then.
   final bool Function() isBusy;
@@ -127,7 +128,7 @@ class ComposerController extends ChangeNotifier {
     final body = (override ?? text.text).trim();
     final attached = _attachments;
     if (body.isEmpty && attached.isEmpty) return null;
-    final quota = quotaFor(model);
+    final quota = quotaFor();
     if (quota.exhausted) return QuotaRefusal(feature: quota.feature);
     final outcome = await sendTurn(body, attached, model);
     if (outcome is SendDone) {

@@ -12,8 +12,8 @@ sealed class ComposerRefusal {
 class QuotaRefusal extends ComposerRefusal {
   const QuotaRefusal({required this.feature, this.refused});
 
-  /// The counter that refused — `phantom_chat`, or `fable_chat` when the
-  /// premium pool is the spent one.
+  /// The counter that refused — the chat's line, `credits` on a plan that
+  /// pays for the chat out of its weekly credits.
   final String feature;
 
   /// The 402 body when the server refused; null when the cached count did.

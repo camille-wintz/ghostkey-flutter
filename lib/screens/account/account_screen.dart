@@ -270,8 +270,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                         ),
                         for (final feature
                             in (quota?.features ?? const <FeatureQuota>[])
+                                // A feature paid out of the credits has no
+                                // counts of its own: the Credits line meters it.
                                 .where(
-                                  (f) => !f.unlimited && f.allowance != null,
+                                  (f) =>
+                                      !f.unlimited &&
+                                      f.allowance != null &&
+                                      f.pool == null,
                                 )) ...[
                           const SizedBox(height: 14),
                           _QuotaMeter(

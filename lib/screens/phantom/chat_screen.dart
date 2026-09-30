@@ -69,7 +69,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       for (final m in ref.read(conversationProvider(_projectId)).messages)
         for (final a in m.attachments) a.id,
     ],
-    quotaFor: (model) => chatQuotaFor(ref.read(quotaProvider).value, chatModelRow(ref.read(chatModelsProvider), model)),
+    quotaFor: () => chatQuotaFor(ref.read(quotaProvider).value),
     sendTurn: (text, attachments, model) => ref
         .read(conversationProvider(_projectId).notifier)
         .send(text, attachments, model, manuscript: _manuscriptWrites ? 'write' : 'read_only'),
@@ -111,7 +111,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       case QuotaRefusal(:final feature, :final refused):
         await showQuotaNotice(
           context,
-          snapshot: ref.read(quotaProvider).value?.feature(feature),
+          snapshot: ref.read(quotaProvider).value?.lineFor(feature),
           refused: refused,
         );
       case PlanDenied():

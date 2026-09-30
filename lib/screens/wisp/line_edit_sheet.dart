@@ -75,7 +75,7 @@ class _LineEditFormState extends ConsumerState<_LineEditForm> {
 
   @override
   Widget build(BuildContext context) {
-    final quota = quotaLine(ref.watch(quotaProvider).value?.feature(lineEditQuotaFeature));
+    final quota = quotaLine(ref.watch(quotaProvider).value?.lineFor(lineEditQuotaFeature));
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
       child: Column(

@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ghostkey/chat/quota_feature.dart';
 import 'package:ghostkey/server/dto/billing.dart';
-import 'package:ghostkey/server/dto/models.dart';
 
 FeatureQuota quota(
   String feature, {
@@ -27,53 +26,93 @@ FeatureQuota quota(
 QuotaSnapshot snapshot(List<FeatureQuota> features) =>
     QuotaSnapshot(plan: Plan.basic, periodEnd: '2026-09-14T00:00:00Z', features: features);
 
-// Two catalog rows: one on the pooled allowance, one with its own counter.
-const terra = CatalogModel(id: 'gpt-5-6-terra', name: 'GPT-5.6 Terra');
-const fable = CatalogModel(id: 'fable-5', name: 'Claude Fable 5', capability: 'models.premium', quota: 'fable_chat');
+// A snapshot as the server sends it since 2026-09-30: the chat priced out of
+// the weekly credits, which carry the numbers.
+FeatureQuota credits({required int remaining, int allowance = 190}) => FeatureQuota(
+      feature: 'credits',
+      label: 'Credits',
+      cadence: QuotaCadence.weekly,
+      periodEnd: '2026-10-05T00:00:00Z',
+      unlimited: false,
+      allowance: allowance,
+      used: allowance - remaining,
+      extras: 0,
+      remaining: remaining,
+      unit: QuotaUnit.credits,
+    );
+
+FeatureQuota pooled(String feature, {required int remaining, double price = 1}) => FeatureQuota(
+      feature: feature,
+      label: 'Chat messages',
+      cadence: QuotaCadence.weekly,
+      periodEnd: '2026-10-05T00:00:00Z',
+      unlimited: false,
+      allowance: null,
+      used: 0,
+      extras: 0,
+      remaining: remaining,
+      pool: 'credits',
+      price: price,
+    );
 
 void main() {
   group('chatQuotaFor', () {
-    test('an absent snapshot gates nothing', () {
-      final gate = chatQuotaFor(null, terra);
+    test('no snapshot gates nothing, on the chat counter', () {
+      final gate = chatQuotaFor(null);
       expect(gate.exhausted, isFalse);
       expect(gate.feature, 'phantom_chat');
     });
-    test('the weekly counter binds an included model', () {
+    test('a chat counted on its own gates on it (an older server)', () {
       final spent = snapshot([quota('phantom_chat', remaining: 0)]);
-      expect(chatQuotaFor(spent, terra).exhausted, isTrue);
-      expect(chatQuotaFor(spent, terra).feature, 'phantom_chat');
+      expect(chatQuotaFor(spent).exhausted, isTrue);
+      expect(chatQuotaFor(spent).feature, 'phantom_chat');
       final left = snapshot([quota('phantom_chat', remaining: 3)]);
-      expect(chatQuotaFor(left, terra).exhausted, isFalse);
+      expect(chatQuotaFor(left).exhausted, isFalse);
     });
-    test("Fable's own counter is named when it is the spent one", () {
-      final fableSpent = snapshot([
-        quota('phantom_chat', remaining: 10),
-        quota('fable_chat', remaining: 0, allowance: 5, label: 'Fable messages'),
-      ]);
-      final gate = chatQuotaFor(fableSpent, fable);
+    test('a pooled chat gates on the credits and names them', () {
+      final spent = snapshot([credits(remaining: 0), pooled('phantom_chat', remaining: 0)]);
+      final gate = chatQuotaFor(spent);
       expect(gate.exhausted, isTrue);
-      expect(gate.feature, 'fable_chat');
+      expect(gate.feature, 'credits');
+      expect(chatQuotaFor(snapshot([credits(remaining: 1), pooled('phantom_chat', remaining: 1)])).exhausted, isFalse);
     });
-    test('the weekly counter still binds Fable when only it is spent', () {
-      final weeklySpent = snapshot([
-        quota('phantom_chat', remaining: 0),
-        quota('fable_chat', remaining: 4, allowance: 5),
+    test('an unlimited chat gates nothing', () {
+      final open = snapshot([
+        quota('phantom_chat', remaining: null, allowance: null, unlimited: true),
+        credits(remaining: 0),
       ]);
-      final gate = chatQuotaFor(weeklySpent, fable);
-      expect(gate.exhausted, isTrue);
-      expect(gate.feature, 'phantom_chat');
+      expect(chatQuotaFor(open).exhausted, isFalse);
     });
-    test('no row (catalog not loaded, or an unlisted id) gates on the weekly messages alone', () {
-      final fableSpent = snapshot([
-        quota('phantom_chat', remaining: 3),
-        quota('fable_chat', remaining: 0, allowance: 5),
-      ]);
-      expect(chatQuotaFor(fableSpent, null).exhausted, isFalse);
-      expect(chatQuotaFor(snapshot([quota('phantom_chat', remaining: 0)]), null).feature, 'phantom_chat');
+  });
+
+  group('QuotaSnapshot.lineFor', () {
+    test("a pooled feature resolves to its pool's line", () {
+      final s = snapshot([credits(remaining: 140), pooled('edit_pass', remaining: 5, price: 25)]);
+      expect(s.lineFor('edit_pass')?.feature, 'credits');
+      expect(s.feature('edit_pass')?.remaining, 5);
     });
-    test("a model's counter missing from the snapshot does not gate", () {
-      final noFable = snapshot([quota('phantom_chat', remaining: 2)]);
-      expect(chatQuotaFor(noFable, fable).exhausted, isFalse);
+    test('an unpooled feature, or a pool the snapshot lacks, is its own line', () {
+      final s = snapshot([quota('reverse_outline', remaining: 2), pooled('edit_pass', remaining: 5)]);
+      expect(s.lineFor('reverse_outline')?.feature, 'reverse_outline');
+      expect(s.lineFor('edit_pass')?.feature, 'edit_pass');
+      expect(s.lineFor('missing'), isNull);
+    });
+    test('reads pool and price off the wire, tolerating their absence', () {
+      final f = FeatureQuota.fromJson({
+        'feature': 'dictation',
+        'label': 'Dictation',
+        'unit': 'seconds',
+        'used': 0,
+        'pool': 'credits',
+        'price': 0.016666666666666666,
+      });
+      expect(f.pool, 'credits');
+      expect(f.price, closeTo(1 / 60, 1e-9));
+      final whole = FeatureQuota.fromJson({'feature': 'edit_pass', 'label': 'x', 'used': 0, 'pool': 'credits', 'price': 25});
+      expect(whole.price, 25.0);
+      final old = FeatureQuota.fromJson({'feature': 'edit_pass', 'label': 'x', 'used': 0});
+      expect(old.pool, isNull);
+      expect(old.price, isNull);
     });
   });
 
@@ -87,10 +126,15 @@ void main() {
         '1 of 15 chat messages left this period',
       );
     });
+    test("the credits' line counts credits", () {
+      expect(quotaLine(credits(remaining: 140)), '140 of 190 credits left this week');
+    });
     test('draws nothing when unlimited or unknown', () {
       expect(quotaLine(null), isNull);
       expect(quotaLine(quota('phantom_chat', remaining: null, allowance: null, unlimited: true)), isNull);
       expect(quotaLine(quota('phantom_chat', remaining: null, allowance: 15)), isNull);
+      // A pooled feature's own entry has no allowance: read its pool's line.
+      expect(quotaLine(pooled('edit_pass', remaining: 5)), isNull);
     });
   });
 }
