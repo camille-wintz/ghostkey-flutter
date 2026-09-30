@@ -9,7 +9,7 @@ class ChatQuotaFeature {
 }
 
 /// A chat message is paid out of the line that gates [chatQuotaFeature]: the
-/// plan's weekly credits since 2026-09-30, charged per model call, so every
+/// plan's weekly credits since 2026-09-30, priced per message by model, so every
 /// model draws on the same line and none has a counter of its own. The chat
 /// is admitted while any credit is left. A plan that holds the chat unlimited
 /// has no pool, and gates nothing. An absent snapshot gates nothing either:
