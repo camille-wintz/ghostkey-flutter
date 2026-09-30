@@ -7,8 +7,8 @@ import '../../ds/tokens.dart';
 import '../../server/providers.dart';
 
 /// One quiet line under an answer another model gave, because the picked one
-/// can't see a picture the turn looked at. The desk names the model on every
-/// turn; the phone only when it is not the one the author picked.
+/// can't see a picture the turn looked at. Neither client names the model
+/// otherwise.
 class ModelSwitchNote extends ConsumerWidget {
   const ModelSwitchNote({super.key, required this.modelSwitch});
   final ModelSwitch modelSwitch;
