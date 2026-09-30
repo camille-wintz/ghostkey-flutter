@@ -191,6 +191,19 @@ String formatQuantity(int n, QuotaUnit unit) {
   return rest == 0 ? '$hours h' : '$hours h $rest min';
 }
 
+/// How much of an allowance is gone, as the meter says it: "3 / 5" on Free,
+/// "40% used" on a paid plan. Never rounded to a share the bar contradicts —
+/// one spent is at least 1%, and 100% only once it is all gone. Mirrors the
+/// desktop's `formatUsage`.
+String formatUsage(int used, int allowance, QuotaUnit unit, bool asShare) {
+  if (!asShare) {
+    return '${formatQuantity(used, unit)} / ${formatQuantity(allowance, unit)}';
+  }
+  if (allowance <= 0 || used >= allowance) return '100% used';
+  final share = (used / allowance * 100).round().clamp(used > 0 ? 1 : 0, 99);
+  return '$share% used';
+}
+
 /// One counted feature's standing. Numbers are null when `unlimited`.
 class FeatureQuota {
   const FeatureQuota({

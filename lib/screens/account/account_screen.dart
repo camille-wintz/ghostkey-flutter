@@ -274,7 +274,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                                   (f) => !f.unlimited && f.allowance != null,
                                 )) ...[
                           const SizedBox(height: 14),
-                          _QuotaMeter(feature: feature),
+                          _QuotaMeter(
+                            feature: feature,
+                            asShare: plan != null && plan != Plan.free,
+                          ),
                         ],
                       ],
                     ),
@@ -383,8 +386,12 @@ class _Rung extends StatelessWidget {
 
 /// One counted feature and what is left of it.
 class _QuotaMeter extends StatelessWidget {
-  const _QuotaMeter({required this.feature});
+  const _QuotaMeter({required this.feature, required this.asShare});
   final FeatureQuota feature;
+
+  /// A paid plan reads as a share ("40% used"), Free as a count ("3 / 5") —
+  /// the desk's `formatUsage`.
+  final bool asShare;
 
   @override
   Widget build(BuildContext context) {
@@ -392,8 +399,7 @@ class _QuotaMeter extends StatelessWidget {
     final fraction = allowance > 0
         ? (feature.used / allowance).clamp(0.0, 1.0)
         : 0.0;
-    final used = formatQuantity(feature.used, feature.unit);
-    final included = formatQuantity(allowance, feature.unit);
+    final usage = formatUsage(feature.used, allowance, feature.unit, asShare);
     final resets = feature.cadence == QuotaCadence.weekly
         ? 'Resets weekly — next on ${formatBillingDate(feature.periodEnd)}'
         : 'Resets on ${formatBillingDate(feature.periodEnd)}';
@@ -415,8 +421,8 @@ class _QuotaMeter extends StatelessWidget {
               // the account rather than to this window, so a full bar with a
               // pack behind it reads as "the included ones are gone".
               feature.extras > 0
-                  ? '$used / $included · ${formatQuantity(feature.extras, feature.unit)} bought'
-                  : '$used / $included',
+                  ? '$usage · ${formatQuantity(feature.extras, feature.unit)} bought'
+                  : usage,
               style: DsStyle.ui(
                 DsText.ui,
                 color: Ds.mid,
