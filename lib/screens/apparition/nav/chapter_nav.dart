@@ -13,6 +13,7 @@ import '../../../server/dto/projects.dart';
 import '../../../server/errors.dart';
 import '../../../server/providers.dart';
 import '../../../store/active_project.dart';
+import '../../../ui/button.dart';
 import '../../../ui/press.dart';
 import '../../../ui/room_title_bar.dart';
 import '../document_resolve.dart';
@@ -139,6 +140,9 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
         final layout = data == null ? layoutNav(const [], const [], state.query) : _layout(data);
         // A search shows matches out of their places, so there is nowhere to drop.
         final canReorder = state.query.isEmpty && !state.pending;
+        // A book with no chapters has no scene to find: the head gives way to
+        // the one thing to do, a first chapter (the header's + by another name).
+        final bare = data != null && chapterCount == 0 && state.query.isEmpty;
 
         return ColoredBox(
           color: Ds.void_,
@@ -157,7 +161,7 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
                 child: CustomScrollView(
                   controller: _scroll,
                   slivers: [
-                    if (widget.head case final head? when state.query.isEmpty) SliverToBoxAdapter(child: head),
+                    if (widget.head case final head? when state.query.isEmpty && !bare) SliverToBoxAdapter(child: head),
                     // Each section is its own group, so its header stays pinned
                     // while its rows scroll under it and the next header takes
                     // its place — the + stays a thumb away.
@@ -166,7 +170,17 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
                         PinnedHeaderSliver(
                           child: SectionHeader(label: 'Chapters', onAdd: data == null ? null : () => _createChapter(data)),
                         ),
-                        if (layout.chaptersMessage != null)
+                        if (bare)
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: GkButton(label: 'Create chapter', onPressed: () => _createChapter(data)),
+                              ),
+                            ),
+                          )
+                        else if (layout.chaptersMessage != null)
                           SliverToBoxAdapter(child: _Message(layout.chaptersMessage!))
                         else
                           SliverReorderableList(
