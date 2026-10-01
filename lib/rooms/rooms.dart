@@ -80,7 +80,7 @@ const List<Room> rooms = [
   Room(
     key: RoomKey.wisp,
     title: 'Wisp',
-    subtitle: 'Editing',
+    subtitle: 'Beta reading',
     mark: RoomMark.wisp,
     tile: TileGradient(Color(0xFFD0714F), Color(0xFF87391F)),
   ),
