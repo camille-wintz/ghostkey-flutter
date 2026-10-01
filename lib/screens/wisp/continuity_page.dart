@@ -105,6 +105,7 @@ class ContinuityPage extends ConsumerWidget {
             locked: !gate.granted || !fullGate.granted,
             disabled: tooShort,
             quota: quota,
+            note: continuityCostNote,
           ),
         ],
       );
@@ -117,7 +118,7 @@ class ContinuityPage extends ConsumerWidget {
         locked: !gate.granted,
         disabled: project == null || tooShort,
         quota: quota,
-        footnote: tooShort ? wholeBookTooShort : null,
+        footnote: tooShort ? wholeBookTooShort : continuityCostNote,
       );
     }
 

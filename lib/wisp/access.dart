@@ -16,6 +16,11 @@ const String fullReportsLabel = 'Whole Wisp reports';
 
 const String outlineQuotaFeature = 'reverse_outline';
 const String continuityQuotaFeature = 'continuity';
+
+/// Said beside every "Find plot holes" button (Cleo, 2026-10-01): a run is
+/// priced to cover a whole-book walk, which can take most of a Standard
+/// week's credits (the desk's wisp/tasks/continuity/costNote.ts says the same).
+const String continuityCostNote = "This is a complex operation: one run can use up to a week's credits.";
 const String lineEditQuotaFeature = 'edit_pass';
 
 /// The counter an analysis spends, each on its own. Free carries none of
