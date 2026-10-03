@@ -34,10 +34,20 @@ Future<OutlineResult> getOutline(String projectId) async {
 
 /// GET /api/projects/{id}/continuity — the cached plot-hole report (null
 /// when none), cut to a preview of one finding below `wisp.full_reports`. The
-/// cache is dropped whenever the manuscript meaningfully changes.
-Future<ContinuityRead> getContinuity(String projectId) async {
-  final res = await apiFetch('/api/projects/$projectId/continuity');
+/// cache is dropped whenever the manuscript meaningfully changes. [chapter]
+/// (a document id) reads that chapter's single-chapter report.
+Future<ContinuityRead> getContinuity(String projectId, {String? chapter}) async {
+  final query = chapter == null ? '' : '?chapter=${Uri.encodeQueryComponent(chapter)}';
+  final res = await apiFetch('/api/projects/$projectId/continuity$query');
   return ContinuityRead.fromJson(res.jsonObject());
+}
+
+/// GET /api/projects/{id}/continuity/estimate — what a check of the whole
+/// book, or of [chapter] against what precedes it, would cost in credits.
+Future<ContinuityEstimate> getContinuityEstimate(String projectId, {String? chapter}) async {
+  final query = chapter == null ? '' : '?chapter=${Uri.encodeQueryComponent(chapter)}';
+  final res = await apiFetch('/api/projects/$projectId/continuity/estimate$query');
+  return ContinuityEstimate.fromJson(res.jsonObject());
 }
 
 /// POST /api/projects/{id}/continuity/answer — answer a finding's question

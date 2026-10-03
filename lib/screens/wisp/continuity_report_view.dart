@@ -25,7 +25,7 @@ class ContinuityReportView extends StatelessWidget {
   Widget build(BuildContext context) {
     final candidates = report.candidates;
     final stats = Text(
-      '${report.chaptersAnalyzed} chapters analyzed · ${report.claimsExtracted} claims checked · '
+      '${report.chaptersAnalyzed} ${report.chaptersAnalyzed == 1 ? 'chapter' : 'chapters'} analyzed · ${report.claimsExtracted} claims checked · '
       '$candidates candidates, ${report.dismissed} dismissed on verification',
       style: DsStyle.ui(DsText.eyebrow, color: Ds.faint),
     );
@@ -72,7 +72,7 @@ class ContinuityReportView extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '${report.chaptersAnalyzed} chapters analyzed, ${report.claimsExtracted} claims checked'
+              '${report.chaptersAnalyzed} ${report.chaptersAnalyzed == 1 ? 'chapter' : 'chapters'} analyzed, ${report.claimsExtracted} claims checked'
               '${candidates > 0 ? ', $candidates candidate${candidates == 1 ? '' : 's'} dismissed on verification' : ''}'
               '. A clean report is the expected outcome for a consistent manuscript.',
               textAlign: TextAlign.center,

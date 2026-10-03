@@ -17,10 +17,11 @@ Future<DocumentSummary?> showChapterPickerSheet(
   BuildContext context, {
   required String projectId,
   required Set<String> attachedDocumentIds,
+  String eyebrow = 'Attach a chapter',
 }) =>
     showGkSheet<DocumentSummary>(
       context,
-      header: SheetHeader(eyebrow: 'Attach a chapter', onClose: () => Navigator.of(context).pop()),
+      header: SheetHeader(eyebrow: eyebrow, onClose: () => Navigator.of(context).pop()),
       builder: (context) => _PickerList(projectId: projectId, attached: attachedDocumentIds),
     );
 

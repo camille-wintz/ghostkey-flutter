@@ -38,5 +38,6 @@ Future<void> answerReportQuestion(
 
 void _refetch(WidgetRef ref, String projectId) {
   ref.invalidate(wispJobsProvider(projectId));
-  ref.invalidate(continuityProvider(projectId));
+  // A finding can sit in the whole book's report and a chapter's alike.
+  ref.invalidate(continuityProvider);
 }

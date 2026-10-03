@@ -7,7 +7,11 @@ import '../server/dto/wisp.dart';
 
 const String analysisCapability = 'wisp.book_analysis';
 const String outlineCapability = 'phantom.reverse_outline';
+/// One chapter checked against everything before it (Basic).
 const String continuityCapability = 'phantom.continuity';
+
+/// The whole book (Standard).
+const String continuityBookCapability = 'phantom.continuity_book';
 
 /// Below it, the reports read back as previews and each is made once: a
 /// forced re-read is refused (`ghostkey-server` `lib/wisp/preview.ts`).
@@ -17,10 +21,23 @@ const String fullReportsLabel = 'Whole Wisp reports';
 const String outlineQuotaFeature = 'reverse_outline';
 const String continuityQuotaFeature = 'continuity';
 
-/// Said beside every "Find plot holes" button (Cleo, 2026-10-01): a run is
-/// priced to cover a whole-book walk, which can take most of a Standard
-/// week's credits (the desk's wisp/tasks/continuity/costNote.ts says the same).
-const String continuityCostNote = "This is a complex operation: one run can use up to a week's credits.";
+/// Said beside a "Find plot holes" button while its estimate is still being
+/// read (the desk's wisp/tasks/continuity/costNote.ts says the same). A run
+/// is charged what it reads.
+const String continuityCostNote = "Charged for what it reads: a long book read whole can use most of a week's credits.";
+
+/// The line under a run button: what this run is expected to cost, and why a
+/// re-run costs less (the desk's `continuityCostLine`).
+String continuityCostLine(ContinuityEstimate? estimate) {
+  if (estimate == null) return continuityCostNote;
+  final credits = 'About ${estimate.credits} ${estimate.credits == 1 ? 'credit' : 'credits'}';
+  final cached = estimate.chaptersCached;
+  final read = estimate.chaptersRead;
+  if (cached == 0) return '$credits.';
+  final already =
+      cached == read ? 'every chapter it needs was read before' : '$cached of $read chapters were read before';
+  return '$credits: $already, so this run costs less.';
+}
 const String lineEditQuotaFeature = 'edit_pass';
 
 /// The counter an analysis spends, each on its own. Free carries none of

@@ -15,7 +15,9 @@ import '../../wisp/pages.dart';
 import '../../wisp/providers.dart';
 import '../../wisp/wisp_run.dart';
 import '../project/project_root.dart';
+import '../phantom/chapter_picker_sheet.dart';
 import 'continuity_report_view.dart';
+import 'continuity_scope.dart';
 import 'job_question_card.dart';
 import 'run_again.dart';
 import 'wisp_intro.dart';
@@ -24,8 +26,10 @@ import '../../ui/page_notice.dart';
 import 'wisp_page_loading.dart';
 import '../../ui/job_running.dart';
 
-/// Find plot holes: plot holes and continuity errors. The check is long (extract → walk →
-/// verify), and the contradictions it confirms become questions — which
+/// Find plot holes: plot holes and continuity errors, in one chapter against
+/// everything before it (Basic) or across the whole book (Standard). The
+/// check is long (extract → compare → verify), and the contradictions it
+/// confirms become questions — which
 /// version is the story — asked at the top of this page while it runs. Once
 /// the report is written each waiting question also sits on its finding, and
 /// that is where it is asked then: the report keeps it answerable after its
@@ -34,20 +38,40 @@ import '../../ui/job_running.dart';
 /// Below `wisp.full_reports` the report reads as a preview of one finding
 /// and is made once: "Run again" is locked there, as on the analyses (the
 /// server refuses a forced run with `plan_insufficient`).
-class ContinuityPage extends ConsumerWidget {
+class ContinuityPage extends ConsumerStatefulWidget {
   const ContinuityPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ContinuityPage> createState() => _ContinuityPageState();
+}
+
+class _ContinuityPageState extends ConsumerState<ContinuityPage> {
+  /// The author's pick, until which a plan that checks the whole book starts
+  /// there and any other on the first chapter.
+  bool _pickedBook = false;
+  String? _pickedChapter;
+
+  @override
+  Widget build(BuildContext context) {
     final projectId = ProjectScope.of(context);
     final project = ref.watch(projectProvider(projectId)).value;
-    final hasChapters = project != null && chaptersInTree(project.chapters).isNotEmpty;
+    final chapters = project == null ? const <DocumentSummary>[] : chaptersInTree(project.chapters);
+    final hasChapters = chapters.isNotEmpty;
     final tooShort = tooShortForWholeBook(project);
-    final read = ref.watch(continuityProvider(projectId));
+    final bookGate = ref.watch(capabilityProvider(continuityBookCapability));
+    final picked = chapters.where((c) => c.id == _pickedChapter).firstOrNull;
+    final chapter = _pickedBook
+        ? null
+        : picked ?? (bookGate.granted ? null : chapters.firstOrNull);
+    final key = (projectId: projectId, chapter: chapter?.id);
+    final read = ref.watch(continuityProvider(key));
+    final estimate = hasChapters ? ref.watch(continuityEstimateProvider(key)).value : null;
+    final costLine = continuityCostLine(estimate);
     final feed = ref.watch(continuityQuestionsProvider(projectId));
-    final runKey = continuityRunKey(projectId);
+    final runKey = continuityRunKey(projectId, chapter: chapter?.id);
     final run = ref.watch(wispRunProvider(runKey));
-    final gate = ref.watch(capabilityProvider(continuityCapability));
+    final chapterGate = ref.watch(capabilityProvider(continuityCapability));
+    final gate = chapter == null ? bookGate : chapterGate;
     final fullGate = ref.watch(capabilityProvider(fullReportsCapability));
     final quota = quotaLine(ref.watch(quotaProvider).value?.lineFor(continuityQuotaFeature));
 
@@ -59,9 +83,34 @@ class ContinuityPage extends ConsumerWidget {
     });
 
     void start({required bool force}) {
-      if (!gate.granted) return explainLock(context, gate, WispPage.continuity.label);
+      if (!gate.granted) {
+        return explainLock(context, gate, chapter == null ? 'Check whole book' : WispPage.continuity.label);
+      }
       if (force && !fullGate.granted) return explainLock(context, fullGate, fullReportsLabel);
-      ref.read(wispRunProvider(runKey).notifier).start({if (force) 'force': true});
+      ref.read(wispRunProvider(runKey).notifier).start({
+        if (force) 'force': true,
+        if (chapter != null) 'chapter': chapter.id,
+      });
+    }
+
+    Future<void> pickChapter() async {
+      final doc = await showChapterPickerSheet(
+        context,
+        projectId: projectId,
+        attachedDocumentIds: {if (chapter != null) chapter.id},
+        eyebrow: 'Check one chapter',
+      );
+      if (doc != null && mounted) {
+        setState(() {
+          _pickedChapter = doc.id;
+          _pickedBook = false;
+        });
+      }
+    }
+
+    void pickBook() {
+      if (!bookGate.granted) return explainLock(context, bookGate, 'Check whole book');
+      setState(() => _pickedBook = true);
     }
 
     // A question the shown report carries on a finding is asked there, not
@@ -81,7 +130,7 @@ class ContinuityPage extends ConsumerWidget {
       body = JobRunning(
         progress: run.progress,
         starting: 'Starting the check',
-        note: 'Extract → walk → verify. Confirmed contradictions become questions above, while the run keeps going. You can leave this page — the result is kept.',
+        note: 'Extract → compare → verify. Confirmed contradictions become questions above, while the run keeps going. You can leave this page — the result is kept.',
       );
     } else if (read.hasError && !read.hasValue) {
       body = PageNotice("The saved report wouldn't load: ${messageFor(read.error)}", error: true);
@@ -105,20 +154,22 @@ class ContinuityPage extends ConsumerWidget {
             locked: !gate.granted || !fullGate.granted,
             disabled: tooShort,
             quota: quota,
-            note: continuityCostNote,
+            note: costLine,
           ),
         ],
       );
     } else {
       body = WispIntro(
         icon: LucideIcons.scanSearch,
-        blurb: 'Identify plot holes and continuity errors.',
+        blurb: chapter == null
+            ? 'Identify plot holes and continuity errors across the whole book.'
+            : 'Check “${chapter.label}” against everything before it for plot holes and continuity errors.',
         action: 'Find plot holes',
         onRun: () => start(force: false),
         locked: !gate.granted,
         disabled: project == null || tooShort,
         quota: quota,
-        footnote: tooShort ? wholeBookTooShort : continuityCostNote,
+        footnote: tooShort ? wholeBookTooShort : costLine,
       );
     }
 
@@ -127,12 +178,21 @@ class ContinuityPage extends ConsumerWidget {
       backgroundColor: Ds.panel,
       onRefresh: () {
         ref.invalidate(wispJobsProvider(projectId));
-        return ref.refresh(continuityProvider(projectId).future);
+        ref.invalidate(continuityEstimateProvider(key));
+        return ref.refresh(continuityProvider(key).future);
       },
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 40),
         children: [
           if (run.error case final error? when !run.running && run.denial == null) PageNotice(error, error: true),
+          if (hasChapters && !run.running)
+            ContinuityScope(
+              chapterName: chapter?.label,
+              onOne: chapter != null,
+              onPickChapter: pickChapter,
+              onBook: pickBook,
+              bookLocked: !bookGate.granted,
+            ),
           for (final open in questions)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),

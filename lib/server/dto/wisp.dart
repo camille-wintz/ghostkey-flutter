@@ -717,6 +717,29 @@ class ContinuityReport {
   }
 }
 
+/// What a plot-hole check would cost before it runs (GET
+/// `/continuity/estimate`): a run is charged what it spends and may start
+/// only with [credits] left. Chapters an earlier run read are not read again.
+class ContinuityEstimate {
+  const ContinuityEstimate({
+    required this.credits,
+    required this.chaptersRead,
+    required this.chaptersCached,
+    required this.words,
+  });
+  final int credits;
+  final int chaptersRead;
+  final int chaptersCached;
+  final int words;
+
+  static ContinuityEstimate fromJson(Json json) => ContinuityEstimate(
+        credits: asInt(json['credits']),
+        chaptersRead: asInt(json['chapters_read']),
+        chaptersCached: asInt(json['chapters_cached']),
+        words: asInt(json['words']),
+      );
+}
+
 /// The plot-hole report as the read returns it: the report (null before a
 /// first run) and, below `wisp.full_reports`, how much of it was held back.
 /// A preview's report carries one finding — the first hard error in chapter

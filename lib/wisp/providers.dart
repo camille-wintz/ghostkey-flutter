@@ -41,8 +41,18 @@ final outlineProvider = FutureProvider.autoDispose.family<OutlineResult, String>
   (ref, projectId) => getOutline(projectId),
 );
 
-final continuityProvider = FutureProvider.autoDispose.family<ContinuityRead, String>(
-  (ref, projectId) => getContinuity(projectId),
+/// A plot-hole check's scope: [chapter] (a document id) against everything
+/// before it, or the whole book when null.
+typedef ContinuityKey = ({String projectId, String? chapter});
+
+final continuityProvider = FutureProvider.autoDispose.family<ContinuityRead, ContinuityKey>(
+  (ref, key) => getContinuity(key.projectId, chapter: key.chapter),
+);
+
+/// What a check of that scope would cost. Stale whenever a run lands — the
+/// chapters it read are cached, so the next one costs less.
+final continuityEstimateProvider = FutureProvider.autoDispose.family<ContinuityEstimate, ContinuityKey>(
+  (ref, key) => getContinuityEstimate(key.projectId, chapter: key.chapter),
 );
 
 /// The project's job feed, re-read while anything in it runs — what the line

@@ -15,7 +15,9 @@ WispRunKey analysisRunKey(String projectId, String analysis) =>
 
 WispRunKey outlineRunKey(String projectId) => (projectId: projectId, kind: 'reverse_outline', subject: null);
 
-WispRunKey continuityRunKey(String projectId) => (projectId: projectId, kind: 'continuity', subject: null);
+/// [chapter] (a document id) is a single-chapter check, its own slot.
+WispRunKey continuityRunKey(String projectId, {String? chapter}) =>
+    (projectId: projectId, kind: 'continuity', subject: chapter);
 
 /// One of Wisp's runs for a project, refreshing the page's read when it
 /// lands. The reverse outline's run is tagged with the length it makes.
@@ -47,7 +49,8 @@ class WispRun extends JobRun {
       case 'reverse_outline':
         ref.invalidate(outlineProvider(key.projectId));
       case 'continuity':
-        ref.invalidate(continuityProvider(key.projectId));
+        ref.invalidate(continuityProvider((projectId: key.projectId, chapter: key.subject)));
+        ref.invalidate(continuityEstimateProvider);
     }
   }
 }
