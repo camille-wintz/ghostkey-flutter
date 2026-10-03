@@ -24,3 +24,6 @@ String formatWords(int count) {
   }
   return count < 0 ? '-$buffer' : buffer.toString();
 }
+
+/// "1 chapter" / "3 chapters".
+String plural(int n, String one, [String? many]) => '$n ${n == 1 ? one : (many ?? '${one}s')}';

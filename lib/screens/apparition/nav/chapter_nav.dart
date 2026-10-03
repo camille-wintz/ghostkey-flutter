@@ -29,15 +29,14 @@ import 'section_header.dart';
 /// The page Apparition opens on (Cleo, 2026-09-24 — it used to be a panel
 /// unfolded from the open chapter's title, which read as a menu over a
 /// chapter rather than the room itself): the book in the bar with its count
-/// under it, search (reaches notes too), plan dots, and it opens scrolled to
-/// the chapter you were last in, which is marked. ONE scroll view over both
-/// sections, every row a fixed extent — a hundred-chapter book mounts a
-/// screenful.
+/// under it, search (reaches notes too), plan dots, and the chapter you were
+/// last in marked. ONE scroll view over the room's home and both sections,
+/// every row a fixed extent — a hundred-chapter book mounts a screenful.
 ///
-/// A row opens its document as a page pushed on top ([onOpen]); the bar's
-/// chevron is the way out of the room. The reveal is a starting offset rather
-/// than a jump: the list is built already positioned, from the same layout
-/// table it draws by, so a row it has never mounted is landed on exactly.
+/// It opens at the top, on the home (2026-10-02): the list used to open
+/// scrolled to the last chapter, and the home's where-you-left-off card is
+/// that door now. A row opens its document as a page pushed on top
+/// ([onOpen]); the bar's chevron is the way out of the room.
 class ChapterNav extends ConsumerStatefulWidget {
   const ChapterNav({
     super.key,
@@ -46,7 +45,6 @@ class ChapterNav extends ConsumerStatefulWidget {
     required this.onBack,
     required this.onOpen,
     this.head,
-    this.headHeight = 0,
   });
   final ChapterNavState state;
   final RecentRename rename;
@@ -56,17 +54,15 @@ class ChapterNav extends ConsumerStatefulWidget {
   final ValueChanged<String> onOpen;
 
   /// Drawn above the Chapters header while the list isn't searched — the
-  /// room's "Find me a scene to write". [headHeight] is its height when the
-  /// list opens, so the reveal still lands on the last chapter.
+  /// room's home.
   final Widget? head;
-  final double headHeight;
 
   @override
   ConsumerState<ChapterNav> createState() => _ChapterNavState();
 }
 
 class _ChapterNavState extends ConsumerState<ChapterNav> {
-  late final ScrollController _scroll;
+  final ScrollController _scroll = ScrollController();
   late final TextEditingController _search = TextEditingController(text: widget.state.query);
 
   /// Where the last hold lifted a row from, per group; a drop back on the
@@ -75,16 +71,6 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
   int? _liftedNote;
 
   String get _projectId => widget.state.projectId;
-
-  @override
-  void initState() {
-    super.initState();
-    final data = ref.read(projectProvider(_projectId)).value;
-    final active = ref.read(activeProjectProvider).activeChapter;
-    final offset = data == null ? null : _layout(data).offsetOfChapter(active);
-    final head = widget.head != null && widget.state.query.isEmpty ? widget.headHeight : 0.0;
-    _scroll = ScrollController(initialScrollOffset: offset == null ? 0 : revealOffset(offset + head));
-  }
 
   @override
   void dispose() {
@@ -140,8 +126,8 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
         final layout = data == null ? layoutNav(const [], const [], state.query) : _layout(data);
         // A search shows matches out of their places, so there is nowhere to drop.
         final canReorder = state.query.isEmpty && !state.pending;
-        // A book with no chapters has no scene to find: the head gives way to
-        // the one thing to do, a first chapter (the header's + by another name).
+        // A book with no chapters: the one thing to do is a first chapter
+        // (the header's + by another name).
         final bare = data != null && chapterCount == 0 && state.query.isEmpty;
 
         return ColoredBox(
@@ -161,7 +147,7 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
                 child: CustomScrollView(
                   controller: _scroll,
                   slivers: [
-                    if (widget.head case final head? when state.query.isEmpty && !bare) SliverToBoxAdapter(child: head),
+                    if (widget.head case final head? when state.query.isEmpty) SliverToBoxAdapter(child: head),
                     // Each section is its own group, so its header stays pinned
                     // while its rows scroll under it and the next header takes
                     // its place — the + stays a thumb away.

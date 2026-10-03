@@ -13,7 +13,6 @@ import '../apparition/apparition_screen.dart';
 import '../mara/mara_screen.dart';
 import '../../chat/arrival.dart';
 import '../phantom/phantom_screen.dart';
-import '../poltergeist/poltergeist_screen.dart';
 import '../veil/veil_screen.dart';
 import '../wisp/wisp_screen.dart';
 import 'project_home_screen.dart';
@@ -92,7 +91,6 @@ class _ProjectRootState extends ConsumerState<ProjectRoot> {
             builder: (context) => switch (settings.name) {
               ApparitionScreen.route => ApparitionScreen(open: settings.arguments as String?),
               VeilScreen.route => const VeilScreen(),
-              PoltergeistScreen.route => const PoltergeistScreen(),
               PhantomScreen.route => PhantomScreen(arrival: settings.arguments as ChatArrival?),
               MaraScreen.route => const MaraScreen(),
               WispScreen.route => const WispScreen(),
@@ -139,7 +137,6 @@ class ProjectScope extends InheritedWidget {
 String routeForRoom(RoomKey key) => switch (key) {
       RoomKey.apparition => ApparitionScreen.route,
       RoomKey.veil => VeilScreen.route,
-      RoomKey.poltergeist => PoltergeistScreen.route,
       RoomKey.phantom => PhantomScreen.route,
       RoomKey.mara => MaraScreen.route,
       RoomKey.wisp => WispScreen.route,

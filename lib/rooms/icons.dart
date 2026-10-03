@@ -6,6 +6,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 // Drawn by flutter_svg from the markup rather than re-traced as paths, so a
 // glyph that changes on the design canvas is copied here, not redrawn.
 
+/// [poltergeist] outlived its room (removed 2026-10-02): it is the glyph a
+/// reward's medallion strikes when the reward is not a cat.
 enum RoomMark { apparition, phantom, veil, poltergeist, mara, wisp }
 
 const String _apparition = '''

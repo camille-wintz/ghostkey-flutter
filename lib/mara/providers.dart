@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../server/dto/plan.dart';
 import '../server/plan/api.dart';
+import 'plan_board.dart';
 
 // Mara's server reads — also what the chat's Review reads when a turn opened
 // a board, the outline or the chapters. A write calls the api and
@@ -52,3 +53,9 @@ String nextBlankBoardName(Iterable<String?> taken) {
   }
   return name;
 }
+
+/// The book's chapters as a worklist — Chapters' rows, their notes and
+/// targets — held against the manuscript on every open (it used to be
+/// Poltergeist's plan board; the board left with the room, the rows stayed).
+final planBoardProvider =
+    AsyncNotifierProvider.autoDispose.family<PlanBoardNotifier, PlanBoardState, String>(PlanBoardNotifier.new);

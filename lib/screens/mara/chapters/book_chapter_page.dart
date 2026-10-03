@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../poltergeist/providers.dart';
+import '../../../mara/providers.dart';
 import '../../../server/dto/projects.dart';
 import '../../../server/providers.dart';
 import '../../../ui/room_subtitle.dart';

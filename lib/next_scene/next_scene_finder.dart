@@ -12,7 +12,7 @@ enum SpotPass { keep, later, never }
 /// them to — so the question doesn't vanish the moment its page opens.
 typedef SceneBrief = ({String documentId, String headline, String prompt});
 
-/// "Find me a scene to write" at the top of the chapter list — the desk's
+/// "Find me a scene to write" on Apparition's home — the desk's
 /// `useNextScene`. [start] asks the server for a scene; [pass] passes the one
 /// shown and asks for the one after, every spot passed this round riding
 /// along as `skip`, and a `later`/`never` stored first so it holds on the next

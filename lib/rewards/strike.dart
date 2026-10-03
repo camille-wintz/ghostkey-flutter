@@ -25,7 +25,7 @@ class Strike {
     required this.ticked,
   });
 
-  /// The cat, when the thing struck is one. A mark shows Poltergeist's glyph.
+  /// The cat, when the thing struck is one. A mark shows the ghost glyph.
   final Cat? cat;
   final String eyebrow;
   final String headline;
@@ -86,7 +86,7 @@ Strike strikeFor(Reward reward, RewardClaim claim) {
             : (words >= 500 ? "You're doing amazing!" : "You're on your way."),
         footnote: next != null
             ? 'Next at ${_grouped(next)}'
-            : 'Kept in Poltergeist',
+            : 'Kept in Apparition',
         ring: next != null
             ? (claim.writtenToday / next).clamp(0, 1).toDouble()
             : 1,
@@ -105,7 +105,7 @@ Strike strikeFor(Reward reward, RewardClaim claim) {
         short: daysToCat > 0
             ? "Daily goal done. ${_asWord(daysToCat)} more ${daysToCat == 1 ? 'day' : 'days'} to a cat."
             : "Daily goal done. This week's cat is already yours.",
-        footnote: 'Kept in Poltergeist',
+        footnote: 'Kept in Apparition',
         ring: 1,
         ticked: ticked,
       );
@@ -123,7 +123,7 @@ Strike strikeFor(Reward reward, RewardClaim claim) {
         short: first
             ? 'Your first daily goal, and a cat for it.'
             : 'A full week of writing, and a cat for it.',
-        footnote: 'Added to Poltergeist',
+        footnote: 'Added to your cats',
         ring: 1,
         ticked: ticked,
       );

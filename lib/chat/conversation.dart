@@ -5,7 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../mara/providers.dart';
-import '../poltergeist/ids.dart';
+import '../core/ids.dart';
 import '../server/chat/api.dart';
 import '../server/dto/chat.dart';
 import '../server/dto/chat_conversation.dart';

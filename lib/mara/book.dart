@@ -3,7 +3,7 @@ import '../server/dto/projects.dart';
 // The book as the Chapters page lists it once nothing is proposed: the
 // manuscript's own chapters, in order, under their parts, each with the plan
 // row that carries what it is for. Titles, order and parts are Apparition's;
-// the row is Poltergeist's plan board's.
+// the row is the plan's (`planBoardProvider`).
 
 sealed class BookRow {
   const BookRow();

@@ -1,20 +1,12 @@
-import 'dart:math';
-
 import '../../../core/chapter_search.dart';
 import '../../../ds/tokens.dart';
 import '../../../server/dto/projects.dart';
 
 // The panel's two sections flattened into one list of items, with the layout
-// table the list positions itself by. Pure: `test/apparition/` pins it.
-//
-// The table is computed here rather than measured because the list has to
-// know where a row it has never mounted sits: it is what lets a
-// hundred-chapter book open on chapter ninety without drawing the eighty-nine
-// above it. Every row's height comes from a token, so the arithmetic holds.
-
-/// Rows above the active one that stay visible, so it opens with its
-/// neighbours around it rather than pinned to the top edge.
-const int leadRows = 3;
+// table of where each sits. Pure: `test/apparition/` pins it. Every row's
+// height comes from a token, so the arithmetic holds without measuring. (The
+// table used to open the list on the last chapter; since 2026-10-02 the room
+// opens at the top, on its home.)
 
 const double navGapHeight = 10;
 
@@ -115,18 +107,6 @@ class NavLayout {
   /// A search that matches no note hides the section rather than heading an
   /// empty one.
   final bool showNotes;
-
-  /// Where the active chapter's row sits, for the reveal on open. Only the
-  /// chapter list is reachable this way; a note is one tap down a short
-  /// list and never needs finding.
-  double? offsetOfChapter(String? filename) {
-    if (filename == null) return null;
-    for (var i = 0; i < items.length; i++) {
-      final item = items[i];
-      if (item is ChapterItem && item.doc.filename == filename) return offsets[i];
-    }
-    return null;
-  }
 }
 
 /// The two sections flattened into one list, plus the offset table.
@@ -171,7 +151,3 @@ NavLayout layoutNav(List<ChapterListRow> rows, List<DocumentSummary> shownNotes,
     showNotes: showNotes,
   );
 }
-
-/// The scroll offset that opens the list on the active row with its
-/// neighbours above it.
-double revealOffset(double activeOffset) => max(0, activeOffset - leadRows * DsGeom.row);

@@ -46,18 +46,11 @@ void main() {
       expect(layout.items.whereType<FolderItem>().single.index, 1);
     });
 
-    test('the active chapter is found by offset even inside a folder', () {
-      final rows = filterChapterTree(tree, '', (_) => false);
-      final layout = layoutNav(rows, notes, '');
-      expect(layout.offsetOfChapter('three.md'), 4 * DsGeom.row);
-      expect(layout.offsetOfChapter('n1.md'), isNull);
-      expect(layout.offsetOfChapter(null), isNull);
-    });
-
     test('a collapsed folder contributes only its heading', () {
       final rows = filterChapterTree(tree, '', (id) => id == 'g2');
       final layout = layoutNav(rows, notes, '');
-      expect(layout.offsetOfChapter('four.md'), 3 * DsGeom.row);
+      final four = layout.items.indexWhere((i) => i is ChapterItem && i.doc.filename == 'four.md');
+      expect(layout.offsets[four], 3 * DsGeom.row);
     });
 
     test('an empty book says so, at the message height', () {
@@ -80,16 +73,6 @@ void main() {
       final layout = layoutNav(rows, const [], 'one');
       expect(layout.showNotes, isFalse);
       expect(layout.items.whereType<GapItem>(), isEmpty);
-    });
-  });
-
-  group('revealOffset', () {
-    test('keeps three rows of neighbours above the active one', () {
-      expect(revealOffset(10 * DsGeom.row), 7 * DsGeom.row);
-    });
-
-    test('never scrolls before the top', () {
-      expect(revealOffset(DsGeom.row), 0);
     });
   });
 }

@@ -1,9 +1,26 @@
 import 'json.dart';
-import 'poltergeist.dart';
 
 // The writing rewards' wire shapes — `Rewards`, `RewardClaim`, `Reward`,
 // `RewardWeek` and `Cat` in openapi.yaml. The server decides every reward;
 // these only carry what it decided.
+
+/// One local calendar day of the ledger's series. `written` is words put
+/// down — added and rewritten count, deletions don't, so it never goes down.
+/// `total` is manuscript size, which can fall.
+class WordStatsDay {
+  const WordStatsDay({required this.day, required this.total, required this.written});
+
+  /// `YYYY-MM-DD`, already the author's local day per the request's offset.
+  final String day;
+  final int total;
+  final int written;
+
+  static WordStatsDay fromJson(Json json) => WordStatsDay(
+        day: asString(json['day']),
+        total: asInt(json['total']),
+        written: asInt(json['written']),
+      );
+}
 
 /// What earned a cat: `first_goal` is the welcome cat, given once ever for
 /// the first day the author's writing reached their daily target; `week` is

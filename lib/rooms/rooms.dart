@@ -7,11 +7,11 @@ import 'icons.dart';
 // desktop's `RoomKey`s, which are also what the server's plan-access table
 // names a whole room by (`room.<key>`).
 
-enum RoomKey { apparition, veil, poltergeist, phantom, mara, wisp }
+enum RoomKey { apparition, veil, phantom, mara, wisp }
 
 /// Tile backgrounds for the room icons, as `[start, end]` pairs — the
 /// desktop's `linear-gradient(151deg, …)`, whose vector is (0,0) → (0.55,1).
-/// Copied from ghost-key's `app-icons/gradients.ts`: six shipped rooms keep
+/// Copied from ghost-key's `app-icons/gradients.ts`: the shipped rooms keep
 /// their colours even though the design canvas has since re-tinted them, by
 /// the author's call. Don't "fix" a diff against the canvas without asking.
 class TileGradient {
@@ -55,13 +55,6 @@ const List<Room> rooms = [
     subtitle: 'Worldbuild',
     mark: RoomMark.veil,
     tile: TileGradient(Color(0xFF2E86B8), Color(0xFF123F66)),
-  ),
-  Room(
-    key: RoomKey.poltergeist,
-    title: 'Poltergeist',
-    subtitle: 'Statistics and tasks',
-    mark: RoomMark.poltergeist,
-    tile: TileGradient(Color(0xFFC08D33), Color(0xFF75521A)),
   ),
   Room(
     key: RoomKey.phantom,

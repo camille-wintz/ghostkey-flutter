@@ -30,7 +30,7 @@ class SceneSuggestion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        margin: const EdgeInsets.only(top: 12),
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: Ds.panel,

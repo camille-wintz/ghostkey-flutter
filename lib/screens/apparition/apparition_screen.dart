@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../ds/tokens.dart';
 import '../../editor/capture_launchers.dart';
 import '../../next_scene/next_scene_finder.dart';
+import '../../rewards/providers.dart';
 import '../../rooms/rooms.dart';
 import '../../server/dto/next_scene.dart';
 import '../../server/dto/projects.dart';
@@ -13,13 +14,14 @@ import '../project/project_root.dart';
 import '../project/room_entering.dart';
 import 'chapter_screen.dart';
 import 'document_resolve.dart';
+import 'home/apparition_home.dart';
 import 'nav/chapter_nav.dart';
 import 'nav/chapter_nav_state.dart';
-import 'next_scene/find_scene.dart';
 import 'next_scene/stuck_in_chat.dart';
 
-/// The writing room: the book's chapters and notes as a page, and each
-/// document opening as a page pushed on top (Cleo, 2026-09-24 — the list used
+/// The writing room: its home (where you left off, the words, the manuscript,
+/// the latest cat — `ApparitionHome`) over the book's chapters and notes as
+/// one page, and each document opening as a page pushed on top (Cleo, 2026-09-24 — the list used
 /// to be a panel unfolded from the open chapter's title). `activeChapter`
 /// belongs here and nowhere else: it is the document that is open, or was last
 /// open, which the list marks and scrolls to.
@@ -73,10 +75,10 @@ class _ApparitionScreenState extends ConsumerState<ApparitionScreen> {
     super.dispose();
   }
 
-  void _open(String filename, {bool atEnd = false}) {
+  Future<void> _open(String filename, {bool atEnd = false}) async {
     if (!mounted) return;
     ref.read(activeProjectProvider.notifier).setActiveChapter(filename);
-    Navigator.of(context).push(
+    await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => ChapterScreen(
           nav: _nav!,
@@ -88,6 +90,12 @@ class _ApparitionScreenState extends ConsumerState<ApparitionScreen> {
         ),
       ),
     );
+    // The home stood under the chapter the whole time: what was written
+    // there is the words, the streak, perhaps a cat, and where you left off.
+    if (!mounted) return;
+    ref.invalidate(rewardsProvider);
+    ref.invalidate(catsProvider);
+    ref.invalidate(projectProvider(ProjectScope.of(context)));
   }
 
   /// "Let's write": the scene's chapter, at its end, with the prompt over it.
@@ -121,9 +129,9 @@ class _ApparitionScreenState extends ConsumerState<ApparitionScreen> {
               rename: _rename,
               onBack: () => Navigator.of(context).pop(),
               onOpen: _open,
-              headHeight: findSceneRowHeight,
-              head: FindScene(
+              head: ApparitionHome(
                 finder: _finder!,
+                onOpen: _open,
                 onWrite: _write,
                 onStuck: _stuck,
                 stuckPending: _openingChat,

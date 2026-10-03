@@ -254,7 +254,8 @@ Future<DocxImportStart> importProjectDocx(
   );
 }
 
-/// The project's Poltergeist plan, or null when the board was never opened.
+/// The project's plan (the chapters' worklist), or null when it was never
+/// seeded.
 Future<ProjectPlan?> getProjectPlan(String projectId) async {
   final res = await apiFetch('/api/projects/$projectId/plan');
   final plan = res.jsonObject()['plan'];

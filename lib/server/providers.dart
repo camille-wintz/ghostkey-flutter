@@ -32,7 +32,8 @@ final projectWordCountProvider = FutureProvider.family<int, String>(
 );
 
 /// The open project's plan, or null when the writer has never opened the
-/// board. The chapter list's dots read it, and so does Poltergeist.
+/// board. The chapter list's dots read it, and so does the manuscript band
+/// on Apparition's home.
 final projectPlanProvider = FutureProvider.family<ProjectPlan?, String>(
   (ref, id) => getProjectPlan(id),
 );

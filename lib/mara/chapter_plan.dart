@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../poltergeist/providers.dart';
 import '../server/dto/plan.dart';
 import '../server/dto/projects.dart';
 import '../server/errors.dart';

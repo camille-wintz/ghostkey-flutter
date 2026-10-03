@@ -64,7 +64,7 @@ void main() {
             headline: 'Peony',
             sub: 'Five days at the desk this week, and a cat for the shelf.',
             short: 'A full week of writing, and a cat for it.',
-            footnote: 'Added to Poltergeist',
+            footnote: 'Added to your cats',
             ring: 1,
             ticked: 5,
           ),
@@ -91,7 +91,7 @@ void main() {
         headline: '500 words',
         sub: '500 words written already. You\'re doing amazing! 200 more to your daily goal.',
         short: '200 more to your daily goal.',
-        footnote: 'Kept in Poltergeist',
+        footnote: 'Kept in Apparition',
         ring: 1,
         ticked: 3,
       ),
@@ -105,7 +105,7 @@ void main() {
     expect(chain('3 of 7 days this week'), findsOneWidget);
     // The full card's furniture stays off it.
     expect(find.text('TODAY'), findsNothing);
-    expect(find.text('KEPT IN POLTERGEIST'), findsNothing);
+    expect(find.text('KEPT IN APPARITION'), findsNothing);
     expect(find.textContaining('doing amazing'), findsNothing);
   });
 

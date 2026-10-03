@@ -4,8 +4,8 @@ import '../ds/tokens.dart';
 import '../server/dto/projects.dart';
 
 /// What a chapter owes, as a colour. The hues are fixed across the suite
-/// (`--color-plan-*`), so a chapter reads the same in Poltergeist's board and
-/// in Apparition's list. A new kind the desktop adds reads here as no dot
+/// (`--color-plan-*`), so a chapter reads the same in Mara's Chapters, the
+/// manuscript band on Apparition's home and Apparition's list. A new kind the desktop adds reads here as no dot
 /// rather than a wrong one.
 class PlanMarker {
   const PlanMarker({required this.color, required this.label});

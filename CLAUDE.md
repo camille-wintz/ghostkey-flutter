@@ -13,9 +13,11 @@ Cloud-only: sign-in required, every project lives on `../ghostkey-server`.
 **The editor, dictation and scan are the selling point; quality is
 load-bearing, feature count is not.**
 
-The rooms this app carries: **Apparition** (the editor), **Veil** (the world
-bible), **Poltergeist** (dashboard, words, tasks, plan board, cats), **PhantomMemory**
-(chat), **Mara** (plot: the Outline, Cards — a board as a list, its order and
+The rooms this app carries: **Apparition** (the editor; its home, above the
+chapter list, holds where you left off, "Find me a scene to write", the words
+chart, the manuscript band and the latest cat — Poltergeist's dashboard, folded
+in when that room and its tasks were removed on 2026-10-02), **Veil** (the world
+bible), **PhantomMemory** (chat), **Mara** (plot: the Outline, Cards — a board as a list, its order and
 labels drawn as the desk's chains — and Chapters: the proposal or changeset
 the chat wrote, reviewed and committed, then the book's chapters with their
 notes and targets; since 2026-09-24, spec `../ghost-key/docs/mara-phone-plan.md`),
@@ -73,7 +75,7 @@ a board's writes are the server's one-card routes, never a whole-map PUT.
   a manuscript document, debounced and flushed on dispose).
 - **Pure logic** in `lib/core/`: `typography` (smart quotes — one text in
   four repos, edit all together), `chapter_search`, `chapter_reorder`,
-  `plan_markers`, `dictation_join`, `words`, `dates`. Testable without a
+  `plan_markers`, `dictation_join`, `words`, `dates`, `ids`. Testable without a
   device; put tests in `test/core/`.
 
 ## Navigation
@@ -113,13 +115,14 @@ lib/
                             words it, strikes.dart queues one card at a time, strike_card.dart
                             draws it above the editor's +; the desktop's RewardStrike is the
                             same card) · CatPicture (the server's SVG). The whole LEDGER — the daily series,
-                            the ticks, the cat shelf — reads from poltergeist/providers.dart's
-                            rewardsProvider, account-wide; wordStatsProvider is left for the one
-                            figure that is the book's, its manuscript size. The week's wording is
-                            poltergeist/rewards.dart.
+                            the ticks, the cat shelf — reads from rewards/providers.dart
+                            (rewardsProvider by window: 30 days, 365 only while Apparition's home
+                            shows the year), account-wide; ledger.dart cuts it into week / month /
+                            year columns, week_line.dart words the week.
   dictation/ scan/          recorder channel · session · policy + room meter · silence pass ·
                             seam ledger · anchors | camera · OCR · insert
-  chat/ veil/ poltergeist/ mara/ wisp/   the logic half of those rooms (see below)
+  chat/ veil/ mara/ wisp/   the logic half of those rooms (see below); mara/ also owns the
+                            plan board (plan_rules, plan_board, planBoardProvider)
   share/                    shareFile — the one way a file the app made leaves it (share_plus)
   media/                    the series' media library, reached only as a picker (no room): the
                             listing + writes + drawPicture (both gates), photo picks (always JPEG,
@@ -131,7 +134,8 @@ lib/
     auth/                   sign-in
     shelf/ account/         the shelf (home, cards, the new-novel sheet, notices) · account
     project/                project_root · project_home · cover · backdrop · room_row · room_entering
-    apparition/ veil/ poltergeist/ phantom/ mara/ wisp/   the rooms
+    apparition/ veil/ phantom/ mara/ wisp/   the rooms (apparition/home/: the home's sections
+                            and the pushed cats screen)
     media/                  the library picker (openLibraryPicker): Veil's portrait and gallery
                             and the chat's picture door open it
 ```
@@ -139,7 +143,7 @@ lib/
 **A room is two directories.** `screens/<room>/` draws it — widgets only —
 and a sibling top-level `<room>/` holds its logic and providers. So Veil's
 roster and dossier building live in `lib/veil/`, its screens in
-`lib/screens/veil/`; the same split holds for Poltergeist and for chat
+`lib/screens/veil/`; the same split holds for Mara and for chat
 (`lib/chat/` + `lib/screens/phantom/`). Apparition is the one that spreads
 wider, because the editor, autosave, dictation and scan are each their own
 top-level module feeding the same screen. New logic goes in the logic half:

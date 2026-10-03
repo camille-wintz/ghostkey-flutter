@@ -8,7 +8,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../ds/tokens.dart';
 import '../../../mara/chapter_plan.dart';
 import '../../../mara/proposal.dart';
-import '../../../poltergeist/ids.dart';
+import '../../../core/ids.dart';
 import '../../../server/dto/plan.dart';
 import '../../../server/dto/projects.dart';
 import '../../../ui/confirm_sheet.dart';

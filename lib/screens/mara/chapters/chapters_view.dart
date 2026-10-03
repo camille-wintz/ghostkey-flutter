@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../mara/chapter_plan.dart';
 import '../../../mara/proposal.dart';
 import '../../../mara/providers.dart';
-import '../../../poltergeist/providers.dart';
 import '../../../server/dto/plan.dart';
 import '../../../server/errors.dart';
 import '../../../server/providers.dart';

@@ -465,7 +465,7 @@ class Series {
       );
 }
 
-// ── Poltergeist's plan ───────────────────────────────────────────────────
+// ── The plan (the chapters' worklist; Mara's Chapters edits it) ──────────
 // Client-owned JSON server-side: the server validates `format_version` and
 // each chapter's `id`/`title` and passes everything else through. The full
 // shape is the desktop's `shared/types/planActions.ts` + `plan.ts`; every

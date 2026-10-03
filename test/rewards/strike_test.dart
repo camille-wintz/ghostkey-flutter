@@ -43,7 +43,7 @@ void main() {
     });
     test('the last word mark is kept, and the ring is full', () {
       final s = strikeFor(const WordsReward(500), claim(written: 520));
-      expect(s.footnote, 'Kept in Poltergeist');
+      expect(s.footnote, 'Kept in Apparition');
       expect(s.ring, 1);
     });
     test('the day counts the week', () {
@@ -69,7 +69,7 @@ void main() {
       final week = strikeFor(CatReward(cat()), claim(target: 300, met: true, ticked: 5));
       expect(week.eyebrow, 'A full week');
       expect(week.sub, "You've completed your weekly goal! Here is a cat for your trouble.");
-      expect(week.footnote, 'Added to Poltergeist');
+      expect(week.footnote, 'Added to your cats');
     });
   });
 

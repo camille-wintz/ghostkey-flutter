@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import '../ds/tokens.dart';
 import '../rooms/icons.dart';
 import '../rooms/room_tile.dart';
-import '../rooms/rooms.dart';
+import '../rooms/rooms.dart' show TileGradient;
 import 'cat_picture.dart';
 import 'strike.dart';
 
@@ -20,6 +20,10 @@ import 'strike.dart';
 // height, the copy in one line, no motes, and it comes down from the top of
 // the page instead of up from its foot — a word mark should be noticed over
 // the shoulder, not stood in front of. A cat still gets the full card.
+
+/// The gold the medallion's mark sits on — Poltergeist's tile, kept when
+/// the room was folded into Apparition.
+const TileGradient _medallionTile = TileGradient(Color(0xFFC08D33), Color(0xFF75521A));
 
 /// The design's ease for everything that arrives: a long ease-out tail.
 const Cubic _arrive = Cubic(0.16, 1, 0.3, 1);
@@ -537,7 +541,7 @@ class _RewardStrikeCardState extends State<RewardStrikeCard> with TickerProvider
                     // scale of the pop.
                     : ClipOval(
                         child: RoomTile(
-                          tile: rooms.firstWhere((r) => r.key == RoomKey.poltergeist).tile,
+                          tile: _medallionTile,
                           mark: RoomMark.poltergeist,
                           size: 58 * k,
                           iconSize: 28 * k,

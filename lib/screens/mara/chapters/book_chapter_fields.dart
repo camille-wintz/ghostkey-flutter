@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../ds/tokens.dart';
-import '../../../poltergeist/providers.dart';
+import '../../../mara/providers.dart';
 import '../../../server/dto/projects.dart';
 import '../../../ui/text.dart';
 import '../../../wisp/providers.dart';
