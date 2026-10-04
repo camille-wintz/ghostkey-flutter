@@ -59,7 +59,7 @@ const List<Room> rooms = [
   Room(
     key: RoomKey.phantom,
     title: 'Phantom Memory',
-    subtitle: 'Book coach',
+    subtitle: 'AI Agent',
     mark: RoomMark.phantom,
     tile: TileGradient(Color(0xFF7D4ECD), Color(0xFF472585)),
   ),
