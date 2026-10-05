@@ -41,7 +41,8 @@ class ShelfSection extends ConsumerWidget {
     // as a book here: the shelf lists the root only, and the books are in it.
     final another = ref.watch(capabilityProvider('projects.more'));
     void newBook() {
-      if (!another.granted && (projectList.isNotEmpty || folderList.isNotEmpty)) {
+      if (!another.granted &&
+          (projectList.isNotEmpty || folderList.isNotEmpty)) {
         explainLock(context, another, 'Unlimited projects');
       } else {
         showNewNovelSheet(context);
@@ -57,7 +58,12 @@ class ShelfSection extends ConsumerWidget {
         ),
         if (error != null) ...[
           _Notice(messageFor(error)),
-          _Grid(projects: const [], series: null, onOpen: (_) {}, onNew: newBook),
+          _Grid(
+            projects: const [],
+            series: null,
+            onOpen: (_) {},
+            onNew: newBook,
+          ),
         ] else if (loading && folderList.isEmpty && projectList.isEmpty)
           Row(
             children: [
@@ -85,7 +91,8 @@ class ShelfSection extends ConsumerWidget {
           _Grid(
             projects: projectList,
             series: series,
-            onOpen: (project) => ref.read(activeProjectProvider.notifier).open(project),
+            onOpen: (project) =>
+                ref.read(activeProjectProvider.notifier).open(project),
             onNew: newBook,
           ),
         ],
@@ -95,7 +102,12 @@ class ShelfSection extends ConsumerWidget {
 }
 
 class _Grid extends StatelessWidget {
-  const _Grid({required this.projects, required this.series, required this.onOpen, required this.onNew});
+  const _Grid({
+    required this.projects,
+    required this.series,
+    required this.onOpen,
+    required this.onNew,
+  });
   final List<ProjectMeta> projects;
   final Map<String, Series>? series;
   final ValueChanged<ProjectMeta> onOpen;
@@ -103,27 +115,30 @@ class _Grid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
-        builder: (context, constraints) {
-          // Two columns at 48% with the remaining 4% between them.
-          final width = constraints.maxWidth * 0.48;
-          return Wrap(
-            spacing: constraints.maxWidth * 0.04,
-            runSpacing: 20,
-            children: [
-              SizedBox(width: width, child: NewNovelCard(onPressed: onNew)),
-              for (final project in projects)
-                SizedBox(
-                  width: width,
-                  child: ProjectCard(
-                    project: project,
-                    series: seriesLabel(series, project.seriesId),
-                    onPressed: () => onOpen(project),
-                  ),
-                ),
-            ],
-          );
-        },
+    builder: (context, constraints) {
+      // Two columns at 48% with the remaining 4% between them.
+      final width = constraints.maxWidth * 0.48;
+      return Wrap(
+        spacing: constraints.maxWidth * 0.04,
+        runSpacing: 20,
+        children: [
+          SizedBox(
+            width: width,
+            child: NewNovelCard(onPressed: onNew),
+          ),
+          for (final project in projects)
+            SizedBox(
+              width: width,
+              child: ProjectCard(
+                project: project,
+                series: seriesLabel(series, project.seriesId),
+                onPressed: () => onOpen(project),
+              ),
+            ),
+        ],
       );
+    },
+  );
 }
 
 class _Notice extends StatelessWidget {
@@ -132,7 +147,12 @@ class _Notice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: UiText(text, step: DsText.ui, color: Ds.mid, align: TextAlign.center),
-      );
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: UiText(
+      text,
+      step: DsText.ui,
+      color: Ds.mid,
+      align: TextAlign.center,
+    ),
+  );
 }
