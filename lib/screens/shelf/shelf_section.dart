@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../access/capability.dart';
 import '../../ds/tokens.dart';
 import '../../server/dto/projects.dart';
 import '../../server/errors.dart';
 import '../../server/providers.dart';
 import '../../store/active_project.dart';
+import '../../ui/lock_notice.dart';
 import '../../ui/text.dart';
 import 'empty_shelf_card.dart';
 import 'folder_card.dart';
@@ -33,6 +35,18 @@ class ShelfSection extends ConsumerWidget {
     final folderList = folders.value ?? const <Folder>[];
     final projectList = projects.value ?? const <ProjectMeta>[];
     final empty = !loading && folderList.isEmpty && projectList.isEmpty;
+    // Free holds one book (`projects.more`, 2026-10-05). Once the shelf has
+    // one, the new-book door says which plan opens a second instead of
+    // opening — the server refuses the create the same way. A folder counts
+    // as a book here: the shelf lists the root only, and the books are in it.
+    final another = ref.watch(capabilityProvider('projects.more'));
+    void newBook() {
+      if (!another.granted && (projectList.isNotEmpty || folderList.isNotEmpty)) {
+        explainLock(context, another, 'Unlimited projects');
+      } else {
+        showNewNovelSheet(context);
+      }
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -43,11 +57,11 @@ class ShelfSection extends ConsumerWidget {
         ),
         if (error != null) ...[
           _Notice(messageFor(error)),
-          _Grid(projects: const [], series: null, onOpen: (_) {}, onNew: () => showNewNovelSheet(context)),
+          _Grid(projects: const [], series: null, onOpen: (_) {}, onNew: newBook),
         ] else if (loading && folderList.isEmpty && projectList.isEmpty)
           Row(
             children: [
-              Expanded(child: NewNovelCard(onPressed: () => showNewNovelSheet(context))),
+              Expanded(child: NewNovelCard(onPressed: newBook)),
               const SizedBox(width: 16),
               const Expanded(child: ProjectCardSkeleton()),
             ],
@@ -72,7 +86,7 @@ class ShelfSection extends ConsumerWidget {
             projects: projectList,
             series: series,
             onOpen: (project) => ref.read(activeProjectProvider.notifier).open(project),
-            onNew: () => showNewNovelSheet(context),
+            onNew: newBook,
           ),
         ],
       ],
