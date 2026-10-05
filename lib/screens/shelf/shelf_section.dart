@@ -43,7 +43,13 @@ class ShelfSection extends ConsumerWidget {
     void newBook() {
       if (!another.granted &&
           (projectList.isNotEmpty || folderList.isNotEmpty)) {
-        explainLock(context, another, 'Unlimited projects');
+        explainLock(
+          context,
+          another,
+          'Unlimited projects',
+          // The phone has no delete; the desk's shelf does.
+          note: 'Or export and delete a project from your shelf on a computer to make room — free holds one at a time.',
+        );
       } else {
         showNewNovelSheet(context);
       }

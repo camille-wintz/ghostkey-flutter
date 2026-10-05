@@ -9,7 +9,9 @@ import 'notice_modal.dart';
 /// What a padlocked control says when tapped: which plan opens it, and
 /// nothing to buy — mobile reports and never sells. `fallbackLabel` names the
 /// feature until the access snapshot has landed with the server's own label.
-void explainLock(BuildContext context, CapabilityState state, String fallbackLabel) {
+/// `note` is a way past the lock that isn't a plan, said by the caller that
+/// knows one (the shelf: delete a book to make room).
+void explainLock(BuildContext context, CapabilityState state, String fallbackLabel, {String? note}) {
   final plan = state.requiredPlan != null ? planName(state.requiredPlan!) : null;
   final what = state.label ?? fallbackLabel;
   showNoticeModal(
@@ -17,7 +19,10 @@ void explainLock(BuildContext context, CapabilityState state, String fallbackLab
     eyebrow: 'Not on your plan',
     title: plan != null ? '$what is part of $plan' : '$what is part of a higher plan',
     action: 'Got it',
-    children: [NoticeText('${plan ?? 'A higher plan'} opens it.')],
+    children: [
+      NoticeText('${plan ?? 'A higher plan'} opens it.'),
+      if (note != null) NoticeText(note),
+    ],
   );
 }
 
