@@ -9,14 +9,12 @@ import '../../server/dto/projects.dart';
 import '../../server/errors.dart';
 import '../../server/providers.dart';
 import '../../ui/button.dart';
-import '../../ui/field.dart';
 import '../../ui/sheet.dart';
 import '../../wisp/access.dart';
 import '../../wisp/line_edit.dart';
 import '../../ui/lock_notice.dart';
 
-/// Ask for a line edit on one chapter: what this pass should watch for, if
-/// anything, and Run. The model is the server's default — the desk's picker
+/// Ask for a line edit on one chapter: the chapter, and Run. The model is the server's default — the desk's picker
 /// is not carried here. True when a pass started, so the caller can take the
 /// author to it.
 Future<bool> showLineEditSheet(BuildContext context, {required String projectId, required DocumentSummary chapter}) async {
@@ -44,15 +42,8 @@ class _LineEditForm extends ConsumerStatefulWidget {
 }
 
 class _LineEditFormState extends ConsumerState<_LineEditForm> {
-  final _focus = TextEditingController();
   bool _pending = false;
   String? _failure;
-
-  @override
-  void dispose() {
-    _focus.dispose();
-    super.dispose();
-  }
 
   Future<void> _run() async {
     setState(() {
@@ -60,7 +51,7 @@ class _LineEditFormState extends ConsumerState<_LineEditForm> {
       _failure = null;
     });
     try {
-      await startLineEdit(ref, widget.projectId, widget.chapter.id, _focus.text);
+      await startLineEdit(ref, widget.projectId, widget.chapter.id);
       ref.invalidate(quotaProvider);
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
@@ -83,15 +74,6 @@ class _LineEditFormState extends ConsumerState<_LineEditForm> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(widget.chapter.label, style: DsStyle.prose(const DsStep(20, 26), color: Ds.hi)),
-          const SizedBox(height: 18),
-          Text('FOCUS — OPTIONAL', style: DsStyle.eyebrow(weight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          GkField(
-            controller: _focus,
-            placeholder: 'e.g. the dialogue in the second half',
-            enabled: !_pending,
-            textInputAction: TextInputAction.done,
-          ),
           if (_failure case final failure?) ...[
             const SizedBox(height: 10),
             Text(failure, style: DsStyle.ui(DsText.ui, color: Ds.destructive)),
