@@ -1,4 +1,4 @@
-final RegExp _token = RegExp(r'\S+');
+final RegExp _token = RegExp(r'[^\s—]+');
 
 /// The marks a token made only of is not a word. Mirrors the server's
 /// `src/lib/text/words.ts` and the desktop's `countWords` — edit them
@@ -6,9 +6,9 @@ final RegExp _token = RegExp(r'\S+');
 /// apart, and a plain whitespace split counts each of them as a word.
 final Set<int> _punctuation = "!\"#\$%&'()*+,-./:;<=>?@[\\]^_`{|}~«»‹›“”‘’„‚—–…¡¿•·".runes.toSet();
 
-/// Words in a manuscript string: whitespace-delimited tokens holding
-/// something other than punctuation — l'homme and dit-il are one word each,
-/// a lone « or — is none.
+/// Words in a manuscript string: tokens between whitespace or em dashes
+/// holding something other than punctuation — l'homme and dit-il are one word
+/// each, stopped—then is two, a lone « or — is none.
 int countWords(String? text) {
   if (text == null || text.isEmpty) return 0;
   return _token.allMatches(text).where((m) => m[0]!.runes.any((r) => !_punctuation.contains(r))).length;
