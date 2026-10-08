@@ -23,6 +23,8 @@ abstract final class Ds {
   static final Color panel = _hex(0x0c0d15);
   static final Color surf = _hex(0x11131c);
   static final Color raise = _hex(0x191c27);
+  // a band cut into the page — the list's section headers (the desk's --color-sunk)
+  static final Color sunk = _hex(0x040507);
 
   // inks
   static final Color hi = _hex(0xf2f3f9);

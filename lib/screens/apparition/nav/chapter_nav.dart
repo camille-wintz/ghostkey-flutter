@@ -13,7 +13,6 @@ import '../../../server/dto/projects.dart';
 import '../../../server/errors.dart';
 import '../../../server/providers.dart';
 import '../../../store/active_project.dart';
-import '../../../ui/button.dart';
 import '../../../ui/press.dart';
 import '../../../ui/room_title_bar.dart';
 import '../document_resolve.dart';
@@ -25,6 +24,7 @@ import 'nav_items.dart';
 import 'folder_tile.dart';
 import '../../../ui/hold_to_drag.dart';
 import 'section_header.dart';
+import 'start_writing.dart';
 
 /// The page Apparition opens on (Cleo, 2026-09-24 — it used to be a panel
 /// unfolded from the open chapter's title, which read as a menu over a
@@ -126,8 +126,10 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
         final layout = data == null ? layoutNav(const [], const [], state.query) : _layout(data);
         // A search shows matches out of their places, so there is nowhere to drop.
         final canReorder = state.query.isEmpty && !state.pending;
-        // A book with no chapters: the one thing to do is a first chapter
-        // (the header's + by another name).
+        // A book with no chapters: the whole list — the home, the Chapters
+        // header — gives way to the one thing to do, the desk's big "Write
+        // the first chapter" door (Cleo, 2026-10-08). Notes stay if the book
+        // has any — they are the author's, not furniture.
         final bare = data != null && chapterCount == 0 && state.query.isEmpty;
 
         return ColoredBox(
@@ -147,71 +149,63 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
                 child: CustomScrollView(
                   controller: _scroll,
                   slivers: [
-                    if (widget.head case final head? when state.query.isEmpty) SliverToBoxAdapter(child: head),
+                    if (widget.head case final head? when state.query.isEmpty && !bare) SliverToBoxAdapter(child: head),
+                    if (bare) SliverToBoxAdapter(child: StartWriting(onStart: () => _createChapter(data))),
                     // Each section is its own group, so its header stays pinned
                     // while its rows scroll under it and the next header takes
                     // its place — the + stays a thumb away.
-                    SliverMainAxisGroup(
-                      slivers: [
-                        PinnedHeaderSliver(
-                          child: SectionHeader(label: 'Chapters', onAdd: data == null ? null : () => _createChapter(data)),
-                        ),
-                        if (bare)
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: GkButton(label: 'Create chapter', onPressed: () => _createChapter(data)),
-                              ),
-                            ),
-                          )
-                        else if (layout.chaptersMessage != null)
-                          SliverToBoxAdapter(child: _Message(layout.chaptersMessage!))
-                        else
-                          SliverReorderableList(
-                            itemCount: layout.chapterRows.length,
-                            itemExtent: DsGeom.row,
-                            proxyDecorator: _carried,
-                            onReorderStart: (i) => _lift(() => _liftedChapter = i),
-                            onReorderEnd: (i) {
-                              if (i != _liftedChapter || data == null) return;
-                              final row = layout.chapterRows[i];
-                              if (row is ChapterRow) _rowMenu(data, row.doc);
-                            },
-                            onReorderItem: (from, to) {
-                              if (data == null) return;
-                              _guard(() => state.moveChapter(data, layout.chapterRows, from, to), 'Could not move chapter');
-                            },
-                            itemBuilder: (context, i) {
-                              final row = layout.chapterRows[i];
-                              return switch (row) {
-                                FolderRow(:final id, :final name) => FolderTile(
-                                    key: ValueKey('g-$id'),
-                                    name: name,
-                                    open: !state.isCollapsed(id),
-                                    onToggle: () => state.toggleFolder(id),
-                                    onAdd: data == null ? null : () => _createChapter(data, inFolder: id),
-                                  ),
-                                ChapterRow(:final doc, :final nested) => HoldToDrag(
-                                    key: ValueKey('c-${doc.id}'),
-                                    index: i,
-                                    enabled: canReorder,
-                                    child: ChapterTile(
-                                      label: doc.label,
-                                      active: doc.filename == active,
-                                      nested: nested,
-                                      marker: markers[doc.id],
-                                      onTap: () => _select(doc.filename),
-                                      onLongPress: canReorder || data == null ? null : () => _rowMenu(data, doc),
-                                    ),
-                                  ),
-                              };
-                            },
+                    if (!bare)
+                      SliverMainAxisGroup(
+                        slivers: [
+                          PinnedHeaderSliver(
+                            child: SectionHeader(label: 'Chapters', onAdd: data == null ? null : () => _createChapter(data)),
                           ),
-                      ],
-                    ),
-                    if (layout.showNotes) ...[
+                          if (layout.chaptersMessage != null)
+                            SliverToBoxAdapter(child: _Message(layout.chaptersMessage!))
+                          else
+                            SliverReorderableList(
+                              itemCount: layout.chapterRows.length,
+                              itemExtent: DsGeom.row,
+                              proxyDecorator: _carried,
+                              onReorderStart: (i) => _lift(() => _liftedChapter = i),
+                              onReorderEnd: (i) {
+                                if (i != _liftedChapter || data == null) return;
+                                final row = layout.chapterRows[i];
+                                if (row is ChapterRow) _rowMenu(data, row.doc);
+                              },
+                              onReorderItem: (from, to) {
+                                if (data == null) return;
+                                _guard(() => state.moveChapter(data, layout.chapterRows, from, to), 'Could not move chapter');
+                              },
+                              itemBuilder: (context, i) {
+                                final row = layout.chapterRows[i];
+                                return switch (row) {
+                                  FolderRow(:final id, :final name) => FolderTile(
+                                      key: ValueKey('g-$id'),
+                                      name: name,
+                                      open: !state.isCollapsed(id),
+                                      onToggle: () => state.toggleFolder(id),
+                                      onAdd: data == null ? null : () => _createChapter(data, inFolder: id),
+                                    ),
+                                  ChapterRow(:final doc, :final nested) => HoldToDrag(
+                                      key: ValueKey('c-${doc.id}'),
+                                      index: i,
+                                      enabled: canReorder,
+                                      child: ChapterTile(
+                                        label: doc.label,
+                                        active: doc.filename == active,
+                                        nested: nested,
+                                        marker: markers[doc.id],
+                                        onTap: () => _select(doc.filename),
+                                        onLongPress: canReorder || data == null ? null : () => _rowMenu(data, doc),
+                                      ),
+                                    ),
+                                };
+                              },
+                            ),
+                        ],
+                      ),
+                    if (layout.showNotes && (!bare || layout.notes.isNotEmpty)) ...[
                       const SliverToBoxAdapter(child: SizedBox(height: navGapHeight)),
                       SliverMainAxisGroup(
                         slivers: [

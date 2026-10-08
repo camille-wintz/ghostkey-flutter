@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../ds/tokens.dart';
+import '../../../ui/add_button.dart';
 import '../../../ui/press.dart';
 
 /// A folder's heading in the chapter list: tap to fold or unfold, and its own
@@ -37,20 +38,7 @@ class FolderTile extends StatelessWidget {
                   child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: DsStyle.ui(DsText.body, color: Ds.soft)),
                 ),
                 if (onAdd != null)
-                  Press(
-                    onPressed: onAdd,
-                    semanticLabel: 'New chapter in $name',
-                    builder: (context, pressed) => Container(
-                      width: DsGeom.ctl,
-                      height: DsGeom.ctl,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(DsGeom.radius),
-                        color: pressed ? Ds.veil : const Color(0x00000000),
-                      ),
-                      child: Icon(LucideIcons.plus, size: 15, color: Ds.mid),
-                    ),
-                  ),
+                  AddButton(semanticLabel: 'New chapter in $name', onPressed: onAdd!),
               ],
             ),
           ),
