@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../../../next_scene/next_scene_finder.dart';
 import '../../../server/dto/next_scene.dart';
-import 'latest_cat.dart';
 import 'left_off.dart';
-import 'manuscript_band.dart';
 import 'words_section.dart';
 
 /// What the writing room opens on, above its chapters (2026-10-02, when
 /// Poltergeist was folded in and its room removed): where you left off with
 /// "Find me a scene to write" beside it, then the words, the manuscript's
 /// standing and the latest cat — Poltergeist's dashboard less its tasks.
+/// Since 2026-10-08 (Cleo) the manuscript band is hidden and the latest cat
+/// sits beside where you left off.
 class ApparitionHome extends StatelessWidget {
   const ApparitionHome({
     super.key,
@@ -35,10 +35,6 @@ class ApparitionHome extends StatelessWidget {
             LeftOff(finder: finder, onOpen: onOpen, onWrite: onWrite, onStuck: onStuck, stuckPending: stuckPending),
             const SizedBox(height: 32),
             const WordsSection(),
-            const SizedBox(height: 32),
-            const ManuscriptBand(),
-            const SizedBox(height: 32),
-            const LatestCat(),
           ],
         ),
       );

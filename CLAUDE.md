@@ -16,7 +16,10 @@ load-bearing, feature count is not.**
 The rooms this app carries: **Apparition** (the editor; its home, above the
 chapter list, holds where you left off, "Find me a scene to write", the words
 chart, the manuscript band and the latest cat — Poltergeist's dashboard, folded
-in when that room and its tasks were removed on 2026-10-02), **Veil** (the world
+in when that room and its tasks were removed on 2026-10-02; since 2026-10-08
+the scene finder, the manuscript band, the range switch, the streak, the cat
+line and the daily target are hidden, their widgets kept, and the latest cat
+is a tile beside where you left off), **Veil** (the world
 bible), **PhantomMemory** (chat), **Mara** (plot: the Outline, Cards — a board as a list, its order and
 labels drawn as the desk's chains — and Chapters: the proposal or changeset
 the chat wrote, reviewed and committed, then the book's chapters with their

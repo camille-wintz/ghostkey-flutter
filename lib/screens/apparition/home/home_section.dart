@@ -25,7 +25,7 @@ class HomeSection extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // The same vertical padding a SectionLink carries for its tap
+              // The same vertical padding the action beside it carries for its
               // target, so the eyebrow and its link sit on one line instead
               // of the label hanging 8px below the affordance beside it.
               Expanded(

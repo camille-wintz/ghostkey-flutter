@@ -10,19 +10,22 @@ import '../../../server/dto/projects.dart';
 import '../../../server/providers.dart';
 import '../../../ui/press.dart';
 import '../../project/project_root.dart';
-import '../next_scene/find_scene.dart';
-import '../next_scene/find_scene_button.dart';
+import 'cat_tile.dart';
 import 'home_section.dart';
 
 /// Where the writer left off: the last chapter touched, its place and size,
-/// and a tap back into it — with "Find me a scene to write" beside it, its
+/// and a tap back into it, with the latest cat beside it — with "Find me a scene to write" beside it, its
 /// answer unfolding underneath. The desk adds a change note written by the
 /// flash model from the chapter's previous snapshot; that note is the desk's
 /// own (its main process writes it, there is no server route), so the phone
 /// says no more than the chapter list knows.
 ///
-/// A book with no chapters has neither: the list's "Create chapter" is the
-/// one thing to do, and there is no scene to find.
+/// A book with no chapters never shows the home: the list gives way to the
+/// "Start writing" card (start_writing.dart).
+///
+/// "Find me a scene to write" and its answer are hidden since 2026-10-08
+/// (Cleo); the finder and its callbacks are still taken, so they come back
+/// with a line.
 class LeftOff extends ConsumerWidget {
   const LeftOff({
     super.key,
@@ -55,21 +58,15 @@ class LeftOff extends ConsumerWidget {
 
     return HomeSection(
       eyebrow: 'Where you left off',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(child: _Card(chapter: chapter, position: position, onOpen: () => onOpen(chapter.filename))),
-                const SizedBox(width: 8),
-                FindSceneButton(finder: finder),
-              ],
-            ),
-          ),
-          SceneAnswer(finder: finder, onWrite: onWrite, onStuck: onStuck, stuckPending: stuckPending),
-        ],
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(child: _Card(chapter: chapter, position: position, onOpen: () => onOpen(chapter.filename))),
+            const SizedBox(width: 10),
+            const CatTile(),
+          ],
+        ),
       ),
     );
   }

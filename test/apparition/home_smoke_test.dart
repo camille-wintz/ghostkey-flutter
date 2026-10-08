@@ -11,8 +11,8 @@ import 'package:ghostkey/server/dto/rewards.dart';
 import 'package:ghostkey/server/providers.dart';
 
 // Apparition's home built over fixed reads, with no server behind it: that
-// each section lays out at a phone's width and the range switch redraws the
-// chart. A phone is still the proof.
+// each section lays out at a phone's width, and the parts hidden since
+// 2026-10-08 stay hidden. A phone is still the proof.
 
 Map<String, dynamic> docJson(String id, String filename, String updatedAt) =>
     {'id': id, 'kind': 'chapter', 'filename': filename, 'version': 1, 'word_count': 1200, 'updated_at': updatedAt};
@@ -44,7 +44,7 @@ Rewards ledger(int days) {
 }
 
 void main() {
-  testWidgets('the home lays out at a phone width and the switch redraws the chart', (tester) async {
+  testWidgets('the home lays out at a phone width with only the week shown', (tester) async {
     tester.view.physicalSize = const Size(360, 2000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -85,22 +85,13 @@ void main() {
 
     expect(find.text('WHERE YOU LEFT OFF'), findsOneWidget);
     expect(find.text('CH. 2'), findsOneWidget);
-    expect(find.text('Find a scene'), findsOneWidget);
-    expect(find.text('2 CHAPTERS · 2 400 WORDS'), findsOneWidget);
+    expect(find.text('Find a scene'), findsNothing);
+    expect(find.text('MANUSCRIPT'), findsNothing);
+    expect(find.text('This year'), findsNothing);
+    expect(find.textContaining('days running'), findsNothing);
 
     await tester.tap(find.text('A rather long chapter title that has to wrap'));
     expect(opened, 'A rather long chapter title that has to wrap.md');
-
-    await tester.tap(find.text('This year'));
-    await tester.pump();
-    // The year is its own read, asked for only now.
-    await tester.pump();
-    expect(find.text('Oct'), findsOneWidget);
-    expect(find.text('Nov'), findsOneWidget);
-
-    await tester.tap(find.text('This month'));
-    await tester.pump();
-    expect(find.text('Oct'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }
