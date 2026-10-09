@@ -2,14 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../server/jobs/job_run.dart';
 import '../server/providers.dart';
-import 'access.dart';
 import 'providers.dart';
 
 /// Which of Wisp's runs: its job kind, and the subject its running slot is
 /// keyed on (the analysis, for `book_analysis`; none otherwise).
 typedef WispRunKey = JobRunKey;
 
-/// [analysis] is the wire id: an [AnalysisId]'s, or a beta reader's.
+/// [analysis] is the wire id: an [AnalysisId]'s.
 WispRunKey analysisRunKey(String projectId, String analysis) =>
     (projectId: projectId, kind: 'book_analysis', subject: analysis);
 
@@ -39,12 +38,6 @@ class WispRun extends JobRun {
       case 'book_analysis':
         if (key.subject case final analysis?) {
           ref.invalidate(analysisProvider((projectId: key.projectId, analysis: analysis)));
-          if (isBetaRead(analysis)) {
-            ref.invalidate(betaReadersProvider(key.projectId));
-            ref.invalidate(betaReaderPagesProvider(
-              (projectId: key.projectId, reader: analysis.substring('beta_'.length)),
-            ));
-          }
         }
       case 'reverse_outline':
         ref.invalidate(outlineProvider(key.projectId));

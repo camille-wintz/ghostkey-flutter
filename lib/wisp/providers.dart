@@ -6,13 +6,12 @@ import '../server/dto/jobs.dart';
 import '../server/dto/wisp.dart';
 import '../server/jobs/api.dart';
 import '../server/wisp/api.dart';
-import 'access.dart';
 import 'pages.dart';
 
 // Wisp's server reads. Each is a cache probe — never a run — and is
 // invalidated by `WispRun` when a run of it lands.
 
-/// `analysis` is the wire id: an [AnalysisId]'s, or a beta reader's.
+/// `analysis` is the wire id: an [AnalysisId]'s.
 typedef AnalysisKey = ({String projectId, String analysis});
 
 /// How often a feed with a running job in it is asked again. The phone has no
@@ -21,20 +20,6 @@ const Duration _poll = Duration(seconds: 3);
 
 final analysisProvider = FutureProvider.autoDispose.family<AnalysisRead, AnalysisKey>(
   (ref, key) => getAnalysis(key.projectId, key.analysis),
-);
-
-/// The beta readers' catalogue: who reads, and whose letter is waiting.
-final betaReadersProvider = FutureProvider.autoDispose.family<List<ReaderCard>, String>(
-  (ref, projectId) => getBetaReaders(projectId),
-);
-
-/// A reader and the book they read: `reader` is the cat id (`custard`).
-typedef BetaPagesKey = ({String projectId, String reader});
-
-/// One reader's comments on the book's pages. Stale with their letter, so a
-/// landed beta read invalidates it beside [analysisProvider].
-final betaReaderPagesProvider = FutureProvider.autoDispose.family<BetaReaderPages, BetaPagesKey>(
-  (ref, key) => getBetaReaderPages(key.projectId, key.reader),
 );
 
 final outlineProvider = FutureProvider.autoDispose.family<OutlineResult, String>(
@@ -93,7 +78,6 @@ final wispRunningTasksProvider = Provider.autoDispose.family<Set<WispPage>, Stri
         ('book_analysis', 'theme') => [WispPage.theme],
         ('book_analysis', 'pacing') => [WispPage.pacing],
         ('book_analysis', 'genre') => [WispPage.genre],
-        ('book_analysis', final String s) when isBetaRead(s) => [WispPage.betaReaders],
         ('continuity', _) => [WispPage.continuity],
         ('reverse_outline', _) => [WispPage.reverseOutline],
         _ => const <WispPage>[],

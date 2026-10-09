@@ -8,7 +8,6 @@ import '../../ui/room_subtitle.dart';
 import '../../ui/room_title_bar.dart';
 import '../project/project_root.dart';
 import 'analysis_page.dart';
-import 'beta_readers_page.dart';
 import 'continuity_page.dart';
 import 'line_editing_page.dart';
 import 'reverse_outline_page.dart';
@@ -42,7 +41,6 @@ class WispPageScreen extends ConsumerWidget {
                 WispPage.genre => const AnalysisPage(analysis: AnalysisId.genre),
                 WispPage.continuity => const ContinuityPage(),
                 WispPage.reverseOutline => const ReverseOutlinePage(),
-                WispPage.betaReaders => const BetaReadersPage(),
               },
             ),
           ],
