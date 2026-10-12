@@ -168,6 +168,7 @@ class NotePanel extends StatelessWidget {
   static String _category(String category) => switch (category) {
         'word-meaning' => 'Word meaning',
         'overlong' => 'Overlong',
+        'pov' => 'POV slip',
         final other => other.isEmpty ? 'Note' : other[0].toUpperCase() + other.substring(1),
       };
 }
