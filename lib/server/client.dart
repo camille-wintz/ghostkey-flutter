@@ -9,6 +9,7 @@ import 'package:http_parser/http_parser.dart';
 import 'config.dart';
 import 'dto/billing.dart';
 import 'dto/json.dart';
+import 'dto/media.dart';
 import 'errors.dart';
 import 'tokens.dart';
 
@@ -111,10 +112,12 @@ MediaType? _mediaType(String contentType) {
 
 String _pathOf(Uri url) => url.path;
 
-Future<ServerError> _parseError(http.StreamedResponse res, Uri url, String rid) async {
+@visibleForTesting
+Future<ServerError> parseServerError(http.StreamedResponse res, Uri url, String rid) async {
   var code = 'unknown';
   PlanDenial? denial;
   QuotaExceeded? quota;
+  ChatHandoff? chatHandoff;
   var retryAfter = int.tryParse(res.headers['retry-after'] ?? '');
   final rawBody = await res.stream.bytesToString().catchError((_) => '');
   if (rawBody.isNotEmpty) {
@@ -130,6 +133,8 @@ Future<ServerError> _parseError(http.StreamedResponse res, Uri url, String rid) 
         if (code == 'quota_exceeded' && data['feature'] is String) {
           quota = QuotaExceeded.fromJson(data);
         }
+        // A failed import whose file the library could still read.
+        chatHandoff = ChatHandoff.tryParse(data['chat_handoff']);
         if (data['retry_after'] is num) retryAfter = (data['retry_after'] as num).toInt();
       }
     } catch (_) {
@@ -142,7 +147,7 @@ Future<ServerError> _parseError(http.StreamedResponse res, Uri url, String rid) 
   final snippet = rawBody.length > 200 ? rawBody.substring(0, 200) : rawBody;
   final detail = '${res.statusCode} ${_pathOf(url)}${snippet.isNotEmpty ? ' — $snippet' : ''}';
   if (kDebugMode) debugPrint('[apiFetch] Request failed with $code: $detail (rid=$rid)');
-  return ServerError(code, res.statusCode, detail, denial, retryAfter, quota);
+  return ServerError(code, res.statusCode, detail, denial, retryAfter, quota, chatHandoff);
 }
 
 Future<http.StreamedResponse> _send(http.BaseRequest request, String rid, {Duration? timeout}) async {
@@ -198,7 +203,7 @@ Future<http.StreamedResponse> apiStream(
   final res = await _send(first, rid, timeout: timeout);
 
   if (res.statusCode != 401 || !auth) {
-    if (res.statusCode < 200 || res.statusCode >= 300) throw await _parseError(res, first.url, rid);
+    if (res.statusCode < 200 || res.statusCode >= 300) throw await parseServerError(res, first.url, rid);
     return res;
   }
 
@@ -214,7 +219,7 @@ Future<http.StreamedResponse> apiStream(
   final retryRes = await _send(retry, rid, timeout: timeout);
   if (retryRes.statusCode == 401) notifyAuthLost();
   if (retryRes.statusCode < 200 || retryRes.statusCode >= 300) {
-    throw await _parseError(retryRes, retry.url, rid);
+    throw await parseServerError(retryRes, retry.url, rid);
   }
   return retryRes;
 }

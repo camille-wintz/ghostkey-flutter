@@ -115,5 +115,12 @@ void main() {
       expect(MediaItem.fromJson({..._item(kind: 'text'), 'series_note': true}).seriesNote, isTrue);
       expect(MediaItem.fromJson(_item()).seriesNote, isFalse);
     });
+
+    test('a chat handoff needs an item and a book', () {
+      final handoff = ChatHandoff.tryParse({'item_id': 'i9', 'title': 'chat.json', 'project_id': 'p1'})!;
+      expect((handoff.itemId, handoff.title, handoff.projectId), ('i9', 'chat.json', 'p1'));
+      expect(ChatHandoff.tryParse({'item_id': 'i9', 'title': 'x'}), isNull);
+      expect(ChatHandoff.tryParse(null), isNull);
+    });
   });
 }

@@ -176,4 +176,24 @@ class MediaItemRead {
       MediaItemRead(item: MediaItem.fromJson(asJson(json['item'])), cards: asInt(json['cards']));
 }
 
+/// Where a failed import's file went instead (`ImportFailed.chat_handoff`):
+/// the library of the book it was imported into, when the library could still
+/// read words out of it — so the book's chat can take it from there.
+class ChatHandoff {
+  const ChatHandoff({required this.itemId, required this.title, required this.projectId});
+  final String itemId;
+  final String title;
+  final String projectId;
+
+  /// Null for anything short of an item and a book to open it in.
+  static ChatHandoff? tryParse(Object? value) {
+    if (value is! Map) return null;
+    final json = asJson(value);
+    final itemId = asString(json['item_id']);
+    final projectId = asString(json['project_id']);
+    if (itemId.isEmpty || projectId.isEmpty) return null;
+    return ChatHandoff(itemId: itemId, title: asString(json['title']), projectId: projectId);
+  }
+}
+
 String? _nonEmpty(Object? value) => value is String && value.isNotEmpty ? value : null;

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../access/capability.dart';
 import '../../ds/tokens.dart';
+import '../../rooms/rooms.dart';
 import '../../server/dto/projects.dart';
 import '../../server/errors.dart';
 import '../../server/projects/api.dart';
@@ -43,6 +45,10 @@ class _NewNovelState extends ConsumerState<_NewNovel> {
   String? _importStatus;
   String? _error;
 
+  /// The import failed but its file went to the kept book's library: the
+  /// chat can still bring it in.
+  ImportHandoff? _handoff;
+
   bool get _pending => _creating || _importing;
 
   @override
@@ -83,6 +89,7 @@ class _NewNovelState extends ConsumerState<_NewNovel> {
       _importing = true;
       _importStatus = null;
       _error = null;
+      _handoff = null;
     });
     try {
       final result = await importDocxAsProject(
@@ -96,8 +103,13 @@ class _NewNovelState extends ConsumerState<_NewNovel> {
         // Closing the picker is not a failure and says nothing.
         case DocxImportCancelled():
           break;
-        case DocxImportFailed(message: final message):
-          setState(() => _error = message);
+        case DocxImportFailed(:final message, :final handoff):
+          // A handed-off import kept its book, and the shelf should show it.
+          if (handoff != null) ref.invalidate(projectsProvider);
+          setState(() {
+            _error = message;
+            _handoff = handoff;
+          });
         case DocxImportDone(project: final project):
           _open(project);
       }
@@ -109,6 +121,15 @@ class _NewNovelState extends ConsumerState<_NewNovel> {
         });
       }
     }
+  }
+
+  /// Into the kept book, landing in its chat with the file attached.
+  void _importWithChat(ImportHandoff handoff) {
+    ref.invalidate(projectsProvider);
+    ref.read(activeProjectProvider.notifier).open(
+          handoff.project,
+          chatLanding: (itemId: handoff.file.itemId, title: handoff.file.title),
+        );
   }
 
   void _close() {
@@ -128,6 +149,7 @@ class _NewNovelState extends ConsumerState<_NewNovel> {
                   ? () => setState(() {
                         _step = _Step.choose;
                         _error = null;
+                        _handoff = null;
                       })
                   : null,
               onClose: _close,
@@ -151,6 +173,7 @@ class _NewNovelState extends ConsumerState<_NewNovel> {
           UiText('Do you have a work in progress, or do you want to start from scratch?', color: Ds.soft),
           const SizedBox(height: 16),
           ?_errorLine(),
+          ?_handoffBlock(),
           GkButton(
             label: 'Start from scratch',
             variant: ButtonVariant.outline,
@@ -159,6 +182,7 @@ class _NewNovelState extends ConsumerState<_NewNovel> {
             onPressed: () => setState(() {
               _step = _Step.scratch;
               _error = null;
+              _handoff = null;
             }),
           ),
           const SizedBox(height: 8),
@@ -206,6 +230,31 @@ class _NewNovelState extends ConsumerState<_NewNovel> {
           ],
         ),
       );
+
+  /// Hidden without the chat: the file stays in the library either way.
+  Widget? _handoffBlock() {
+    final handoff = _handoff;
+    if (handoff == null || !ref.watch(capabilityProvider(roomFor(RoomKey.phantom).capability)).granted) return null;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'The chat can still read it, and bring it in with you.',
+            style: DsStyle.prose(DsText.body, color: Ds.soft).copyWith(fontStyle: FontStyle.italic),
+          ),
+          const SizedBox(height: 10),
+          GkButton(
+            label: 'Import it with the chat',
+            wide: true,
+            disabled: _pending,
+            onPressed: () => _importWithChat(handoff),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget? _errorLine() => _error == null
       ? null

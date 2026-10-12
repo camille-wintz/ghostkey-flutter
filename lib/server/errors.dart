@@ -1,5 +1,6 @@
 import '../core/dates.dart';
 import 'dto/billing.dart';
+import 'dto/media.dart';
 
 /// Extra fields a 403 `plan_insufficient` carries, so the message can name the
 /// feature and the plan that unlocks it rather than saying "went wrong".
@@ -40,6 +41,7 @@ class ServerError implements Exception {
     this.denial,
     this.retryAfter,
     this.quota,
+    this.chatHandoff,
   ]) : message = message ?? code;
 
   final String code;
@@ -52,6 +54,10 @@ class ServerError implements Exception {
 
   /// The 402 body, so the notice can name the counter and its reset day.
   final QuotaExceeded? quota;
+
+  /// An import that could not read its file, but the library could: where
+  /// the file went, so the book's chat can bring it in instead.
+  final ChatHandoff? chatHandoff;
 
   @override
   String toString() => 'ServerError($code, $status): $message';

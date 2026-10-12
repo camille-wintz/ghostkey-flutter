@@ -23,6 +23,7 @@ String mimeForFilename(String filename) {
     'pdf' => pdfMimeType,
     'txt' => 'text/plain',
     'md' || 'markdown' => 'text/markdown',
+    'json' => 'application/json',
     'png' => 'image/png',
     'jpg' || 'jpeg' => 'image/jpeg',
     'webp' => 'image/webp',

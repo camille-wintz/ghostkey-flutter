@@ -219,4 +219,20 @@ void main() {
     expect(planOrNull('enterprise'), isNull);
     expect(planOrNull(null), isNull);
   });
+
+  group('an arrival', () {
+    test('a handed-off file attaches by id and title and goes with the ask', () async {
+      final h = Harness();
+      h.composer.attachItemRef(itemId: 'i9', title: 'chat.json');
+      h.composer.attachItemRef(itemId: 'i9', title: 'chat.json');
+      final attached = h.composer.attachments.single as FileAttachment;
+      expect((attached.itemId, attached.title, attached.words), ('i9', 'chat.json', null));
+
+      await h.composer.send(override: 'Help me process and import this file.');
+      final (text, attachments, _) = h.sent.single;
+      expect(text, 'Help me process and import this file.');
+      expect((attachments.single as FileAttachment).itemId, 'i9');
+      expect(h.composer.attachments, isEmpty);
+    });
+  });
 }

@@ -89,6 +89,16 @@ class ComposerController extends ChangeNotifier {
     ]);
   }
 
+  /// Attach a library item known only by its id and title — an arrival's,
+  /// whose body was never fetched — so the chip carries no length.
+  void attachItemRef({required String itemId, required String title}) {
+    if (_attachments.any((a) => a is FileAttachment && a.itemId == itemId)) return;
+    _set([
+      ..._attachments,
+      FileAttachment(id: _mint(), title: title.trim().isNotEmpty ? title : 'File', itemId: itemId),
+    ]);
+  }
+
   void attachChapter(DocumentSummary chapter) {
     // Twice would give the model two handles for one document.
     if (_attachments.any((a) => a is ChapterAttachment && a.documentId == chapter.id)) return;

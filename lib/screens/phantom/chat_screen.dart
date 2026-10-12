@@ -86,6 +86,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> _arrive(ChatArrival arrival) async {
     await ref.read(conversationProvider(_projectId).notifier).selectSession(arrival.sessionId);
     if (!mounted) return;
+    if (arrival.attach case (:final itemId, :final title)) _composer.attachItemRef(itemId: itemId, title: title);
     if (arrival.ask case final ask?) await _send(ask);
   }
 
@@ -168,7 +169,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       file = await FilePicker.pickFile(
         dialogTitle: 'Attach a file',
         type: FileType.custom,
-        allowedExtensions: const ['docx', 'pdf', 'txt', 'md'],
+        // json: a Claude or ChatGPT chat export, which the library reads.
+        allowedExtensions: const ['docx', 'pdf', 'txt', 'md', 'json'],
       );
     } catch (e) {
       setState(() => _attachError = 'The file picker would not open. $e');
@@ -188,7 +190,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         setState(() => _attachError = switch (code) {
               'unreadable' => 'That file has no text in it — a scanned PDF needs the handwriting scan.',
               'content_too_large' => 'That file is too large to attach.',
-              'unsupported_type' => 'Only .docx, .pdf and text files can be attached.',
+              'unsupported_type' => 'Only .docx, .pdf, text and chat-export .json files can be attached.',
               _ => 'The file could not be attached. ${messageFor(e)}',
             });
       }

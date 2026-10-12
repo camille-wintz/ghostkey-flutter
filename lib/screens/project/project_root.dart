@@ -15,6 +15,7 @@ import '../../chat/arrival.dart';
 import '../phantom/phantom_screen.dart';
 import '../veil/veil_screen.dart';
 import '../wisp/wisp_screen.dart';
+import 'import_with_chat.dart';
 import 'project_home_screen.dart';
 import 'project_stage.dart';
 
@@ -42,7 +43,22 @@ class ProjectRoot extends ConsumerStatefulWidget {
 class _ProjectRootState extends ConsumerState<ProjectRoot> {
   final _nav = GlobalKey<NavigatorState>();
 
+  bool _landing = false;
+
   void _close() => ref.read(activeProjectProvider.notifier).close();
+
+  /// A book opened to land in its chat (a failed import's file) goes there
+  /// once its navigator is up, over the home — back from the chat is the book.
+  void _landWhenReady() {
+    if (_landing || ref.read(activeProjectProvider).chatLanding == null) return;
+    _landing = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final navigator = _nav.currentState;
+      final file = ref.read(activeProjectProvider.notifier).takeChatLanding();
+      if (!mounted || navigator == null || file == null) return;
+      await importWithChat(navigator.context, ref, projectId: widget.projectId, file: file, navigator: navigator);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +89,7 @@ class _ProjectRootState extends ConsumerState<ProjectRoot> {
       );
     }
 
+    _landWhenReady();
     return ProjectScope(
       projectId: widget.projectId,
       child: HardwareBack(

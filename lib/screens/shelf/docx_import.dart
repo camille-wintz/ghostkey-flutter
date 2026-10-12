@@ -3,13 +3,14 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 
 import '../../server/dto/jobs.dart';
+import '../../server/dto/media.dart';
 import '../../server/dto/projects.dart';
 import '../../server/errors.dart';
 import '../../server/jobs/run_job.dart';
 import '../../server/projects/api.dart';
 
-/// A manuscript arriving from a desk: a `.docx`, an `.epub`, a `.pdf` or a
-/// `.txt` picked on the phone becomes a new project whose chapters are split
+/// A manuscript arriving from a desk: a `.docx`, an `.epub`, a `.pdf`, a
+/// `.txt` or a `.md` picked on the phone becomes a new project whose chapters are split
 /// out of the document's headings, or the book's table of contents.
 ///
 /// The desktop offers this beside Create, and so does the shelf, but the two
@@ -21,12 +22,16 @@ import '../../server/projects/api.dart';
 /// left on someone's shelf is worse than an import that plainly failed.
 
 /// What the picker offers, and the content type each is sent under. The server
-/// reads the bytes, not the type.
+/// reads the bytes, not the type. A `.json` is no manuscript — it is offered
+/// because it is usually a Claude or ChatGPT chat export, which the server
+/// refuses as a book and hands to the chat instead (`chat_handoff`).
 const Map<String, String> _mimeTypes = {
   'docx': docxMime,
   'epub': epubMime,
   'pdf': 'application/pdf',
   'txt': 'text/plain',
+  'md': 'text/markdown',
+  'json': 'application/json',
 };
 final List<String> _extensions = _mimeTypes.keys.toList();
 
@@ -44,9 +49,17 @@ class DocxImportCancelled extends DocxImport {
 }
 
 class DocxImportFailed extends DocxImport {
-  const DocxImportFailed(this.message);
+  const DocxImportFailed(this.message, {this.handoff});
   final String message;
+
+  /// The server could not read the file as a book but its library could:
+  /// the book was kept, with the file in its library, for its chat to bring
+  /// in by hand.
+  final ImportHandoff? handoff;
 }
+
+/// A kept book and the file its chat can import.
+typedef ImportHandoff = ({ProjectMeta project, ChatHandoff file});
 
 class DocxImportDone extends DocxImport {
   const DocxImportDone({required this.project, required this.chapters});
@@ -93,7 +106,7 @@ Future<DocxImport> importDocxAsProject({
   if (!_extensions.contains(extension)) {
     return const DocxImportFailed(
       'That is not a manuscript this can read. Ghostkey imports .docx files — the format '
-      'Word, Pages and Google Docs all export — .epub books, .pdf and .txt files.',
+      'Word, Pages and Google Docs all export — .epub books, .pdf, .txt and .md files.',
     );
   }
 
@@ -173,6 +186,11 @@ Future<DocxImport> importDocxAsProject({
         return DocxImportDone(project: project, chapters: null);
     }
   } catch (e) {
+    // The file is in this book's library, so the book stays: its chat is
+    // where the import goes on from here.
+    if (e case ServerError(chatHandoff: final file?)) {
+      return DocxImportFailed(messageFor(e), handoff: (project: project, file: file));
+    }
     await _discard(project.id);
     return DocxImportFailed(messageFor(e));
   }
@@ -215,7 +233,7 @@ String? _lineFor(JobSnapshot job) {
 
 /// "The Hollow Crown - final draft (2).docx" → "The Hollow Crown - final draft".
 String _titleFrom(String filename) {
-  final stem = filename.replaceAll(RegExp(r'\.(docx|epub|pdf|txt)$', caseSensitive: false), '').trim();
+  final stem = filename.replaceAll(RegExp(r'\.(docx|epub|pdf|txt|md|json)$', caseSensitive: false), '').trim();
   return stem.isEmpty ? 'Imported manuscript' : stem;
 }
 
