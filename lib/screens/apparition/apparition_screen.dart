@@ -6,10 +6,12 @@ import '../../editor/capture_launchers.dart';
 import '../../next_scene/next_scene_finder.dart';
 import '../../rewards/providers.dart';
 import '../../rooms/rooms.dart';
+import '../../server/dto/media.dart';
 import '../../server/dto/next_scene.dart';
 import '../../server/dto/projects.dart';
 import '../../server/providers.dart';
 import '../../store/active_project.dart';
+import '../media/series_note_screen.dart';
 import '../project/project_root.dart';
 import '../project/room_entering.dart';
 import 'chapter_screen.dart';
@@ -98,6 +100,13 @@ class _ApparitionScreenState extends ConsumerState<ApparitionScreen> {
     ref.invalidate(projectProvider(ProjectScope.of(context)));
   }
 
+  /// A series note: read-only here, editing stays on the desk.
+  void _openSeriesNote(MediaItem item) => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => SeriesNoteScreen(projectId: ProjectScope.of(context), itemId: item.id, title: item.title),
+        ),
+      );
+
   /// "Let's write": the scene's chapter, at its end, with the prompt over it.
   void _write(NextScene scene) {
     final data = ref.read(projectProvider(ProjectScope.of(context))).value;
@@ -129,6 +138,7 @@ class _ApparitionScreenState extends ConsumerState<ApparitionScreen> {
               rename: _rename,
               onBack: () => Navigator.of(context).pop(),
               onOpen: _open,
+              onOpenSeriesNote: _openSeriesNote,
               head: ApparitionHome(
                 finder: _finder!,
                 onOpen: _open,

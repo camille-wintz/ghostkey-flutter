@@ -16,6 +16,7 @@ class ChapterTile extends StatelessWidget {
     required this.onTap,
     this.marker,
     this.onLongPress,
+    this.tag,
   });
 
   final String label;
@@ -26,6 +27,10 @@ class ChapterTile extends StatelessWidget {
 
   /// The row's menu, when a hold is not a lift (search, a write in flight).
   final VoidCallback? onLongPress;
+
+  /// A small caps word after the label — "Series" on a note every book of the
+  /// series shares.
+  final String? tag;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +44,7 @@ class ChapterTile extends StatelessWidget {
       child: Press(
         onPressed: onTap,
         onLongPress: onLongPress,
-        semanticLabel: dot != null ? '$label, ${dot.label}' : label,
+        semanticLabel: [label, ?tag, ?dot?.label].join(', '),
         builder: (context, pressed) => Container(
           height: DsGeom.row,
           padding: EdgeInsets.only(left: indent, right: 20),
@@ -66,6 +71,14 @@ class ChapterTile extends StatelessWidget {
                   style: DsStyle.ui(DsText.body, color: active ? Ds.hi : Ds.soft),
                 ),
               ),
+              if (tag case final tag?) ...[
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(color: Ds.veil, borderRadius: BorderRadius.circular(DsGeom.radius)),
+                  child: Text(tag.toUpperCase(), style: DsStyle.eyebrow(color: Ds.low)),
+                ),
+              ],
               if (dot != null) ...[
                 const SizedBox(width: 10),
                 Container(width: 6, height: 6, decoration: BoxDecoration(color: dot.color, shape: BoxShape.circle)),

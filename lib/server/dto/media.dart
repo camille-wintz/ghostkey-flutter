@@ -23,6 +23,7 @@ class MediaItem {
     this.height,
     this.captionBy,
     this.prompt,
+    this.seriesNote = false,
     this.version = 0,
     this.createdAt = '',
     this.updatedAt = '',
@@ -66,6 +67,11 @@ class MediaItem {
   final String? captionBy;
   final String? prompt;
 
+  /// An uploaded text file, which reads as a note in every book of the
+  /// series — listed beside the book's own notes, tagged as the series'.
+  /// The server decides it.
+  final bool seriesNote;
+
   /// Bumps when the title or the body changes, and on nothing else.
   final int version;
 
@@ -98,6 +104,7 @@ class MediaItem {
       height: meta['height'] is num ? (meta['height'] as num).toInt() : null,
       captionBy: _nonEmpty(meta['caption_by']),
       prompt: _nonEmpty(meta['prompt']),
+      seriesNote: asBool(json['series_note']),
       version: asInt(json['version']),
       createdAt: asString(json['created_at']),
       updatedAt: asString(json['updated_at']),

@@ -109,4 +109,11 @@ void main() {
     ]);
     expect(BibleEntityWriteResponse.fromJson({'id': 'e1', 'entities': <Map<String, dynamic>>[]}).refusedImages, isEmpty);
   });
+
+  group('series notes', () {
+    test('series_note reads onto the item, false when absent', () {
+      expect(MediaItem.fromJson({..._item(kind: 'text'), 'series_note': true}).seriesNote, isTrue);
+      expect(MediaItem.fromJson(_item()).seriesNote, isFalse);
+    });
+  });
 }

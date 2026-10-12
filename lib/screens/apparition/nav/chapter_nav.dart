@@ -9,6 +9,9 @@ import '../../../core/chapter_search.dart';
 import '../../../core/plan_markers.dart';
 import '../../../core/words.dart';
 import '../../../ds/tokens.dart';
+import '../../../media/library.dart';
+import '../../../media/series_notes.dart';
+import '../../../server/dto/media.dart';
 import '../../../server/dto/projects.dart';
 import '../../../server/errors.dart';
 import '../../../server/providers.dart';
@@ -44,6 +47,7 @@ class ChapterNav extends ConsumerStatefulWidget {
     required this.rename,
     required this.onBack,
     required this.onOpen,
+    required this.onOpenSeriesNote,
     this.head,
   });
   final ChapterNavState state;
@@ -52,6 +56,10 @@ class ChapterNav extends ConsumerStatefulWidget {
 
   /// Open a document (a chapter or a note), by filename, as its own page.
   final ValueChanged<String> onOpen;
+
+  /// Open a series note — a library text every book of the series lists
+  /// after its own notes — as its own page.
+  final ValueChanged<MediaItem> onOpenSeriesNote;
 
   /// Drawn above the Chapters header while the list isn't searched — the
   /// room's home.
@@ -115,6 +123,7 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
     final words = ref.watch(projectWordCountProvider(_projectId)).value;
     final markers = planMarkers(ref.watch(projectPlanProvider(_projectId)).value);
     final active = ref.watch(activeProjectProvider.select((p) => p.activeChapter));
+    final seriesNotes = seriesNotesOf(ref.watch(libraryProvider(_projectId)).value);
 
     return ListenableBuilder(
       listenable: widget.state,
@@ -124,6 +133,10 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
         final title = project?.displayTitle ?? 'Project';
         final chapterCount = data == null ? 0 : chaptersInTree(state.chaptersOf(data)).length;
         final layout = data == null ? layoutNav(const [], const [], state.query) : _layout(data);
+        final shownSeries = [
+          for (final item in seriesNotes)
+            if (matchesQuery(_seriesLabel(item), state.query)) item,
+        ];
         // A search shows matches out of their places, so there is nowhere to drop.
         final canReorder = state.query.isEmpty && !state.pending;
         // A book with no chapters: the whole list — the home, the Chapters
@@ -205,7 +218,8 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
                             ),
                         ],
                       ),
-                    if (layout.showNotes && (!bare || layout.notes.isNotEmpty)) ...[
+                    if ((layout.showNotes || shownSeries.isNotEmpty) &&
+                        (!bare || layout.notes.isNotEmpty || shownSeries.isNotEmpty)) ...[
                       const SliverToBoxAdapter(child: SizedBox(height: navGapHeight)),
                       SliverMainAxisGroup(
                         slivers: [
@@ -241,6 +255,23 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
                                   onTap: () => _select(doc.filename),
                                   onLongPress: canReorder || data == null ? null : () => _rowMenu(data, doc),
                                 ),
+                              );
+                            },
+                          ),
+                          // After the book's own notes, and not draggable: the
+                          // book's note order holds only its own.
+                          SliverFixedExtentList.builder(
+                            itemExtent: DsGeom.row,
+                            itemCount: shownSeries.length,
+                            itemBuilder: (context, i) {
+                              final item = shownSeries[i];
+                              return ChapterTile(
+                                key: ValueKey('s-${item.id}'),
+                                label: _seriesLabel(item),
+                                tag: 'Series',
+                                active: false,
+                                nested: false,
+                                onTap: () => widget.onOpenSeriesNote(item),
                               );
                             },
                           ),
@@ -285,6 +316,8 @@ class _ChapterNavState extends ConsumerState<ChapterNav> {
         },
       );
 }
+
+String _seriesLabel(MediaItem item) => item.title.trim().isEmpty ? 'Untitled' : item.title;
 
 class _SearchRow extends StatelessWidget {
   const _SearchRow({required this.controller, required this.query, required this.onChanged});
