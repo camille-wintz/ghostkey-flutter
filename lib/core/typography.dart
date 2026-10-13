@@ -120,6 +120,18 @@ class _QuoteState {
   bool singleOpen = false;
 }
 
+/// Whether a single mark is an apostrophe rather than a quotation mark. Inside
+/// a word (don't); after one at the end of the text, the keystroke being
+/// typed; after one with no single quotation open, since a quotation never
+/// opens straight after a letter (the dogs' bowls, Jess'.); and a ’ already
+/// curled in front of one (’em, ’90s) — whoever curled it meant elision. A
+/// ‘ keeps the word rule only: in the german style it is the closing mark.
+bool _isApostrophe(String ch, String? prev, String? next, bool singleOpen) {
+  if (ch == '‘') return _isWordChar(prev) && (next == null || _isWordChar(next));
+  if (_isWordChar(prev)) return next == null || _isWordChar(next) || !singleOpen;
+  return ch == '’' && _isWordChar(next);
+}
+
 _QuoteState _quoteStateFor(String text, _QuoteStyle style) {
   final state = _QuoteState();
   String? prev;
@@ -132,8 +144,12 @@ _QuoteState _quoteStateFor(String text, _QuoteStyle style) {
       state.doubleOpen = true;
     } else if (style.closers.contains(ch)) {
       state.doubleOpen = false;
-    } else if (ch == "'") {
-      if (!(_isWordChar(prev) && _isWordChar(next))) state.singleOpen = !state.singleOpen;
+    } else if (ch == "'" || ch == '’') {
+      // The text ends where the insertion starts, so a mark at its end is
+      // judged as if something non-word followed — "‘Hi’" closed its quote.
+      if (!_isApostrophe(ch, prev, next ?? '', state.singleOpen)) {
+        state.singleOpen = ch == "'" ? !state.singleOpen : false;
+      }
     } else if (style.singleOpeners.contains(ch)) {
       state.singleOpen = true;
     } else if (style.singleClosers.contains(ch)) {
@@ -194,7 +210,7 @@ String applyTypography(String text, String contextBefore, TypographyMode mode) {
       // The space after « is already there — a second one is a typo.
       continue;
     } else if (ch == "'" || ch == '‘' || ch == '’') {
-      if (_isWordChar(prev) && (next == null || _isWordChar(next))) {
+      if (_isApostrophe(ch, prev, next, state.singleOpen)) {
         result.write('’');
       } else {
         result.write(state.singleOpen ? style.singleClose : style.singleOpen);

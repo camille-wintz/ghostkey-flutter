@@ -204,4 +204,16 @@ void main() {
       expect(applyTypography(once, "", mode('guillemets')), once);
     });
   });
+
+  // A model's suggestion arrives already curled; these came back reversed
+  // when an edit was applied (2026-10-14).
+  group('apostrophes that are not quotation marks', () {
+    test('a plural possessive', () => expect(applyTypography("the dogs’ bowls", "She fed ", mode('curly')), "the dogs’ bowls"));
+    test('a possessive before punctuation', () => expect(applyTypography("Jess’.", "It was ", mode('curly')), "Jess’."));
+    test('a straight possessive', () => expect(applyTypography("the dogs' bowls", "", mode('curly')), "the dogs’ bowls"));
+    test('a curled elision', () => expect(applyTypography("’em all", "Get ", mode('curly')), "’em all"));
+    test('a decade', () => expect(applyTypography("the ’90s", "In ", mode('curly')), "the ’90s"));
+    test('quotes still open and close', () => expect(applyTypography("'Hi,' she said.", "x ", mode('curly')), "‘Hi,’ she said."));
+    test('an open quote still closes', () => expect(applyTypography("’ she said", "‘We were the Jones", mode('curly')), "’ she said"));
+  });
 }
