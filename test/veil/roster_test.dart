@@ -166,10 +166,15 @@ void main() {
   });
 
   group('display helpers', () {
-    test('titleCase capitalises each word and leaves inner caps alone', () {
+    test('titleCase capitalises an all-lowercase name, word by word', () {
       expect(titleCase('ada of the ashen keep'), 'Ada Of The Ashen Keep');
-      expect(titleCase('jean-luc mcKay'), 'Jean-Luc McKay');
+      expect(titleCase('jean-luc mckay'), 'Jean-Luc Mckay');
       expect(titleCase('élodie'), 'Élodie');
+    });
+
+    test('titleCase shows a name that has a capital as written', () {
+      expect(titleCase('Lise de Subrans'), 'Lise de Subrans');
+      expect(titleCase('jean-luc McKay'), 'jean-luc McKay');
     });
 
     test('dossierSummary takes the first sentence past the 30-char floor', () {

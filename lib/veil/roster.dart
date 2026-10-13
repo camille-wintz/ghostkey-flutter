@@ -157,13 +157,16 @@ String _count(int n, String one, String many) => '$n ${n == 1 ? one : many}';
 /// "3 chapters" / "1 chapter".
 String chapterCount(int n) => _count(n, 'chapter', 'chapters');
 
-/// Display-only Title Case: the first letter of every whitespace- or
-/// hyphen-separated word, the rest of each word untouched so intentional
-/// caps (McKay) survive. The stored name is never changed.
-String titleCase(String name) => name.replaceAllMapped(
-      RegExp(r'(^|[\s-])(\p{L})', unicode: true),
-      (m) => '${m[1]}${m[2]!.toUpperCase()}',
-    );
+/// Display-only Title Case for a name typed all in lowercase: the first
+/// letter of every whitespace- or hyphen-separated word. A name with any
+/// capital in it is shown as written, so "Lise de Subrans" keeps its
+/// particle. The stored name is never changed.
+String titleCase(String name) => RegExp(r'\p{Lu}', unicode: true).hasMatch(name)
+    ? name
+    : name.replaceAllMapped(
+        RegExp(r'(^|[\s-])(\p{L})', unicode: true),
+        (m) => '${m[1]}${m[2]!.toUpperCase()}',
+      );
 
 /// The dossier's one-line answer to "who is this": the opening sentence of
 /// the card's dossier text ([BibleEntity.notes]), markdown stripped. The
