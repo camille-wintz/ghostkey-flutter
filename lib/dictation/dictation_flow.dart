@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../access/capability.dart';
 import '../access/quota_refusals.dart';
 import '../ds/tokens.dart';
 import '../editor/editor_controller.dart';
@@ -10,6 +11,7 @@ import '../screens/project/project_root.dart';
 import '../server/dto/billing.dart';
 import '../server/errors.dart';
 import '../server/providers.dart';
+import '../ui/lock_notice.dart';
 import '../ui/notice_modal.dart';
 import 'anchor.dart';
 import 'dock/record_dock.dart';
@@ -33,6 +35,13 @@ import 'transcribe.dart';
 
 Future<void> startDictation(BuildContext context, EditorController editor) async {
   if (editor.capturing) return;
+  // Basic and up since 2026-10-14. Told at the tap, like the week spent below,
+  // rather than by the first chunk's refusal after the writer has spoken.
+  final access = ProviderScope.containerOf(context, listen: false).read(capabilityProvider('apparition.dictation'));
+  if (!access.granted) {
+    explainLock(context, access, 'Dictation');
+    return;
+  }
   // Held across the quota read, so a second tap cannot start a second take.
   editor.capturing = true;
   final container = ProviderScope.containerOf(context, listen: false);
