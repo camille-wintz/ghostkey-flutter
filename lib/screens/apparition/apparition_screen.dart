@@ -3,12 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../ds/tokens.dart';
 import '../../editor/capture_launchers.dart';
-import '../../next_scene/next_scene_finder.dart';
 import '../../rewards/providers.dart';
 import '../../rooms/rooms.dart';
 import '../../server/dto/media.dart';
-import '../../server/dto/next_scene.dart';
-import '../../server/dto/projects.dart';
 import '../../server/providers.dart';
 import '../../store/active_project.dart';
 import '../media/series_note_screen.dart';
@@ -19,7 +16,6 @@ import 'document_resolve.dart';
 import 'home/apparition_home.dart';
 import 'nav/chapter_nav.dart';
 import 'nav/chapter_nav_state.dart';
-import 'next_scene/stuck_in_chat.dart';
 
 /// The writing room: its home (where you left off, the words, the manuscript,
 /// the latest cat — `ApparitionHome`) over the book's chapters and notes as
@@ -48,9 +44,7 @@ class ApparitionScreen extends ConsumerStatefulWidget {
 
 class _ApparitionScreenState extends ConsumerState<ApparitionScreen> {
   ChapterNavState? _nav;
-  NextSceneFinder? _finder;
   final RecentRename _rename = RecentRename();
-  bool _openingChat = false;
 
   @override
   void initState() {
@@ -67,17 +61,15 @@ class _ApparitionScreenState extends ConsumerState<ApparitionScreen> {
       projectId: projectId,
       refreshProject: () => ref.invalidate(projectProvider(projectId)),
     );
-    _finder ??= NextSceneFinder(projectId: projectId);
   }
 
   @override
   void dispose() {
     _nav?.dispose();
-    _finder?.dispose();
     super.dispose();
   }
 
-  Future<void> _open(String filename, {bool atEnd = false}) async {
+  Future<void> _open(String filename) async {
     if (!mounted) return;
     ref.read(activeProjectProvider.notifier).setActiveChapter(filename);
     await Navigator.of(context).push(
@@ -87,8 +79,6 @@ class _ApparitionScreenState extends ConsumerState<ApparitionScreen> {
           rename: _rename,
           onDictate: CaptureLaunchers.dictate,
           onScan: CaptureLaunchers.scan,
-          finder: _finder,
-          revealEnd: atEnd,
         ),
       ),
     );
@@ -107,25 +97,6 @@ class _ApparitionScreenState extends ConsumerState<ApparitionScreen> {
         ),
       );
 
-  /// "Let's write": the scene's chapter, at its end, with the prompt over it.
-  void _write(NextScene scene) {
-    final data = ref.read(projectProvider(ProjectScope.of(context))).value;
-    final doc = data == null ? null : chaptersInTree(data.chapters).where((d) => d.id == scene.documentId).firstOrNull;
-    if (doc == null) {
-      // A chapter the list hasn't caught up with: the next read has it.
-      ref.invalidate(projectProvider(ProjectScope.of(context)));
-      return;
-    }
-    _finder!.takeBrief(scene);
-    _open(doc.filename, atEnd: true);
-  }
-
-  Future<void> _stuck(NextScene scene) async {
-    setState(() => _openingChat = true);
-    await stuckInChat(context, ref, projectId: ProjectScope.of(context), scene: scene);
-    if (mounted) setState(() => _openingChat = false);
-  }
-
   @override
   Widget build(BuildContext context) => Entered(
         room: roomFor(RoomKey.apparition),
@@ -139,13 +110,7 @@ class _ApparitionScreenState extends ConsumerState<ApparitionScreen> {
               onBack: () => Navigator.of(context).pop(),
               onOpen: _open,
               onOpenSeriesNote: _openSeriesNote,
-              head: ApparitionHome(
-                finder: _finder!,
-                onOpen: _open,
-                onWrite: _write,
-                onStuck: _stuck,
-                stuckPending: _openingChat,
-              ),
+              head: ApparitionHome(onOpen: _open),
             ),
           ),
         ),

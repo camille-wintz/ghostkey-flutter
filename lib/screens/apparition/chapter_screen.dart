@@ -15,8 +15,6 @@ import 'chapter_editor.dart';
 import 'document_resolve.dart';
 import 'nav/chapter_nav_state.dart';
 import 'nav/document_menu.dart';
-import '../../next_scene/next_scene_finder.dart';
-import 'next_scene/scene_brief_band.dart';
 
 /// One document as a page, pushed over the chapter list: resolves the active
 /// chapter's filename to a document and mounts [ChapterEditor] for it, keyed
@@ -32,18 +30,12 @@ class ChapterScreen extends ConsumerWidget {
     required this.rename,
     this.onDictate,
     this.onScan,
-    this.finder,
-    this.revealEnd = false,
   });
 
   final ChapterNavState nav;
   final RecentRename rename;
   final CaptureLauncher? onDictate;
   final CaptureLauncher? onScan;
-
-  /// Holds the prompt "Let's write" took along; shown over its own chapter.
-  final NextSceneFinder? finder;
-  final bool revealEnd;
 
   /// The open chapter's own menu. Read fresh on press: the tree the page
   /// last built from may already be behind a rename.
@@ -95,18 +87,6 @@ class ChapterScreen extends ConsumerWidget {
             onMenu: () => _openMenu(context, ref, documentId),
             onDictate: onDictate,
             onScan: onScan,
-            revealEnd: revealEnd,
-            pageHead: switch (finder) {
-              final finder? => ListenableBuilder(
-                  listenable: finder,
-                  builder: (context, _) => switch (finder.brief) {
-                    final brief? when brief.documentId == documentId =>
-                      SceneBriefBand(brief: brief, onClose: finder.closeBrief),
-                    _ => const SizedBox.shrink(),
-                  },
-                ),
-              null => null,
-            },
           );
         },
       ),

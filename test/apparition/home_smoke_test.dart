@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghostkey/next_scene/next_scene_finder.dart';
 import 'package:ghostkey/rewards/ledger.dart';
 import 'package:ghostkey/rewards/providers.dart';
 import 'package:ghostkey/screens/apparition/home/apparition_home.dart';
@@ -48,8 +47,6 @@ void main() {
     tester.view.physicalSize = const Size(360, 2000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    final finder = NextSceneFinder(projectId: 'p');
-    addTearDown(finder.dispose);
     String? opened;
 
     await tester.pumpWidget(
@@ -68,13 +65,7 @@ void main() {
             projectId: 'p',
             child: Scaffold(
               body: SingleChildScrollView(
-                child: ApparitionHome(
-                  finder: finder,
-                  onOpen: (filename) => opened = filename,
-                  onWrite: (_) {},
-                  onStuck: (_) {},
-                  stuckPending: false,
-                ),
+                child: ApparitionHome(onOpen: (filename) => opened = filename),
               ),
             ),
           ),
@@ -85,7 +76,6 @@ void main() {
 
     expect(find.text('WHERE YOU LEFT OFF'), findsOneWidget);
     expect(find.text('CH. 2'), findsOneWidget);
-    expect(find.text('Find a scene'), findsNothing);
     expect(find.text('MANUSCRIPT'), findsNothing);
     expect(find.text('This year'), findsNothing);
     expect(find.textContaining('days running'), findsNothing);

@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/dates.dart';
 import '../../../core/words.dart';
 import '../../../ds/tokens.dart';
-import '../../../next_scene/next_scene_finder.dart';
-import '../../../server/dto/next_scene.dart';
 import '../../../server/dto/projects.dart';
 import '../../../server/providers.dart';
 import '../../../ui/press.dart';
@@ -14,32 +12,16 @@ import 'cat_tile.dart';
 import 'home_section.dart';
 
 /// Where the writer left off: the last chapter touched, its place and size,
-/// and a tap back into it, with the latest cat beside it — with "Find me a scene to write" beside it, its
-/// answer unfolding underneath. The desk adds a change note written by the
+/// and a tap back into it, with the latest cat beside it. The desk adds a change note written by the
 /// flash model from the chapter's previous snapshot; that note is the desk's
 /// own (its main process writes it, there is no server route), so the phone
 /// says no more than the chapter list knows.
 ///
 /// A book with no chapters never shows the home: the list gives way to the
 /// "Start writing" card (start_writing.dart).
-///
-/// "Find me a scene to write" and its answer are hidden since 2026-10-08
-/// (Cleo); the finder and its callbacks are still taken, so they come back
-/// with a line.
 class LeftOff extends ConsumerWidget {
-  const LeftOff({
-    super.key,
-    required this.finder,
-    required this.onOpen,
-    required this.onWrite,
-    required this.onStuck,
-    required this.stuckPending,
-  });
-  final NextSceneFinder finder;
+  const LeftOff({super.key, required this.onOpen});
   final ValueChanged<String> onOpen;
-  final ValueChanged<NextScene> onWrite;
-  final ValueChanged<NextScene> onStuck;
-  final bool stuckPending;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
