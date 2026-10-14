@@ -30,5 +30,5 @@ String? quotaLine(FeatureQuota? q) {
   final allowance = q.allowance;
   if (remaining == null || allowance == null) return null;
   final of = q.unit == QuotaUnit.credits ? formatQuantity(allowance, q.unit) : '$allowance ${q.label.toLowerCase()}';
-  return '$remaining of $of left ${q.cadence.window}';
+  return '$remaining of $of left${q.cadence.window}';
 }

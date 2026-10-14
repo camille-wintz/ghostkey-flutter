@@ -51,7 +51,7 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
   /// than let it keep recording what can never land.
   final void Function(ServerError error)? onRefused;
 
-  /// The week's dictation ran out mid-take: the recording was ended at the
+  /// The dictation left ran out mid-take: the recording was ended at the
   /// line, its last chunk shipped, and every chunk has now landed. Fires once.
   final void Function()? onQuotaSpent;
 
@@ -74,7 +74,7 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
   int _lastElapsedMs = 0;
   int _durationBase = 0;
 
-  // The week's dictation, metered against `durationMs`: the take ends itself
+  // The dictation left, metered against `durationMs`: the take ends itself
   // when the clock reaches this, so its last chunk is admitted and lands
   // instead of being refused. Null when the plan does not count dictation.
   // Seeded from the quota read at the tap, then re-read from every chunk's
@@ -348,7 +348,7 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  /// The clock reached the week's line: end the take the way Done does, so
+  /// The clock reached the allowance's line: end the take the way Done does, so
   /// the running chunk ships and lands; the flow is told once it has.
   void _endForQuota() {
     if (_quotaSpent || !_live) return;
@@ -516,7 +516,7 @@ class DictationSession extends ChangeNotifier with WidgetsBindingObserver {
   void _onChunkLost(Object e) {
     debugPrint('[dictation] chunk lost: $e');
     if (_disposed) return;
-    // Both refusals refuse every chunk after this one too — the week's
+    // Both refusals refuse every chunk after this one too — the allowance's
     // dictation spent is as final as a plan without it — so stop listening
     // rather than keep losing the writer's words.
     if (e is ServerError && (e.code == 'plan_insufficient' || e.code == 'quota_exceeded')) {

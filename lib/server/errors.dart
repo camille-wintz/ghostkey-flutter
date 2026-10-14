@@ -135,9 +135,10 @@ String messageFor(Object? err) {
           : "You've used this week's ${amount}credits. They come back on $back.";
     }
     if (err.code == 'quota_exceeded' && quota != null && quota.unit == QuotaUnit.seconds) {
+      // Only free's dictation counts seconds, and since 2026-10-14 it never
+      // refills — so no date to promise.
       final amount = quota.allowance == null ? '' : '${formatQuantity(quota.allowance!, quota.unit)} of ';
-      return "You've used this week's $amount${quota.label.toLowerCase()}. "
-          'It comes back on ${formatBillingDate(quota.periodEnd)}.';
+      return "You've used your $amount${quota.label.toLowerCase()}.";
     }
     if (err.code == 'quota_exceeded' && quota != null && quota.feature != 'phantom_chat' && quota.feature != 'credits') {
       return "${quota.label}: this period's allowance is used up.";

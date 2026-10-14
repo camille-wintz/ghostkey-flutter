@@ -151,19 +151,25 @@ enum QuotaCadence {
   weekly,
 
   /// Free's chat messages reset every day; the other plans count them weekly.
-  daily;
+  daily,
+
+  /// Never resets: free's fifteen minutes of dictation (2026-10-14).
+  lifetime;
 
   static QuotaCadence fromWire(String? value) => switch (value) {
         'weekly' => QuotaCadence.weekly,
         'daily' => QuotaCadence.daily,
+        'lifetime' => QuotaCadence.lifetime,
         _ => QuotaCadence.billing,
       };
 
-  /// "this week" — the window the count runs over, for a sentence.
+  /// " this week" — the window the count runs over, with its leading space,
+  /// for the end of a sentence. Empty for a count that never resets.
   String get window => switch (this) {
-        QuotaCadence.daily => 'today',
-        QuotaCadence.weekly => 'this week',
-        QuotaCadence.billing => 'this period',
+        QuotaCadence.daily => ' today',
+        QuotaCadence.weekly => ' this week',
+        QuotaCadence.billing => ' this period',
+        QuotaCadence.lifetime => '',
       };
 }
 

@@ -12,7 +12,7 @@ class TranscriptTurn {
 
 /// POST /api/transcribe response. `verbatim` is present on the Gemini
 /// pipeline only; the client falls back to `text`. `quotaRemaining` is the
-/// seconds of dictation left this week after this chunk was charged — null
+/// seconds of dictation left after this chunk was charged — null
 /// when the plan does not count dictation. `quotaRead` is false when the
 /// field is absent (a server older than it), which is no reading at all
 /// rather than a null one.

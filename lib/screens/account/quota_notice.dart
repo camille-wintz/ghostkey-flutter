@@ -27,11 +27,12 @@ Future<void> showQuotaNotice(
   final allowance = refused?.allowance ?? snapshot?.allowance;
   final used = refused?.used ?? snapshot?.used;
   final periodEnd = refused?.periodEnd ?? snapshot?.periodEnd ?? '';
-  final window = (snapshot?.cadence ?? QuotaCadence.weekly).window;
+  final cadence = snapshot?.cadence ?? QuotaCadence.weekly;
+  final window = cadence.window;
 
   final title = switch (allowance) {
     0 => "${_capitalize(label)} aren't included on your plan",
-    _ => "You've used up your $label $window",
+    _ => "You've used up your $label$window",
   };
   final resets = formatBillingDate(periodEnd);
 
@@ -48,7 +49,11 @@ Future<void> showQuotaNotice(
           extras: (snapshot?.extras ?? 0) > 0
               ? formatQuantity(snapshot!.extras, unit)
               : null,
-          resets: resets.isEmpty ? null : 'Resets on $resets',
+          resets: cadence == QuotaCadence.lifetime
+              ? "Doesn't reset"
+              : resets.isEmpty
+                  ? null
+                  : 'Resets on $resets',
         ),
       const _ManageLink(),
     ],

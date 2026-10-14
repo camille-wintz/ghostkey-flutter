@@ -35,8 +35,9 @@ import 'transcribe.dart';
 
 Future<void> startDictation(BuildContext context, EditorController editor) async {
   if (editor.capturing) return;
-  // Basic and up since 2026-10-14. Told at the tap, like the week spent below,
-  // rather than by the first chunk's refusal after the writer has spoken.
+  // Every plan since 2026-10-14 (free on fifteen minutes, ever), so this is
+  // the fence for a plan that loses it again: told at the tap, like the
+  // minutes spent below, rather than by the first chunk's refusal.
   final access = ProviderScope.containerOf(context, listen: false).read(capabilityProvider('apparition.dictation'));
   if (!access.granted) {
     explainLock(context, access, 'Dictation');
@@ -48,7 +49,7 @@ Future<void> startDictation(BuildContext context, EditorController editor) async
   final projectId = ProjectScope.of(context);
   final overlay = Overlay.of(context, rootOverlay: true);
 
-  // The week's dictation is read at the tap, not found at the first refused
+  // The dictation left is read at the tap, not found at the first refused
   // chunk: a writer with none left gets the notice instead of a dock that
   // records words it cannot land.
   final quota = await _readQuota(container);
@@ -91,8 +92,8 @@ Future<void> startDictation(BuildContext context, EditorController editor) async
     },
     onSettled: () => paragraphs.finish(anchor.landingPoint),
     previousText: anchor.textBeforeDictation,
-    // The take reached the week's line and its last chunk has landed: close
-    // the dock, then the notice — read fresh, so it shows the week spent.
+    // The take reached the allowance's line and its last chunk has landed: close
+    // the dock, then the notice — read fresh, so it shows it spent.
     onQuotaSpent: () {
       unawaited(close());
       unawaited(_readQuota(container).then((q) => reportQuotaSpent(_feature, snapshot: q)));

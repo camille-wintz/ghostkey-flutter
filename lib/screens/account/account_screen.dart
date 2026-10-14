@@ -405,9 +405,11 @@ class _QuotaMeter extends StatelessWidget {
         ? (feature.used / allowance).clamp(0.0, 1.0)
         : 0.0;
     final usage = formatUsage(feature.used, allowance, feature.unit, asShare);
-    final resets = feature.cadence == QuotaCadence.weekly
-        ? 'Resets weekly — next on ${formatBillingDate(feature.periodEnd)}'
-        : 'Resets on ${formatBillingDate(feature.periodEnd)}';
+    final resets = switch (feature.cadence) {
+      QuotaCadence.lifetime => "Doesn't reset",
+      QuotaCadence.weekly => 'Resets weekly — next on ${formatBillingDate(feature.periodEnd)}',
+      _ => 'Resets on ${formatBillingDate(feature.periodEnd)}',
+    };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
