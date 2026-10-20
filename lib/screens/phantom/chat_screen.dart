@@ -10,6 +10,7 @@ import '../../chat/providers.dart';
 import '../../chat/quota_feature.dart';
 import '../../chat/refusals.dart';
 import '../../ds/tokens.dart';
+import '../../server/analytics/gate.dart';
 import '../../server/dto/chat.dart';
 import '../../server/dto/projects.dart';
 import '../../server/errors.dart';
@@ -108,6 +109,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     _scrollToEnd();
     final refusal = await _composer.send(override: override, model: _model);
     if (refusal == null || !mounted) return;
+    // A wall the server counted where it refused says so; every other one —
+    // the cached snapshot stopping the send before any request — is reported
+    // here, as the notice opens. The chat's own line and the chat's room are
+    // the vocabulary the desk reports in too.
+    if (!refusal.counted) {
+      switch (refusal) {
+        case QuotaRefusal():
+          reportGateShown(GateKind.quota, chatQuotaFeature);
+        case PlanDenied(:final capability):
+          reportGateShown(GateKind.plan, capability ?? 'phantom.chat');
+      }
+    }
     switch (refusal) {
       case QuotaRefusal(:final feature, :final refused):
         await showQuotaNotice(

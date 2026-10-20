@@ -154,11 +154,13 @@ class ComposerController extends ChangeNotifier {
     if (outcome is! SendRefused) return null;
     final error = outcome.error;
     if (error.code == 'quota_exceeded') {
-      return QuotaRefusal(feature: error.quota?.feature ?? quota.feature, refused: error.quota);
+      return QuotaRefusal(feature: error.quota?.feature ?? quota.feature, refused: error.quota, counted: error.wallRecorded);
     }
     return PlanDenied(
       what: error.denial?.label ?? 'This model',
       requiredPlan: planOrNull(error.denial?.requiredPlan),
+      capability: error.denial?.capability,
+      counted: error.wallRecorded,
     );
   }
 

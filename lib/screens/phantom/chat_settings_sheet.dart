@@ -6,6 +6,7 @@ import '../../chat/model_access.dart';
 import '../../chat/models.dart';
 import '../../chat/refusals.dart';
 import '../../ds/tokens.dart';
+import '../../server/analytics/gate.dart';
 import '../../server/dto/models.dart';
 import '../../server/providers.dart';
 import '../../ui/press.dart';
@@ -73,7 +74,10 @@ class _ChatSettingsState extends ConsumerState<_ChatSettings> {
   void _pickModel(CatalogModel def) {
     final access = modelAccess(ref.read(accessProvider).value, def);
     if (!access.granted) {
-      showPlanNotice(context, PlanDenied(what: def.name, requiredPlan: access.requiredPlan));
+      // A locked row makes no request, so this side reports the wall.
+      final capability = def.capability;
+      if (capability != null) reportGateShown(GateKind.plan, capability);
+      showPlanNotice(context, PlanDenied(what: def.name, requiredPlan: access.requiredPlan, capability: capability));
       return;
     }
     setState(() => _model = def.id);

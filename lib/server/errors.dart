@@ -42,6 +42,7 @@ class ServerError implements Exception {
     this.retryAfter,
     this.quota,
     this.chatHandoff,
+    this.wallRecorded = false,
   ]) : message = message ?? code;
 
   final String code;
@@ -58,6 +59,11 @@ class ServerError implements Exception {
   /// An import that could not read its file, but the library could: where
   /// the file went, so the book's chat can bring it in instead.
   final ChatHandoff? chatHandoff;
+
+  /// On a 402/403: the server already counted this refusal as a wall the
+  /// author hit, so the notice shown over it reports nothing
+  /// (`server/analytics/gate.dart`).
+  final bool wallRecorded;
 
   @override
   String toString() => 'ServerError($code, $status): $message';

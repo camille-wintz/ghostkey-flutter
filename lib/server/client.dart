@@ -118,6 +118,7 @@ Future<ServerError> parseServerError(http.StreamedResponse res, Uri url, String 
   PlanDenial? denial;
   QuotaExceeded? quota;
   ChatHandoff? chatHandoff;
+  var wallRecorded = false;
   var retryAfter = int.tryParse(res.headers['retry-after'] ?? '');
   final rawBody = await res.stream.bytesToString().catchError((_) => '');
   if (rawBody.isNotEmpty) {
@@ -135,6 +136,7 @@ Future<ServerError> parseServerError(http.StreamedResponse res, Uri url, String 
         }
         // A failed import whose file the library could still read.
         chatHandoff = ChatHandoff.tryParse(data['chat_handoff']);
+        wallRecorded = data['wall_recorded'] == true;
         if (data['retry_after'] is num) retryAfter = (data['retry_after'] as num).toInt();
       }
     } catch (_) {
@@ -147,7 +149,7 @@ Future<ServerError> parseServerError(http.StreamedResponse res, Uri url, String 
   final snippet = rawBody.length > 200 ? rawBody.substring(0, 200) : rawBody;
   final detail = '${res.statusCode} ${_pathOf(url)}${snippet.isNotEmpty ? ' — $snippet' : ''}';
   if (kDebugMode) debugPrint('[apiFetch] Request failed with $code: $detail (rid=$rid)');
-  return ServerError(code, res.statusCode, detail, denial, retryAfter, quota, chatHandoff);
+  return ServerError(code, res.statusCode, detail, denial, retryAfter, quota, chatHandoff, wallRecorded);
 }
 
 Future<http.StreamedResponse> _send(http.BaseRequest request, String rid, {Duration? timeout}) async {

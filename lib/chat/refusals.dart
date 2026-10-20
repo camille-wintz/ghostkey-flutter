@@ -4,13 +4,18 @@ import '../server/dto/billing.dart';
 // a notice, never an error bar, and the message returns to the composer.
 
 sealed class ComposerRefusal {
-  const ComposerRefusal();
+  const ComposerRefusal({this.counted = false});
+
+  /// The server refused and already counted the wall
+  /// (`ServerError.wallRecorded`); false when this side stopped the send, or
+  /// a server that predates the flag refused it — the notice reports those.
+  final bool counted;
 }
 
 /// A spent counter — ahead of the call from the cached snapshot, or the
 /// server's 402.
 class QuotaRefusal extends ComposerRefusal {
-  const QuotaRefusal({required this.feature, this.refused});
+  const QuotaRefusal({required this.feature, this.refused, super.counted});
 
   /// The counter that refused — the chat's line, `credits` on a plan that
   /// pays for the chat out of its weekly credits.
@@ -24,9 +29,12 @@ class QuotaRefusal extends ComposerRefusal {
 
 /// A 403 from a send, or a locked picker row.
 class PlanDenied extends ComposerRefusal {
-  const PlanDenied({required this.what, this.requiredPlan});
+  const PlanDenied({required this.what, this.requiredPlan, this.capability, super.counted});
 
   /// What was refused — a model's name, or the server's label for a surface.
   final String what;
   final Plan? requiredPlan;
+
+  /// The capability that refused, when known — what the wall is reported as.
+  final String? capability;
 }
