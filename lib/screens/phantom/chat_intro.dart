@@ -20,7 +20,7 @@ const List<String> _manuscriptSuggestions = [
 const List<String> _planningSuggestions = [
   'What do you think of my outline?',
   'Which beats are still empty, and which matter most?',
-  'Help me plot using a three-act structure',
+  'Help me plot my novel.',
   'Where does my plan go “and then” instead of “therefore”?',
 ];
 
