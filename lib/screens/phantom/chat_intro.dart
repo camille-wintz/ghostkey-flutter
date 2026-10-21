@@ -13,7 +13,7 @@ const List<String> _manuscriptSuggestions = [
   'Where does the pacing sag?',
   'Line edit my first chapter',
   'List the unresolved threads',
-  'Which characters disappear for too long?',
+  'Help me move a scene',
   'Help me plot the rest of the book',
 ];
 
