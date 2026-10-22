@@ -5,12 +5,14 @@ enum Plan {
   free,
   basic,
   standard,
-  pro;
+  pro,
+  ultra;
 
   static Plan fromWire(String? value) => switch (value) {
         'basic' => Plan.basic,
         'standard' => Plan.standard,
         'pro' => Plan.pro,
+        'ultra' => Plan.ultra,
         _ => Plan.free,
       };
 
@@ -19,6 +21,7 @@ enum Plan {
         Plan.basic => 'Basic',
         Plan.standard => 'Standard',
         Plan.pro => 'Pro',
+        Plan.ultra => 'Ultra',
       };
 }
 
