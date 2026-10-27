@@ -13,7 +13,6 @@ import '../../ui/field.dart';
 import '../../ui/press.dart';
 import '../../ui/text.dart';
 import 'forgot_password_form.dart';
-import 'gift_code_field.dart';
 import 'google_link_form.dart';
 import 'google_mark.dart';
 
@@ -40,7 +39,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   _Mode _mode = _Mode.signin;
   final _email = TextEditingController();
   final _password = TextEditingController();
-  final _gift = TextEditingController();
   bool _pending = false;
   String? _error;
 
@@ -60,7 +58,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   void dispose() {
     _email.dispose();
     _password.dispose();
-    _gift.dispose();
     super.dispose();
   }
 
@@ -80,7 +77,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     try {
       final session = _mode == _Mode.signin
           ? await postSignin(email, password)
-          : await postSignup(email, password, giftCode: _giftCode);
+          : await postSignup(email, password);
       // Registering is the only moment the welcome-week greeting may fire,
       // and nothing downstream can tell a fresh account from a returning one.
       if (_mode == _Mode.signup) rememberSignupArrival();
@@ -107,7 +104,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       final idToken = password == null ? await askGoogleForIdToken() : _googleIdToken;
       if (idToken == null) return;
       _googleIdToken = idToken;
-      final session = await postGoogle(idToken, password: password, giftCode: _giftCode);
+      final session = await postGoogle(idToken, password: password);
       if (session.created) rememberSignupArrival();
       // A password remembered for whoever was here before must not be what
       // restores this session.
@@ -127,12 +124,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     } finally {
       if (mounted) setState(() => _pending = false);
     }
-  }
-
-  /// Only the signup tab shows the field, so only a signup sends a code.
-  String? get _giftCode {
-    final code = _gift.text.trim();
-    return _mode != _Mode.signin && code.isNotEmpty ? code : null;
   }
 
   void _switch(_Mode next) => setState(() {
@@ -197,10 +188,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     ],
                   ),
                 ),
-                if (_mode == _Mode.signup) ...[
-                  const SizedBox(height: 10),
-                  GiftCodeField(controller: _gift),
-                ],
                 const SizedBox(height: 16),
                 if (_error != null) ...[
                   UiText(_error!, step: DsText.ui, color: Ds.destructive),
