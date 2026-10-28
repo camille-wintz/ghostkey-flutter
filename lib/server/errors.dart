@@ -110,6 +110,7 @@ const Map<String, String> _messages = {
   'empty_response': 'The model returned nothing. Try again.',
   'name_taken': 'Something else already goes by that name.',
   'unsupported_format': 'That is not a manuscript this can read. Import a .docx, an .epub, a .pdf or a .txt.',
+  'scrivener_index': "That is Scrivener's .scrivx file, which only lists the project's documents. Import a .docx, an .epub, a .pdf or a .txt exported from Scrivener instead.",
   'invalid_manuscript': 'That manuscript could not be read. Saving a fresh copy from the program you wrote it in usually fixes it.',
   'no_text': 'There is no text in that file to import. A scanned PDF is pictures of pages — '
       'export the manuscript from the program you wrote it in and import that.',
