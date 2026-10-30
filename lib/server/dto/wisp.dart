@@ -501,9 +501,15 @@ class ContinuityEstimate {
 /// order, else the first arc drift — with `stats` whole; `hiddenUnits` counts
 /// the findings held back.
 class ContinuityRead {
-  const ContinuityRead({required this.report, required this.preview});
+  const ContinuityRead({required this.report, required this.preview, this.stale = false, this.changedChapters = 0});
   final ContinuityReport? report;
   final PreviewCut? preview;
+
+  /// The book has changed since the run read it (since 2026-10-31 a report
+  /// is kept past edits), by [changedChapters] edited, added or removed — 0
+  /// when the chapters only moved, or the report predates the count.
+  final bool stale;
+  final int changedChapters;
 
   /// Every finding the report found, shown or held back.
   int get issueCount => (report?.findingCount ?? 0) + (preview?.hiddenUnits ?? 0);
@@ -511,5 +517,7 @@ class ContinuityRead {
   static ContinuityRead fromJson(Json json) => ContinuityRead(
         report: json['report'] is Map ? ContinuityReport.fromJson(asJson(json['report'])) : null,
         preview: PreviewCut.fromJson(json['preview']),
+        stale: json['stale'] == true,
+        changedChapters: json['changed_chapters'] is int ? json['changed_chapters'] as int : 0,
       );
 }

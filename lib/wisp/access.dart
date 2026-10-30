@@ -38,6 +38,16 @@ String continuityCostLine(ContinuityEstimate? estimate) {
       cached == read ? 'every chapter it needs was read before' : '$cached of $read chapters were read before';
   return '$credits: $already, so this run costs less.';
 }
+
+/// Above a plot-holes report the book has moved on from (the desk's
+/// wisp/tasks/continuity/staleNote.ts says the same): the report is kept, and
+/// this says how far behind it is.
+String continuityStaleLine(int changedChapters) {
+  const again = 'Run it again to check the book as it is now.';
+  if (changedChapters == 0) return 'Your book has changed since this check. $again';
+  final chapters = changedChapters == 1 ? '1 chapter has' : '$changedChapters chapters have';
+  return 'This check was read before your latest edits: $chapters changed since. $again';
+}
 const String lineEditQuotaFeature = 'edit_pass';
 
 /// The counter an analysis spends, each on its own, paid at what it spends.

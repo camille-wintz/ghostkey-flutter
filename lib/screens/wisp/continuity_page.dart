@@ -139,6 +139,7 @@ class _ContinuityPageState extends ConsumerState<ContinuityPage> {
     } else if (read.value?.report case final r?) {
       body = Column(
         children: [
+          if (read.value case final value? when value.stale) PageNotice(continuityStaleLine(value.changedChapters)),
           if (r.extractionFailures.isNotEmpty)
             PageNotice(
               'Extraction failed for ${r.extractionFailures.join(', ')} — these chapters were not checked. Re-run to try again.',

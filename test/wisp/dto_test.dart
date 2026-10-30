@@ -57,6 +57,20 @@ void main() {
     expect(ContinuityRead.fromJson({'report': null, 'preview': null}).report, isNull);
   });
 
+  test('a kept continuity report says how far behind the book it is', () {
+    const report = {'chapters_analyzed': 3, 'hard_errors': <Object>[], 'arc_drift': <Object>[]};
+    final behind = ContinuityRead.fromJson({'report': report, 'preview': null, 'stale': true, 'changed_chapters': 2});
+    expect(behind.stale, isTrue);
+    expect(behind.changedChapters, 2);
+    expect(continuityStaleLine(2), contains('2 chapters have changed'));
+    expect(continuityStaleLine(1), contains('1 chapter has changed'));
+    expect(continuityStaleLine(0), startsWith('Your book has changed'));
+    // A server from before the fields reads as current.
+    final older = ContinuityRead.fromJson({'report': report, 'preview': null});
+    expect(older.stale, isFalse);
+    expect(older.changedChapters, 0);
+  });
+
   test('pacing intensities are clamped to the wave', () {
     final r = AnalysisReport.fromJson({
       'analysis': 'pacing',
