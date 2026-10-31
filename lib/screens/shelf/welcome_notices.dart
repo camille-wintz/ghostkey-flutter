@@ -99,8 +99,7 @@ class _WelcomeNoticesState extends ConsumerState<WelcomeNotices> {
           'are still yours — the editor and the sync carry on exactly as before.',
         ),
         NoticeText(
-          'Dictation and photo-to-text keep working. Free has a few runs a week '
-          'of everything else.',
+          'Every feature keeps working on Free, paid from its weekly credits.',
         ),
         NoticeText(
           'Your plan follows your account rather than this phone, and Account '
