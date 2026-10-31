@@ -30,10 +30,12 @@ Future<void> showQuotaNotice(
   final cadence = snapshot?.cadence ?? QuotaCadence.weekly;
   final window = cadence.window;
 
-  final title = switch (allowance) {
-    0 => "${_capitalize(label)} aren't included on your plan",
-    _ => "You've used up your $label$window",
-  };
+  // Free's credits since 2026-10-31: none a week, only the signup's and what
+  // was bought, so a zero there is spent rather than left out of the plan.
+  final notIncluded = allowance == 0 && unit != QuotaUnit.credits;
+  final title = notIncluded
+      ? "${_capitalize(label)} aren't included on your plan"
+      : "You've used up your $label$window";
   final resets = formatBillingDate(periodEnd);
 
   return showNoticeModal(

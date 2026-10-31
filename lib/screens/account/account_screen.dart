@@ -391,10 +391,15 @@ class _QuotaMeter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final allowance = feature.allowance ?? 0;
+    // Free's credits since 2026-10-31: none a week, only the signup's and
+    // what was bought — a count with no window to fill a bar against.
+    final startedOnly = allowance == 0 && feature.unit == QuotaUnit.credits;
     final fraction = allowance > 0
         ? (feature.used / allowance).clamp(0.0, 1.0)
         : 0.0;
-    final usage = formatUsage(feature.used, allowance, feature.unit, asShare);
+    final usage = startedOnly
+        ? '${formatQuantity(feature.remaining ?? 0, feature.unit)} left'
+        : formatUsage(feature.used, allowance, feature.unit, asShare);
     final resets = switch (feature.cadence) {
       QuotaCadence.lifetime => "Doesn't reset",
       QuotaCadence.weekly => 'Resets weekly — next on ${formatBillingDate(feature.periodEnd)}',
@@ -417,7 +422,7 @@ class _QuotaMeter extends StatelessWidget {
               // Bought runs are not in the bar and must not be: they belong to
               // the account rather than to this window, so a full bar with a
               // pack behind it reads as "the included ones are gone".
-              feature.extras > 0
+              feature.extras > 0 && !startedOnly
                   ? '$usage · ${formatQuantity(feature.extras, feature.unit)} bought'
                   : usage,
               style: DsStyle.ui(
@@ -427,16 +432,18 @@ class _QuotaMeter extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 7),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(DsGeom.radiusRound),
-          child: LinearProgressIndicator(
-            value: fraction,
-            minHeight: 3,
-            backgroundColor: Ds.edge,
-            color: fraction >= 1 ? Ds.attention : Ds.accent,
+        if (!startedOnly) ...[
+          const SizedBox(height: 7),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(DsGeom.radiusRound),
+            child: LinearProgressIndicator(
+              value: fraction,
+              minHeight: 3,
+              backgroundColor: Ds.edge,
+              color: fraction >= 1 ? Ds.attention : Ds.accent,
+            ),
           ),
-        ),
+        ],
         const SizedBox(height: 7),
         Text(
           resets,

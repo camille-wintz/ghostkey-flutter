@@ -156,7 +156,8 @@ enum QuotaCadence {
   /// Free's chat messages reset every day; the other plans count them weekly.
   daily,
 
-  /// Never resets: free's fifteen minutes of dictation (2026-10-14).
+  /// Never resets: free's credits since 2026-10-31 (the signup's 50 and what
+  /// was bought).
   lifetime;
 
   static QuotaCadence fromWire(String? value) => switch (value) {
