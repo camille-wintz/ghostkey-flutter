@@ -9,6 +9,7 @@ import 'answer_end_note.dart';
 import 'attachment_chip.dart';
 import 'chat_markdown.dart';
 import 'recall_rail.dart';
+import 'review/review_screen.dart';
 import 'edit_receipt.dart';
 import 'model_switch_note.dart';
 import 'question_card.dart';
@@ -43,7 +44,15 @@ class ChatMessageView extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (message.steps.isNotEmpty) RecallRail(steps: message.steps, live: false),
-          if (message.text.trim().isNotEmpty) ChatMarkdown(message.text),
+          if (message.text.trim().isNotEmpty)
+            ChatMarkdown(
+              message.text,
+              onChapter: (id, title) => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ReviewScreen(projectId: projectId, view: ChatView(kind: ChatViewKind.chapter, id: id, title: title)),
+                ),
+              ),
+            ),
           if (result case ChatAnswerResult(:final model?, :final switchedFrom?))
             ModelSwitchNote(modelSwitch: (model: model, from: switchedFrom)),
           if (result != null && result.savedNotes.isNotEmpty) SavedNoteReceipt(notes: result.savedNotes),

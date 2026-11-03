@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/chapter_refs.dart';
 import '../../ds/tokens.dart';
 
 // THE markdown renderer for assistant prose — and for a world-bible card's
@@ -28,9 +29,12 @@ enum MarkdownHeadings {
 }
 
 class ChatMarkdown extends StatefulWidget {
-  const ChatMarkdown(this.text, {super.key, this.headings = MarkdownHeadings.compact});
+  const ChatMarkdown(this.text, {super.key, this.headings = MarkdownHeadings.compact, this.onChapter});
   final String text;
   final MarkdownHeadings headings;
+
+  /// A chapter named in the text was tapped: its id and the name shown.
+  final void Function(String id, String title)? onChapter;
 
   @override
   State<ChatMarkdown> createState() => _ChatMarkdownState();
@@ -224,7 +228,13 @@ class _ChatMarkdownState extends State<ChatMarkdown> {
         return TextSpan(text: node.textContent, style: _mono.copyWith(backgroundColor: Ds.raise));
       case 'a':
         final href = node.attributes['href'];
-        final recognizer = href == null ? null : (TapGestureRecognizer()..onTap = () => _open(href));
+        final onChapter = widget.onChapter;
+        final chapter = href != null && href.startsWith(chapterScheme);
+        if (chapter && onChapter == null) return TextSpan(children: _inlines(children, base));
+        final recognizer = href == null
+            ? null
+            : (TapGestureRecognizer()
+              ..onTap = chapter ? () => onChapter!(href.substring(chapterScheme.length), node.textContent) : () => _open(href));
         if (recognizer != null) _recognizers.add(recognizer);
         final style = base.copyWith(color: Ds.accent, decoration: TextDecoration.underline, decorationColor: Ds.accent);
         return TextSpan(style: style, recognizer: recognizer, children: _inlines(children, style));
