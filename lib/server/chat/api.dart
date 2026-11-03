@@ -104,6 +104,7 @@ Future<ChatSendResult> sendMessage(
   required String manuscript,
   ChatView? view,
   String? workPlanId,
+  String? approves,
 }) async {
   final res = await apiFetch('${_base(projectId)}/messages',
       method: 'POST',
@@ -116,6 +117,7 @@ Future<ChatSendResult> sendMessage(
         manuscript: manuscript,
         view: view,
         workPlanId: workPlanId,
+        approves: approves,
       ));
   return ChatSendResult.fromJson(res.jsonObject());
 }
@@ -133,6 +135,7 @@ Json sendMessageBody({
   required String manuscript,
   ChatView? view,
   String? workPlanId,
+  String? approves,
 }) =>
     {
       'id': id,
@@ -144,6 +147,9 @@ Json sendMessageBody({
       // The phone has no desk beside the chat, but what a tool opens is still
       // where its work landed: the Review button seats it on demand.
       'views': 'beside',
+      // And this build draws the question a batch waits on.
+      'asks_to_apply': true,
+      'approves': ?approves,
       if (sessionId == null) 'view': ?view?.toJson(),
       if (sessionId == null) 'work_plan_id': ?workPlanId,
     };

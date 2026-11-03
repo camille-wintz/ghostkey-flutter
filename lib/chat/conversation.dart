@@ -160,6 +160,7 @@ class ConversationApi {
     required String manuscript,
     ChatView? view,
     String? workPlanId,
+    String? approves,
   }) =>
       sendMessage(
         projectId,
@@ -171,6 +172,7 @@ class ConversationApi {
         manuscript: manuscript,
         view: view,
         workPlanId: workPlanId,
+        approves: approves,
       );
 
   Future<ChatConversation> read(String projectId, String sessionId) => readConversation(projectId, sessionId);
@@ -244,6 +246,7 @@ class ConversationNotifier extends Notifier<ConversationState> with WidgetsBindi
     List<ChatAttachment> attachments,
     String? model, {
     required String manuscript,
+    String? approves,
   }) async {
     if (state.busy) return const SendFailed();
     final key = '$text\u0000${attachments.map((a) => a.id).join(',')}';
@@ -262,6 +265,7 @@ class ConversationNotifier extends Notifier<ConversationState> with WidgetsBindi
         manuscript: manuscript,
         view: state.view,
         workPlanId: state.workPlanId,
+        approves: approves,
       );
       _unsent = null;
       if (!_alive) return const SendDone();

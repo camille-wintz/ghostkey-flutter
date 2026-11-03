@@ -4,13 +4,15 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../chat/attachments.dart';
 import '../../ds/tokens.dart';
 import '../../server/dto/chat.dart';
+import 'batch_receipt_row.dart';
 
 /// What the assistant changed in the project this answer besides notes: a
 /// passage of a chapter, a chapter it wrote, a world-bible card. (The changes
 /// it handed to tasks are lines of their own in the conversation.) Receipts,
 /// not prompts — each write happened on the author's say-so.
 class EditReceipt extends StatelessWidget {
-  const EditReceipt({super.key, required this.edits});
+  const EditReceipt({super.key, required this.projectId, required this.edits});
+  final String projectId;
   final ChatTurnEdits edits;
 
   @override
@@ -51,6 +53,7 @@ class EditReceipt extends StatelessWidget {
                 ],
               ),
             ),
+          for (final batch in edits.batches) BatchReceiptRow(key: ValueKey(batch.id), projectId: projectId, batch: batch),
         ],
       ),
     );

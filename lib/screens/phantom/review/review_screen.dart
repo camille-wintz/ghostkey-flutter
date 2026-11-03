@@ -4,6 +4,7 @@ import '../../../ds/tokens.dart';
 import '../../../server/dto/chat.dart';
 import '../../../ui/room_title_bar.dart';
 import '../../mara/chapters/chapters_view.dart';
+import 'batch_review.dart';
 import 'board_review.dart';
 import 'chapter_review.dart';
 import 'image_review.dart';
@@ -35,6 +36,7 @@ class ReviewScreen extends StatelessWidget {
                   ChatViewKind.chapters => ChaptersView(projectId: projectId),
                   ChatViewKind.image => ImageReview(projectId: projectId, itemId: view.id!, headerTitle: reviewTitle(view)),
                   ChatViewKind.workPlan => WorkPlanReview(projectId: projectId, planId: view.id!),
+                  ChatViewKind.batch => BatchReview(projectId: projectId, batchId: view.id!),
                 },
               ),
             ],

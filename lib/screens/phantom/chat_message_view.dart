@@ -4,6 +4,7 @@ import '../../chat/answer_end.dart';
 import '../../ds/tokens.dart';
 import '../../server/dto/chat.dart';
 import '../../server/dto/chat_conversation.dart';
+import '../../ui/button.dart';
 import 'answer_end_note.dart';
 import 'attachment_chip.dart';
 import 'chat_markdown.dart';
@@ -17,9 +18,13 @@ import 'saved_note_receipt.dart';
 /// chips beneath; a finished answer is prose — the recall rail above,
 /// receipts, any questions it stopped on, and a line when it did not finish.
 class ChatMessageView extends StatelessWidget {
-  const ChatMessageView({super.key, required this.message, this.onAnswer});
+  const ChatMessageView({super.key, required this.projectId, required this.message, this.onAnswer, this.onApprove});
 
+  final String projectId;
   final ChatMessage message;
+
+  /// Set only on the answer whose button can still be pressed.
+  final VoidCallback? onApprove;
 
   /// Set only when this answer's questions are still open to answer — the
   /// newest answer, nothing in flight. Null draws them read-only.
@@ -42,9 +47,14 @@ class ChatMessageView extends StatelessWidget {
           if (result case ChatAnswerResult(:final model?, :final switchedFrom?))
             ModelSwitchNote(modelSwitch: (model: model, from: switchedFrom)),
           if (result != null && result.savedNotes.isNotEmpty) SavedNoteReceipt(notes: result.savedNotes),
-          if (edits != null && !edits.isEmpty) EditReceipt(edits: edits),
+          if (edits != null && !edits.isEmpty) EditReceipt(projectId: projectId, edits: edits),
           if (message.questions.isNotEmpty) QuestionCard(questions: message.questions, onAnswer: onAnswer),
           if (ended != null) AnswerEndNote(line: ended),
+          if (message.approvalLabel case final label? when onApprove != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Align(alignment: Alignment.centerLeft, child: GkButton(label: label, onPressed: onApprove)),
+            ),
         ],
       ),
     );

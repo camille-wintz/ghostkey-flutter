@@ -47,6 +47,17 @@ String answersMessage(List<ChatQuestion> questions, QuestionChoices choices) => 
 
 /// Where the questions still open to answer are: the newest answer, when
 /// nothing but tasks came after it. Null when nothing is open.
+/// Which message's button can still be pressed: the newest answer's, finished,
+/// with nothing said since. A press on an older one is read as its words.
+int? pressableAt(List<ChatMessage> messages) {
+  for (var i = messages.length - 1; i >= 0; i--) {
+    final m = messages[i];
+    if (m.role == ChatRole.task || m.automatic) continue;
+    return m.role == ChatRole.assistant && m.status == ChatMessageStatus.done && m.approvalLabel != null ? i : null;
+  }
+  return null;
+}
+
 int? openQuestionsAt(List<ChatMessage> messages) {
   for (var i = messages.length - 1; i >= 0; i--) {
     final m = messages[i];

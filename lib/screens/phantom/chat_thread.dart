@@ -20,6 +20,7 @@ import 'task_message_row.dart';
 class ChatThread extends StatelessWidget {
   const ChatThread({
     super.key,
+    required this.projectId,
     required this.messages,
     required this.live,
     required this.busy,
@@ -27,7 +28,13 @@ class ChatThread extends StatelessWidget {
     required this.controller,
     required this.intro,
     required this.onAnswer,
+    required this.onApprove,
   });
+
+  final String projectId;
+
+  /// The press on the newest answer's button.
+  final ValueChanged<ChatMessage> onApprove;
 
   final List<ChatMessage> messages;
 
@@ -66,6 +73,7 @@ class ChatThread extends StatelessWidget {
     }
     final waitingRows = waiting ? 1 : 0;
     final answerable = busy ? null : openQuestionsAt(messages);
+    final pressable = busy ? null : pressableAt(messages);
     return ListView.builder(
       controller: controller,
       reverse: true,
@@ -80,8 +88,15 @@ class ChatThread extends StatelessWidget {
         return switch (message.role) {
           ChatRole.task => TaskMessageRow(key: key, message: message),
           ChatRole.unknown => SizedBox.shrink(key: key),
+          _ when message.automatic => SizedBox.shrink(key: key),
           _ when live != null && live.id == message.id => PendingTurnView(key: key, live: live),
-          _ => ChatMessageView(key: key, message: message, onAnswer: index == answerable ? onAnswer : null),
+          _ => ChatMessageView(
+              key: key,
+              projectId: projectId,
+              message: message,
+              onAnswer: index == answerable ? onAnswer : null,
+              onApprove: index == pressable ? () => onApprove(message) : null,
+            ),
         };
       },
     );

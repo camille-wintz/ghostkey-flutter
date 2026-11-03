@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../server/chat/batches.dart';
+import '../../server/dto/batch.dart';
 import '../../server/dto/jobs.dart';
 import '../../server/dto/media.dart';
 import '../../server/jobs/api.dart';
@@ -38,3 +40,22 @@ typedef MediaItemKey = ({String projectId, String itemId});
 final mediaItemProvider = FutureProvider.autoDispose.family<MediaItem, MediaItemKey>(
   (ref, key) async => (await getMediaItem(key.projectId, key.itemId)).item,
 );
+
+/// A batch's address.
+typedef BatchKey = ({String projectId, String batchId});
+
+/// How often a batch still going is asked about. The phone has no job socket.
+const Duration _batchPoll = Duration(seconds: 4);
+
+/// A batch as the server has it. Re-asks while it runs or its review does.
+final batchProvider = FutureProvider.autoDispose.family<BatchPage, BatchKey>((ref, key) async {
+  final page = await readBatch(key.projectId, key.batchId);
+  if (page.live) {
+    final poll = Timer(_batchPoll, ref.invalidateSelf);
+    ref.onDispose(poll.cancel);
+  }
+  return page;
+});
+
+/// Whether the chat's line edits write straight in; null until answered.
+final autoLineEditProvider = FutureProvider.autoDispose<bool?>((ref) => readAutoLineEdit());

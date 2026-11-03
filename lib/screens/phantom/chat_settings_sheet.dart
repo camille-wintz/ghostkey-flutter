@@ -5,8 +5,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../chat/model_access.dart';
 import '../../chat/models.dart';
 import '../../chat/refusals.dart';
+import '../../chat/review/providers.dart';
 import '../../ds/tokens.dart';
 import '../../server/analytics/gate.dart';
+import '../../server/chat/batches.dart';
 import '../../server/dto/models.dart';
 import '../../server/providers.dart';
 import '../../ui/press.dart';
@@ -123,6 +125,17 @@ class _ChatSettingsState extends ConsumerState<_ChatSettings> {
           detail: 'The assistant reads and advises; it never touches the text.',
           selected: !_writes,
           onPressed: () => _pickWrites(false),
+        ),
+        _SettingRow(
+          icon: LucideIcons.wandSparkles,
+          label: 'Apply line edits automatically',
+          detail: 'Holds for all your books. Off, a line edit leaves notes for you to apply.',
+          detailLines: 2,
+          selected: ref.watch(autoLineEditProvider).value == true,
+          onPressed: () async {
+            await setAutoLineEdit(ref.read(autoLineEditProvider).value != true);
+            ref.invalidate(autoLineEditProvider);
+          },
         ),
         const _SectionLabel('Model'),
         // No fallback list: nothing to pick until the catalog lands, and a

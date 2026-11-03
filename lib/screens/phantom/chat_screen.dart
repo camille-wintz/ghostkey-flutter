@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../chat/arrival.dart';
 import '../../chat/composer.dart';
 import '../../chat/models.dart';
+import '../../server/dto/chat_conversation.dart';
 import '../../chat/providers.dart';
 import '../../chat/quota_feature.dart';
 import '../../chat/refusals.dart';
@@ -103,6 +106,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scroll.hasClients) _scroll.jumpTo(0);
     });
+  }
+
+  /// The press on an answer's button: its label as the message, and the answer
+  /// it approves. A refusal has nothing to explain here that the send's own error
+  /// bar doesn't.
+  void _approve(ChatMessage answer) {
+    _scrollToEnd();
+    unawaited(ref.read(conversationProvider(_projectId).notifier).send(
+          answer.approvalLabel ?? '',
+          const [],
+          _model,
+          manuscript: _manuscriptWrites ? 'write' : 'read_only',
+          approves: answer.id,
+        ));
   }
 
   Future<void> _send([String? override]) async {
@@ -250,6 +267,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
             Expanded(
               child: ChatThread(
+                projectId: _projectId,
+                onApprove: _approve,
                 messages: chat.messages,
                 live: chat.live,
                 busy: chat.busy,

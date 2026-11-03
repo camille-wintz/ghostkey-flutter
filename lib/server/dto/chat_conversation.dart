@@ -60,6 +60,8 @@ class ChatMessage {
     this.label,
     this.summary,
     this.error,
+    this.approvalLabel,
+    this.automatic = false,
   });
 
   final String id;
@@ -96,6 +98,12 @@ class ChatMessage {
   /// A failed answer's (or task's) wire code — never shown as is.
   final String? error;
 
+  /// The button under a finished answer: what its press says. Null for none.
+  final String? approvalLabel;
+
+  /// A message the server sent itself to start a turn. Not the author's words.
+  final bool automatic;
+
   bool get isRunningAnswer => role == ChatRole.assistant && status == ChatMessageStatus.running;
 
   static ChatMessage fromJson(Json json) => ChatMessage(
@@ -114,6 +122,8 @@ class ChatMessage {
         label: nonEmptyString(json['label']),
         summary: nonEmptyString(json['summary']),
         error: nonEmptyString(json['error']),
+        approvalLabel: json['approval'] is Map ? nonEmptyString((json['approval'] as Map)['label']) : null,
+        automatic: json['automatic'] == true,
       );
 }
 

@@ -117,6 +117,7 @@ class FakeApi extends ConversationApi {
     required String manuscript,
     ChatView? view,
     String? workPlanId,
+    String? approves,
   }) async {
     sentIds.add(id);
     if (sendError case final e?) throw e;

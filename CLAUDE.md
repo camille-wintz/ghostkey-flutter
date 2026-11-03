@@ -26,7 +26,9 @@ the chat wrote, reviewed and committed, then the book's chapters with their
 notes and targets; since 2026-09-24, spec `../ghost-key/docs/mara-phone-plan.md`),
 **Wisp** (editing: line edits per chapter, continuity, the theme /
 pacing / genre analyses, the reverse outline — its chapter review is
-PhantomMemory's), plus dictation and scan landing in the editor. Séance and
+PhantomMemory's; a line edit from the chat over several chapters is a batch,
+`screens/phantom/review/batch_review.dart`, `../ghostkey-server/docs/batch-jobs-plan.md`),
+plus dictation and scan landing in the editor. Séance and
 Glamour are desk rooms and never come here. The chat's review views mount
 Mara's own components (the card list, the outline editor, the Chapters view);
 a board's writes are the server's one-card routes, never a whole-map PUT.

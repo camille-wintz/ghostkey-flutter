@@ -187,7 +187,8 @@ enum ChatViewKind {
   outline('outline'),
   chapters('chapters'),
   image('image'),
-  workPlan('work_plan');
+  workPlan('work_plan'),
+  batch('batch');
 
   const ChatViewKind(this.wire);
   final String wire;
@@ -311,10 +312,20 @@ class ChatBibleEdit {
 /// world-bible cards. The changes it handed to tasks are messages of their
 /// own in the conversation, not receipts.
 class ChatTurnEdits {
-  const ChatTurnEdits({required this.chapterEdits, required this.bibleEdits});
+  const ChatTurnEdits({required this.chapterEdits, required this.bibleEdits, this.batches = const []});
   final List<ChatChapterEdit> chapterEdits;
   final List<ChatBibleEdit> bibleEdits;
-  bool get isEmpty => chapterEdits.isEmpty && bibleEdits.isEmpty;
+  final List<ChatBatchStart> batches;
+  bool get isEmpty => chapterEdits.isEmpty && bibleEdits.isEmpty && batches.isEmpty;
+}
+
+/// A batch an answer started. The line under the answer follows it.
+class ChatBatchStart {
+  const ChatBatchStart({required this.id, required this.label});
+  final String id;
+  final String label;
+
+  static ChatBatchStart fromJson(Json json) => ChatBatchStart(id: asString(json['id']), label: asString(json['label']));
 }
 
 /// A finished answer's receipts — a ChatMessage's `result`. The fields this
@@ -325,6 +336,7 @@ class ChatAnswerResult {
     this.savedNotes = const [],
     this.chapterEdits = const [],
     this.bibleEdits = const [],
+    this.batches = const [],
     this.model,
     this.switchedFrom,
     this.workPlanId,
@@ -332,6 +344,7 @@ class ChatAnswerResult {
   final List<ChatSavedNote> savedNotes;
   final List<ChatChapterEdit> chapterEdits;
   final List<ChatBibleEdit> bibleEdits;
+  final List<ChatBatchStart> batches;
 
   /// The registry model that answered.
   final String? model;
@@ -344,7 +357,7 @@ class ChatAnswerResult {
   /// the conversation already had.
   final String? workPlanId;
 
-  ChatTurnEdits get edits => ChatTurnEdits(chapterEdits: chapterEdits, bibleEdits: bibleEdits);
+  ChatTurnEdits get edits => ChatTurnEdits(chapterEdits: chapterEdits, bibleEdits: bibleEdits, batches: batches);
 
   static ChatAnswerResult? fromJson(Object? json) {
     if (json is! Map) return null;
@@ -353,6 +366,7 @@ class ChatAnswerResult {
       savedNotes: _list(map['savedNotes']).map(ChatSavedNote.fromJson).toList(),
       chapterEdits: _list(map['chapterEdits']).map(ChatChapterEdit.fromJson).toList(),
       bibleEdits: _list(map['bibleEdits']).map(ChatBibleEdit.fromJson).toList(),
+      batches: _list(map['batches']).map(ChatBatchStart.fromJson).toList(),
       model: nonEmptyString(map['model']),
       switchedFrom: nonEmptyString(map['switched_from']),
       workPlanId: nonEmptyString(map['workPlanId']),
