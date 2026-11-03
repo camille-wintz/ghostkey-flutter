@@ -146,14 +146,15 @@ class ChapterNavState extends ChangeNotifier {
   /// filename.
   Future<String> createChapter(ProjectFull data, {String? inFolder}) async {
     final chapters = chaptersOf(data);
-    final document = await createDocument(projectId, kind: DocumentKind.chapter, filename: '');
+    final filename = nextChapterFilename(chapterFilenamesInTree(chapters));
+    final document = await createDocument(projectId, kind: DocumentKind.chapter, filename: filename);
     final next = inFolder == null
         ? [...chapters, document.summary]
         : appendChapterToFolder(chapters, inFolder, document.summary);
     final draft = await _writeTree(data, next);
     if (inFolder != null && _collapsed.remove(inFolder)) notifyListeners();
     refreshProject();
-    return draft.chapterNames[document.id] ?? document.filename;
+    return draft.chapterNames[document.id] ?? filename;
   }
 
   /// Same shape as chapters: append to the existing note order and persist

@@ -81,7 +81,7 @@ class ChatThread extends StatelessWidget {
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       itemCount: messages.length + waitingRows,
       itemBuilder: (context, i) {
-        if (waiting && i == 0) return PendingTurnView(projectId: projectId, key: const ValueKey('pending'), live: live);
+        if (waiting && i == 0) return PendingTurnView(key: const ValueKey('pending'), live: live);
         final index = messages.length - 1 - (i - waitingRows);
         final message = messages[index];
         final key = ValueKey(message.id);
@@ -89,7 +89,7 @@ class ChatThread extends StatelessWidget {
           ChatRole.task => TaskMessageRow(key: key, message: message),
           ChatRole.unknown => SizedBox.shrink(key: key),
           _ when message.automatic => SizedBox.shrink(key: key),
-          _ when live != null && live.id == message.id => PendingTurnView(key: key, projectId: projectId, live: live),
+          _ when live != null && live.id == message.id => PendingTurnView(key: key, live: live),
           _ => ChatMessageView(
               key: key,
               projectId: projectId,

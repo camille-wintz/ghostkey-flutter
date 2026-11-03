@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../chat/live_answer.dart';
-import '../../core/chapter_refs.dart';
 import '../../ds/tokens.dart';
 import '../../server/dto/chat.dart';
-import '../../server/dto/projects.dart';
-import '../../server/providers.dart';
 import '../../ui/text.dart';
 import 'chat_markdown.dart';
 import 'pulse.dart';
@@ -18,13 +14,12 @@ import 'recall_rail.dart';
 /// Listens to the answer's two ValueNotifiers directly, so a frame rebuilds
 /// this widget and nothing above it — the stream-to-paint budget (P9) is
 /// spent here alone.
-class PendingTurnView extends ConsumerWidget {
-  const PendingTurnView({super.key, required this.projectId, required this.live});
-  final String projectId;
+class PendingTurnView extends StatelessWidget {
+  const PendingTurnView({super.key, required this.live});
   final LiveAnswer live;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Padding(
+  Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: ValueListenableBuilder<List<ChatToolStep>>(
           valueListenable: live.steps,
@@ -48,11 +43,7 @@ class PendingTurnView extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        ChatMarkdown(
-                          linkChapterRefs(text, {
-                            for (final d in chaptersInTree(ref.read(projectProvider(projectId)).value?.chapters ?? const [])) d.id: d.filename,
-                          }),
-                        ),
+                        ChatMarkdown(text),
                         Padding(
                           padding: const EdgeInsets.only(top: 6),
                           child: UiText('writing…', step: DsText.eyebrow, color: Ds.faint),

@@ -6,6 +6,12 @@ DocumentSummary _doc(String id) =>
     DocumentSummary(id: id, kind: DocumentKind.chapter, filename: '$id.md', version: 1, wordCount: 0, updatedAt: '');
 
 void main() {
+  test('nextChapterFilename counts on from the chapters there are', () {
+    expect(nextChapterFilename(const []), 'Chapter 1.md');
+    expect(nextChapterFilename(const ['Chapter 1.md', 'The Wreck.md']), 'Chapter 3.md');
+    expect(nextChapterFilename(const ['Chapter 2.md']), 'Chapter 3.md');
+  });
+
   test('nextNoteFilename matches the desktop naming', () {
     expect(nextNoteFilename(const ['Note 1.md']), 'Note 2.md');
   });
