@@ -10,6 +10,7 @@ import '../../../server/dto/chat.dart';
 import '../../../server/errors.dart';
 import '../../../ui/button.dart';
 import '../../../ui/press.dart';
+import '../../../ui/progress_moon.dart';
 import '../../../ui/state_screen.dart';
 import '../../../ui/text.dart';
 import 'review_screen.dart';
@@ -72,30 +73,39 @@ class _BatchReviewState extends ConsumerState<BatchReview> {
           : const StateScreen(spinner: true, message: 'Reading where it stands…');
     }
     final stopping = _stoppedJob != null && _stoppedJob == page.jobId && page.status == BatchStatus.running;
-    final waiting = page.items.where((i) => i.waiting).toList();
+    final inProgress = page.status != BatchStatus.done;
+    final alignment = inProgress ? Alignment.center : Alignment.centerLeft;
+    final textAlign = inProgress ? TextAlign.center : TextAlign.start;
+    final count = page.total == 1 ? page.label : '${page.finished} of ${page.total}';
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
       children: [
-        BrandTitle(page.total == 1 ? page.label : '${page.finished} of ${page.total}'),
+        if (inProgress)
+          Center(child: ProgressMoon(beads: [for (final item in page.items) _beadFor(item)], label: '${page.finished} of ${page.total}')),
+        BrandTitle(count, align: textAlign),
         const SizedBox(height: 6),
-        Text(_line(page, stopping), style: DsStyle.prose(DsText.body, color: Ds.mid).copyWith(fontStyle: FontStyle.italic)),
+        Text(_line(page, stopping), textAlign: textAlign, style: DsStyle.prose(DsText.body, color: Ds.mid).copyWith(fontStyle: FontStyle.italic)),
         if (page.failed > 0) ...[
           const SizedBox(height: 4),
-          UiText('${page.failed} failed, and ${page.failed == 1 ? "wasn't" : "weren't"} charged.', step: DsText.ui, color: Ds.low),
+          Align(
+            alignment: alignment,
+            child: UiText('${page.failed} failed, and ${page.failed == 1 ? "wasn't" : "weren't"} charged.', step: DsText.ui, color: Ds.low),
+          ),
         ],
         if (_error case final error?) ...[
           const SizedBox(height: 8),
           UiText(error, step: DsText.ui, color: Ds.destructive),
         ],
+        if (inProgress) ..._nowOn(page),
         const SizedBox(height: 16),
         if (page.status == BatchStatus.running && !stopping && page.jobId != null)
           Align(
-            alignment: Alignment.centerLeft,
+            alignment: alignment,
             child: GkButton(label: 'Stop', variant: ButtonVariant.outline, disabled: _busy, onPressed: () => _stop(page.jobId!)),
           ),
         if (page.status == BatchStatus.paused && page.pauseReason != 'draft_changed')
           Align(
-            alignment: Alignment.centerLeft,
+            alignment: alignment,
             child: GkButton(
               label: page.pauseReason == 'review_missed' ? 'Review it now' : 'Resume',
               busy: _busy,
@@ -110,23 +120,48 @@ class _BatchReviewState extends ConsumerState<BatchReview> {
             onOpen: () => _openChapter(item),
             onUndo: () => _do(() => undoBatchItem(widget.projectId, widget.batchId, item.seq)),
           ),
-        if (waiting.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          const Eyebrow('Still to come'),
-          const SizedBox(height: 8),
-          for (final item in waiting)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 3),
-              child: Text(
-                item.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: DsStyle.ui(DsText.ui, color: item.status == 'running' ? Ds.attention : Ds.mid),
-              ),
-            ),
-        ],
       ],
     );
+  }
+
+  static MoonBead _beadFor(BatchItem item) => switch (item.status) {
+        'pending' => MoonBead.waiting,
+        'running' => MoonBead.working,
+        'failed' => MoonBead.failed,
+        'skipped' => MoonBead.quiet,
+        _ => MoonBead.lit,
+      };
+
+  /// What is in hand this moment, by name, and how many wait behind it.
+  static List<Widget> _nowOn(BatchPage page) {
+    final running = page.items.where((i) => i.status == 'running').toList();
+    final waiting = page.items.where((i) => i.status == 'pending').length;
+    return [
+      if (running.isNotEmpty) ...[
+        const SizedBox(height: 20),
+        const Center(child: Eyebrow('Now on')),
+        const SizedBox(height: 6),
+        for (final item in running)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Text(
+              item.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: DsStyle.ui(DsText.body, color: Ds.attention300),
+            ),
+          ),
+      ],
+      if (waiting > 0) ...[
+        const SizedBox(height: 6),
+        Text(
+          running.isNotEmpty ? 'and $waiting more after these' : '$waiting still to come',
+          textAlign: TextAlign.center,
+          style: DsStyle.prose(DsText.ui, color: Ds.low).copyWith(fontStyle: FontStyle.italic),
+        ),
+      ],
+    ];
   }
 
   static String _line(BatchPage page, bool stopping) {
