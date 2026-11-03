@@ -6,6 +6,7 @@ import '../../editor/capture_launchers.dart';
 import '../../rewards/providers.dart';
 import '../../rooms/rooms.dart';
 import '../../server/dto/media.dart';
+import '../../server/dto/projects.dart';
 import '../../server/providers.dart';
 import '../../store/active_project.dart';
 import '../media/series_note_screen.dart';
@@ -60,6 +61,12 @@ class _ApparitionScreenState extends ConsumerState<ApparitionScreen> {
     _nav ??= ChapterNavState(
       projectId: projectId,
       refreshProject: () => ref.invalidate(projectProvider(projectId)),
+      // The open chapter is held by its name, and a move can change that name.
+      onChaptersNamed: (before, names) {
+        final active = ref.read(activeProjectProvider).activeChapter;
+        final now = names[chaptersInTree(before).where((d) => d.filename == active).firstOrNull?.id];
+        if (now != null && now != active) ref.read(activeProjectProvider.notifier).setActiveChapter(now);
+      },
     );
   }
 

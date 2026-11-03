@@ -369,17 +369,26 @@ class AssetMeta {
 }
 
 class DraftSummary {
-  const DraftSummary({required this.id, required this.name, required this.version, this.updatedAt});
+  const DraftSummary({required this.id, required this.name, required this.version, this.updatedAt, this.chapterNames = const {}});
   final String id;
   final String name;
   final int version;
   final String? updatedAt;
+
+  /// Document id to name, as a write to the tree answers: a chapter with no
+  /// title reads as its place, so its name moves with the tree.
+  final Map<String, String> chapterNames;
 
   static DraftSummary fromJson(Json json) => DraftSummary(
         id: asString(json['id']),
         name: asString(json['name']),
         version: asInt(json['version']),
         updatedAt: json['updated_at'] as String?,
+        chapterNames: {
+          for (final entry in (json['chapters'] as List?) ?? const [])
+            for (final doc in (asJson(entry)['chapters'] as List?) ?? [entry])
+              asString(asJson(doc)['id']): asString(asJson(doc)['filename']),
+        },
       );
 }
 

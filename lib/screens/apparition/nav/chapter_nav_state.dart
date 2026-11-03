@@ -20,12 +20,22 @@ import 'tree_edits.dart';
 /// note order that matches. A refused write drops the held order and
 /// refetches, which puts the list back the way the server has it.
 class ChapterNavState extends ChangeNotifier {
-  ChapterNavState({required this.projectId, required this.refreshProject});
+  ChapterNavState({required this.projectId, required this.refreshProject, required this.onChaptersNamed});
 
   final String projectId;
 
   /// Drop the project read so it refetches. The list never reads stale.
   final void Function() refreshProject;
+
+  /// A tree write landed, and the chapters it held now carry these names by id.
+  final void Function(List<ChaptersListEntry> before, Map<String, String> names) onChaptersNamed;
+
+  Future<DraftSummary> _writeTree(ProjectFull data, List<ChaptersListEntry> chapters, {int? baseVersion}) async {
+    final before = chaptersOf(data);
+    final draft = await patchDraftChapters(projectId, data.project.activeDraftId, chapters, baseVersion: baseVersion);
+    onChaptersNamed(before, draft.chapterNames);
+    return draft;
+  }
 
   String _query = '';
   final Set<String> _collapsed = {};
@@ -98,12 +108,7 @@ class ChapterNavState extends ChangeNotifier {
     _pending = true;
     notifyListeners();
     try {
-      final draft = await patchDraftChapters(
-        projectId,
-        data.project.activeDraftId,
-        chapters,
-        baseVersion: draftVersionOf(data),
-      );
+      final draft = await _writeTree(data, chapters, baseVersion: draftVersionOf(data));
       _landedDraftVersion = draft.version;
     } catch (_) {
       _optimisticChapters = null;
@@ -141,15 +146,14 @@ class ChapterNavState extends ChangeNotifier {
   /// filename.
   Future<String> createChapter(ProjectFull data, {String? inFolder}) async {
     final chapters = chaptersOf(data);
-    final filename = nextChapterFilename(chapterFilenamesInTree(chapters));
-    final document = await createDocument(projectId, kind: DocumentKind.chapter, filename: filename);
+    final document = await createDocument(projectId, kind: DocumentKind.chapter, filename: '');
     final next = inFolder == null
         ? [...chapters, document.summary]
         : appendChapterToFolder(chapters, inFolder, document.summary);
-    await patchDraftChapters(projectId, data.project.activeDraftId, next);
+    final draft = await _writeTree(data, next);
     if (inFolder != null && _collapsed.remove(inFolder)) notifyListeners();
     refreshProject();
-    return filename;
+    return draft.chapterNames[document.id] ?? document.filename;
   }
 
   /// Same shape as chapters: append to the existing note order and persist
@@ -173,12 +177,7 @@ class ChapterNavState extends ChangeNotifier {
   /// The server soft-deletes and leaves the tree to the client.
   Future<void> deleteChapter(ProjectFull data, DocumentSummary doc) async {
     await deleteDocument(projectId, doc.id);
-    await patchDraftChapters(
-      projectId,
-      data.project.activeDraftId,
-      removeDocumentFromTree(chaptersOf(data), doc.id),
-      baseVersion: draftVersionOf(data),
-    );
+    await _writeTree(data, removeDocumentFromTree(chaptersOf(data), doc.id), baseVersion: draftVersionOf(data));
     _optimisticChapters = null;
     refreshProject();
   }

@@ -5,14 +5,6 @@ import '../../../server/dto/projects.dart';
 List<String> chapterFilenamesInTree(List<ChaptersListEntry> tree) =>
     chaptersInTree(tree).map((d) => d.filename).toList();
 
-String nextChapterFilename(Iterable<String> existing) {
-  final taken = existing.toSet();
-  for (var n = 1;; n++) {
-    final candidate = 'chapter-$n.md';
-    if (!taken.contains(candidate)) return candidate;
-  }
-}
-
 /// Matches the desktop's note naming ("Note N.md").
 String nextNoteFilename(Iterable<String> existing) {
   final taken = existing.toSet();
