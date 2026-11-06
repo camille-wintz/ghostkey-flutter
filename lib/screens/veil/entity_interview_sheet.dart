@@ -42,7 +42,16 @@ class _EntityInterviewSheetState extends ConsumerState<_EntityInterviewSheet> {
   @override
   void initState() {
     super.initState();
-    unawaited(_interview.start());
+    unawaited(_open());
+  }
+
+  /// Ask the sitting's first question; a spent count closes the sheet, the
+  /// app's quota notice saying why.
+  Future<void> _open() async {
+    await _interview.start();
+    if (!_interview.quotaRefused || !mounted || _closing) return;
+    _closing = true;
+    Navigator.of(context).pop();
   }
 
   @override

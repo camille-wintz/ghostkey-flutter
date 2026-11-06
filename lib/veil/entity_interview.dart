@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../access/quota_refusals.dart';
 import '../server/dto/bible.dart';
 import '../server/errors.dart';
 import 'entity_writes.dart';
@@ -20,6 +21,10 @@ class EntityInterview extends ChangeNotifier {
   final List<String> _asked = [];
   bool busy = false;
   String? error;
+
+  /// The sitting was refused for a spent count (ten a week on free): the app's
+  /// quota notice explains it, so [error] stays empty and the sheet closes.
+  bool quotaRefused = false;
   bool _disposed = false;
 
   /// The first question of the sitting.
@@ -54,7 +59,11 @@ class EntityInterview extends ChangeNotifier {
       question = asked;
       return true;
     } catch (e) {
-      error = _describe(e);
+      if (reportQuotaRefusal(e)) {
+        quotaRefused = true;
+      } else {
+        error = _describe(e);
+      }
       return false;
     } finally {
       busy = false;
