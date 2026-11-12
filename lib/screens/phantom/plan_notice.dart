@@ -20,6 +20,9 @@ Future<void> showPlanNotice(BuildContext context, PlanDenied denied) {
             ? '$plan and the plans above it open $what. Your plan follows your account rather than this phone, and Account always says which one you are on.'
             : 'A higher plan opens $what. Your plan follows your account rather than this phone, and Account always says which one you are on.',
       ),
+      // The server's wall on a turn that changes several chapters at once
+      // (2026-11-12): one chapter at a time is open on every plan.
+      if (denied.capability == 'phantom.batch_book') const NoticeText('On your plan, ask for one chapter at a time.'),
     ],
   );
 }
