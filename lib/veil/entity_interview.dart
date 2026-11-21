@@ -19,6 +19,9 @@ class EntityInterview extends ChangeNotifier {
 
   InterviewQuestion? question;
   final List<String> _asked = [];
+
+  /// Per question put this sitting: answered (true) or skipped (false).
+  final List<bool> trail = [];
   bool busy = false;
   String? error;
 
@@ -56,6 +59,7 @@ class EntityInterview extends ChangeNotifier {
       _asked
         ..clear()
         ..addAll(labels);
+      if (answering != null) trail.add(answer.trim().isNotEmpty);
       question = asked;
       return true;
     } catch (e) {

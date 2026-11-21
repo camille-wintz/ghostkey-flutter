@@ -122,7 +122,8 @@ class _EntityDossierState extends ConsumerState<EntityDossier> {
           ] else if (build.error case final String error) ...[
             _Failed(error, canRun ? (hasText ? () => _start() : _fill) : null),
             const SizedBox(height: 16),
-          ] else if (!editing && !hasText && !canRun)
+          ] else if (!editing && !hasText && !canRun && !capability.granted)
+            // A missing book is said by the interview's own line below.
             Text(_whyNot(capability), style: DsStyle.ui(DsText.ui, color: Ds.faint)),
           if (editing) ...[
             if (!build.building) ...[
@@ -158,7 +159,10 @@ class _EntityDossierState extends ConsumerState<EntityDossier> {
               // Held until the probe settles, as the desk's button is.
               onFill: canRun && probed && build.error == null ? _fill : null,
               onCreate: widget.onCreate,
-              spaced: !canRun,
+              // No page names the card: nothing to read, so the interview
+              // fills it rather than an empty form.
+              onInterview: canRun ? null : widget.onInterview,
+              spaced: !capability.granted,
             ),
         ],
       ),
@@ -213,12 +217,20 @@ class _Failed extends StatelessWidget {
 
 /// A card with nothing written about it yet, as the reading page shows it:
 /// the two ways a dossier starts, side by side — read from the book, or
-/// written by the author (edit mode, where the interview is).
+/// written by the author (edit mode, where the interview is). When no page
+/// names the card ([onInterview]), the interview takes the place of both.
 class _Empty extends StatelessWidget {
-  const _Empty({required this.name, required this.onFill, required this.onCreate, required this.spaced});
+  const _Empty({
+    required this.name,
+    required this.onFill,
+    required this.onCreate,
+    required this.onInterview,
+    required this.spaced,
+  });
   final String name;
   final VoidCallback? onFill;
   final VoidCallback onCreate;
+  final VoidCallback? onInterview;
 
   /// A status line sits above it.
   final bool spaced;
@@ -229,7 +241,13 @@ class _Empty extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!spaced) ...[
+            if (onInterview != null) ...[
+              Text(
+                'No page names $name yet. Answer a few questions and the card fills itself in.',
+                style: DsStyle.prose(DsText.body, color: Ds.mid),
+              ),
+              const SizedBox(height: 14),
+            ] else if (!spaced) ...[
               Text('Nothing written about $name yet.', style: DsStyle.prose(DsText.body, color: Ds.mid)),
               const SizedBox(height: 14),
             ],
@@ -237,18 +255,26 @@ class _Empty extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                if (onFill case final onFill?)
+                if (onInterview case final onInterview?)
+                  GkButton(
+                    label: 'Answer questions',
+                    leading: Icon(LucideIcons.messagesSquare, size: 16, color: Ds.accent),
+                    onPressed: onInterview,
+                  )
+                else ...[
+                  if (onFill case final onFill?)
                   GkButton(
                     label: 'Fill from the book',
                     leading: Icon(LucideIcons.bookOpenText, size: 16, color: Ds.accent),
                     onPressed: onFill,
                   ),
-                GkButton(
-                  label: 'Create dossier',
-                  variant: ButtonVariant.outline,
-                  leading: Icon(LucideIcons.penLine, size: 16, color: Ds.soft),
-                  onPressed: onCreate,
-                ),
+                  GkButton(
+                    label: 'Create dossier',
+                    variant: ButtonVariant.outline,
+                    leading: Icon(LucideIcons.penLine, size: 16, color: Ds.soft),
+                    onPressed: onCreate,
+                  ),
+                ],
               ],
             ),
           ],

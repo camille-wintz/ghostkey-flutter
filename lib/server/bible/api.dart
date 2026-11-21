@@ -105,8 +105,8 @@ Future<Uint8List> getSeriesAsset(String seriesId, String assetId) async {
 
 /// One step of the dossier interview. The server is stateless: [asked] is
 /// every label this sitting has asked. An [answer] to [answering] is filed
-/// into the dossier verbatim under its heading before the next question is
-/// asked; `next: false` files and stops, and answers null. `dossier_full`
+/// onto the card verbatim, where the question's target says, before the next
+/// question is asked; `next: false` files and stops, and answers null. `dossier_full`
 /// when the answer would not fit — nothing is filed then.
 Future<InterviewQuestion?> interviewEntity(
   String projectId,
@@ -118,7 +118,12 @@ Future<InterviewQuestion?> interviewEntity(
 }) async {
   final res = await apiFetch('/api/projects/$projectId/bible/entities/$entityId/interview', method: 'POST', body: {
     if (answering != null && answer != null)
-      'answer': {'label': answering.label, 'heading': answering.heading, 'text': answer},
+      'answer': {
+        'label': answering.label,
+        'heading': answering.heading,
+        if (answering.target.isNotEmpty) 'target': answering.target,
+        'text': answer,
+      },
     'asked': asked.length > 100 ? asked.sublist(asked.length - 100) : asked,
     'next': next,
   });

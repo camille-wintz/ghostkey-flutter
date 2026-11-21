@@ -499,17 +499,21 @@ class Dossier {
 
 /// One question of the dossier interview (`POST …/interview`). [label] names
 /// the topic and heads the answer in the dossier; [heading] is the `## `
-/// section it is filed under.
+/// section it is filed under, and what the author is told. [target] is where
+/// the server files the answer (the dossier, the description, a GMC cell, a
+/// tie) — its own token, echoed back with the answer and never read here.
 class InterviewQuestion {
-  const InterviewQuestion({required this.question, required this.label, required this.heading});
+  const InterviewQuestion({required this.question, required this.label, required this.heading, this.target = ''});
 
   final String question;
   final String label;
   final String heading;
+  final String target;
 
   static InterviewQuestion fromJson(Json json) => InterviewQuestion(
         question: asString(json['question']),
         label: asString(json['label']),
         heading: asString(json['heading']),
+        target: asString(json['target']),
       );
 }

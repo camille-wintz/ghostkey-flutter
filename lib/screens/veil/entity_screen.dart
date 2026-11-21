@@ -31,7 +31,7 @@ import 'entity_gallery.dart';
 import 'entity_gmc_view.dart';
 import 'entity_header.dart';
 import 'entity_hero_portrait.dart';
-import 'entity_interview_sheet.dart';
+import 'entity_interview_screen.dart';
 import 'entity_pictures.dart';
 import 'entity_presence.dart';
 import 'entity_text_sheet.dart';
@@ -209,7 +209,7 @@ class _EntityScreenState extends ConsumerState<EntityScreen> {
           setState(() => _editing = true);
           _editDossier(projectId, entity);
         },
-        onInterview: () => showEntityInterview(context, projectId: projectId, entity: entity),
+        onInterview: () => openEntityInterview(context, projectId: projectId, entity: entity),
       ),
       if (EntityTies.hasContent(entity, dossierTies, entities, editing: editing))
         EntityTies(
