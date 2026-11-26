@@ -1,3 +1,5 @@
+import '../access/plans.dart';
+import '../server/dto/billing.dart';
 import '../server/dto/chat_conversation.dart';
 
 /// The line under an answer that did not finish: stopped, cut off, refused.
@@ -10,6 +12,10 @@ String? answerEndLine(ChatMessage answer) {
     ChatMessageStatus.error => switch (answer.error) {
         'interrupted' => 'This answer was cut off. Ask again to pick it up.',
         'quota_exceeded' => "This week's chat messages ran out before this one was answered.",
+        // The turn stopped mid-way, before a second chapter (`wall`): what it
+        // changed before stays.
+        'plan_insufficient' when answer.wallRequiredPlan != null =>
+          'Stopped before the next chapter: changing several in one go is part of ${planName(Plan.fromWire(answer.wallRequiredPlan))}. What changed so far stays; on your plan, ask for one chapter a message.',
         'plan_insufficient' => "This one wasn't answered: that model isn't part of your plan.",
         _ => answer.text.trim().isEmpty ? "This one wasn't answered. Ask again." : 'This answer stopped short.',
       },

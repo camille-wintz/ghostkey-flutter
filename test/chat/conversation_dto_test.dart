@@ -151,6 +151,19 @@ void main() {
       expect(lines, everyElement(isNotNull));
       expect(lines.join(), isNot(contains('_')));
     });
+
+    test('a turn that stopped at the several-chapters wall names the plan', () {
+      final walled = ChatMessage.fromJson(row({
+        'status': 'error',
+        'error': 'plan_insufficient',
+        'wall': {'capability': 'phantom.batch_book', 'required_plan': 'standard'},
+      }));
+      expect(walled.wallRequiredPlan, 'standard');
+      expect(answerEndLine(walled), contains('Standard'));
+      expect(answerEndLine(walled), contains('one chapter a message'));
+      expect(answer('error', error: 'plan_insufficient').wallRequiredPlan, isNull);
+      expect(answerEndLine(answer('error', error: 'plan_insufficient')), contains('model'));
+    });
   });
 
   group('ChatView.fromJson', () {

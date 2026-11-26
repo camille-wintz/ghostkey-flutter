@@ -62,6 +62,7 @@ class ChatMessage {
     this.error,
     this.approvalLabel,
     this.automatic = false,
+    this.wallRequiredPlan,
   });
 
   final String id;
@@ -104,6 +105,11 @@ class ChatMessage {
   /// A message the server sent itself to start a turn. Not the author's words.
   final bool automatic;
 
+  /// The plan that opens what an answer's turn stopped at mid-way (`wall`:
+  /// today a second chapter changed in one turn below Standard). Null for
+  /// an answer that hit no wall.
+  final String? wallRequiredPlan;
+
   bool get isRunningAnswer => role == ChatRole.assistant && status == ChatMessageStatus.running;
 
   static ChatMessage fromJson(Json json) => ChatMessage(
@@ -124,6 +130,7 @@ class ChatMessage {
         error: nonEmptyString(json['error']),
         approvalLabel: json['approval'] is Map ? nonEmptyString((json['approval'] as Map)['label']) : null,
         automatic: json['automatic'] == true,
+        wallRequiredPlan: json['wall'] is Map ? nonEmptyString((json['wall'] as Map)['required_plan']) : null,
       );
 }
 
